@@ -108,7 +108,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="Acciones" align="center" width="150">
+        <el-table-column label="Acciones" align="center" width="150" class-name="no-print">
           <template slot-scope="{row}">
             <el-button type="primary" circle size="small" icon="el-icon-view" title="Ver Detalles" @click="openDetailModal(row)" />
             <el-button type="danger" circle size="small" icon="el-icon-printer" title="Imprimir Ficha" @click="handlePrintAthlete(row)" />
@@ -131,14 +131,6 @@
       append-to-body
     >
       <div v-if="selectedAthlete" id="printable-modal-content" class="modal-content-wrapper">
-        <!-- Printable Logo Header -->
-        <div class="print-only-header">
-          <div class="print-logo"><i class="el-icon-trophy" /></div>
-          <div class="print-title">
-            <h1>Club Atlético Deportivo Acarigua</h1>
-            <p>Ficha Técnica del Atleta</p>
-          </div>
-        </div>
 
         <!-- Header Screen -->
         <div class="modal-header-custom screen-only">
@@ -256,9 +248,6 @@
           </div>
         </div>
 
-        <div class="modal-footer-custom">
-          <p>Generado por Sistema de Gestión - CADA | {{ new Date().toLocaleDateString() }}</p>
-        </div>
       </div>
       <span slot="footer" class="dialog-footer">
         <el-button @click="showModal = false">Cerrar</el-button>
@@ -270,7 +259,6 @@
 
 <script>
 import request from '@/utils/request'
-
 export default {
   name: 'ListaAtletas',
   data() {
@@ -425,32 +413,71 @@ export default {
         })
       })
     },
-    handlePrintList() {
-      // Logic to ensure only the list prints (by default behavior if modal closed)
-      if (this.showModal) this.showModal = false
-      // Remove specific modal print class if exists
-      document.body.classList.remove('printing-modal')
-      setTimeout(() => window.print(), 300)
+    async handlePrintList() {
+      // Logic for printing the generic list
+      try {
+        this.loading = true
+        const { PdfReportService } = await import('@/utils/pdfReportService')
+        PdfReportService.generateAthleteListReport(this.filteredAthletes)
+      } catch (e) {
+        console.error(e)
+        this.$message.error('Error generando PDF')
+      } finally {
+        this.loading = false
+      }
     },
     async handlePrintAthlete(row) {
       if (!this.showModal || this.selectedAthlete?.atleta_id !== row.atleta_id) {
         await this.openDetailModal(row)
       }
-      // Specific class to hide everything else but modal
       this.printModal()
     },
-    printModal() {
-      document.body.classList.add('printing-modal')
-      // Wait for render
-      this.$nextTick(() => {
-        // Print with delay to ensure DOM update
-        setTimeout(() => {
-          window.print()
-          // Cleanup
-          setTimeout(() => {
-            document.body.classList.remove('printing-modal')
-          }, 1000)
-        }, 800)
+    async printModal() {
+      try {
+        this.loading = true
+
+        const { PdfReportService } = await import('@/utils/pdfReportService')
+
+        // Convert Profile Photo to Base64
+        let photoBase64 = null
+        if (this.selectedAthlete && this.selectedAthlete.foto) {
+          try {
+            const url = this.getFotoUrl(this.selectedAthlete.foto)
+            photoBase64 = await this.toDataURL(url)
+          } catch (e) {
+            console.warn('Could not load profile photo for PDF', e)
+          }
+        }
+
+        PdfReportService.generateAthleteCardReport(
+          this.selectedAthlete,
+          this.selectedMedical,
+          this.selectedMetrics,
+          this.selectedTest,
+          this.selectedTutor,
+          photoBase64
+        )
+      } catch (e) {
+        console.error(e)
+        this.$message.error('Error generando Ficha PDF')
+      } finally {
+        this.loading = false
+      }
+    },
+    toDataURL(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image()
+        img.crossOrigin = 'Anonymous'
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          canvas.width = img.width
+          canvas.height = img.height
+          const ctx = canvas.getContext('2d')
+          ctx.drawImage(img, 0, 0)
+          resolve(canvas.toDataURL('image/png'))
+        }
+        img.onerror = reject
+        img.src = url
       })
     }
   }
@@ -867,41 +894,4 @@ export default {
   font-size: 0.8rem;
 }
 
-</style>
-
-<style>
-/* Global Print Styles specific for this page */
-@media print {
-   /* Hide Layout Elements Global */
-   .sidebar-container, .navbar, .tags-view-container, .app-main > .header { display: none !important; }
-
-   /* Default Print: List View */
-   /* If NOT printing modal, hide controls but show list */
-   body:not(.printing-modal) .control-panel,
-   body:not(.printing-modal) .actions-section,
-   body:not(.printing-modal) .el-button { display: none !important; }
-
-   body:not(.printing-modal) .report-container { background: white !important; padding: 0 !important; }
-   body:not(.printing-modal) .table-container { box-shadow: none !important; padding: 0 !important; }
-
-   /* Modal Print specific */
-   body.printing-modal > *:not(.el-dialog__wrapper) { display: none !important; } /* Hide everything on body level except dialog wrapper */
-   body.printing-modal .el-dialog__wrapper { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; background: white !important; z-index: 99999 !important; display: block !important; }
-   body.printing-modal .el-dialog { margin: 0 !important; width: 100% !important; box-shadow: none !important; margin-top: 0 !important; }
-
-   body.printing-modal .el-dialog__headerbtn,
-   body.printing-modal .el-dialog__footer { display: none !important; }
-
-   body.printing-modal .print-only-header { display: flex !important; justify-content: center; align-items: center; gap: 15px; margin-bottom: 30px; border-bottom: 3px solid #E51D22; padding-bottom: 20px; }
-   body.printing-modal .print-logo { font-size: 3rem; color: #E51D22; }
-   body.printing-modal .print-title h1 { margin: 0; color: #324157; font-size: 1.8rem; }
-   body.printing-modal .print-title p { margin: 0; color: #888; letter-spacing: 2px; text-transform: uppercase; font-size: 0.9rem; }
-
-   body.printing-modal .screen-only { display: none !important; }
-   body.printing-modal .sheet-section { border: 1px solid #ccc; break-inside: avoid; }
-   body.printing-modal .sheet-title { background: #eee; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-
-   /* Colors fix for print */
-   .info-tag { border: 1px solid #ccc; }
-}
 </style>

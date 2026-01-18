@@ -70,12 +70,6 @@
       </div>
 
       <div v-else>
-        <!-- Summary Stats (Optional Global Header for Print) -->
-        <div class="print-only-header">
-          <h1>Reporte de Asistencia</h1>
-          <p v-if="selectedCategoryName">Categoría: {{ selectedCategoryName }}</p>
-          <p class="date">Generado el: {{ new Date().toLocaleDateString() }}</p>
-        </div>
 
         <el-table
           :data="filteredAthletesStats"
@@ -159,6 +153,7 @@
         <div v-if="filteredAthletesStats.length === 0" class="empty-state">
           <p>No se encontraron datos coincidente con los filtros.</p>
         </div>
+
       </div>
     </el-card>
 
@@ -177,11 +172,6 @@
       </div>
 
       <div v-if="selectedAthlete" class="modal-content">
-        <div class="print-only-header">
-          <h2>Reporte de Asistencia Individual</h2>
-          <p>Atleta: {{ selectedAthlete.nombre }} {{ selectedAthlete.apellido }}</p>
-          <p>Categoría: {{ selectedAthlete.categoria_nombre }}</p>
-        </div>
 
         <div class="modal-summary">
           <div class="summary-item">
@@ -221,6 +211,7 @@
           </el-table-column>
           <el-table-column prop="observaciones" label="Observaciones" show-overflow-tooltip />
         </el-table>
+
       </div>
 
       <div slot="footer" class="dialog-footer no-print">
@@ -302,9 +293,6 @@ export default {
         const ausente = records.filter(r => r.estatus === 'AUSENTE').length
         const justificado = records.filter(r => r.estatus === 'JUSTIFICADO').length
 
-        // Calculation: (Present / Total) * 100.
-        // Optional: Count Justified as 0.5 or ignore? Usually ignored or treated as authorized absence.
-        // Simple formula: Present / Total * 100
         const percentage = total > 0 ? Math.round((presente / total) * 100) : 0
 
         // Find Category Name
@@ -340,7 +328,7 @@ export default {
         await Promise.all([
           this.fetchCategorias(),
           this.fetchAtletas(),
-          this.fetchAsistencias() // Gets all for now, efficient enough for < 1000 records. Ideally filter by date on API.
+          this.fetchAsistencias()
         ])
       } catch (error) {
         console.error('Error loading report data:', error)
@@ -356,39 +344,58 @@ export default {
       this.atletas = await getAtletas()
     },
     async fetchAsistencias() {
-      // Fetch all for client-side aggregation flexibility
-      // Optimization: filter by date params if dateRange is set initially
       this.asistencias = await getAsistencias()
     },
     handleFilterChange() {
-      // Triggered on select change, mostly for explicit UX interaction
-      // Computed property handles the filtering automatically
     },
     viewDetail(row) {
       this.selectedAthlete = row
       this.showDetailModal = true
     },
-    printIndividual(row) {
-      this.selectedAthlete = row
-      this.showDetailModal = true
-      // Add special class for modal printing
-      document.body.classList.add('print-modal-active')
-      this.$nextTick(() => {
-        setTimeout(() => {
-          this.printModal()
-        }, 500) // Wait for modal animation
-      })
+    async printIndividual(row) {
+      if (!row) return
+      try {
+        const { PdfReportService } = await import('@/utils/pdfReportService')
+
+        // Find history with safety check
+        const dataStats = this.filteredAthletesStats || []
+        const records = dataStats.find(r => r.atleta_id === row.atleta_id)?.records || []
+        const sorted = [...records].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+
+        PdfReportService.generateIndividualAttendanceReport(
+          `${row.nombre} ${row.apellido}`,
+          sorted
+        )
+      } catch (e) {
+        console.error(e)
+        this.$message.error('Error generando PDF')
+      }
     },
-    printModal() {
-      document.body.classList.add('print-modal-active')
-      window.print()
-      // Cleanup after print dialog closes (approximate)
-      setTimeout(() => {
-        document.body.classList.remove('print-modal-active')
-      }, 1000)
+    async printModal() {
+      if (!this.selectedAthlete) return
+      this.printIndividual(this.selectedAthlete)
     },
-    handlePrint() {
-      window.print()
+    async handlePrint() {
+      try {
+        const { PdfReportService } = await import('@/utils/pdfReportService')
+
+        const dataForPdf = this.filteredAthletesStats.map(row => ({
+          athlete_name: `${row.nombre} ${row.apellido}`,
+          present_count: row.stats.presente,
+          absent_count: row.stats.ausente,
+          justified_count: row.stats.justificado,
+          percentage: row.stats.percentage
+        }))
+
+        PdfReportService.generateAttendanceReport(
+          dataForPdf,
+          this.selectedCategoryName,
+          this.filters.dateRange
+        )
+      } catch (e) {
+        console.error(e)
+        this.$message.error('Error generando PDF')
+      }
     },
     formatDate(date) {
       if (!date) return '-'
@@ -417,7 +424,6 @@ export default {
     },
     getFotoUrl(filename) {
       if (!filename) return ''
-      // If filename is full path (starts with /uploads), use it directly, else prepend
       if (filename.startsWith('/uploads')) {
         return `${this.backendUrl}${filename}`
       }
@@ -590,40 +596,5 @@ export default {
   padding: 40px;
   text-align: center;
   color: #909399;
-}
-
-/* Print Styles */
-.print-only-header { display: none; }
-
-@media print {
-  .asistencia-reporte-container {
-    padding: 0;
-    margin: 0;
-  }
-
-  .main-card {
-    border: none;
-    box-shadow: none;
-  }
-
-  /* TABLE TWEAKS */
-  .el-table {
-    width: 100% !important;
-  }
-  .el-table th, .el-table td {
-    padding: 4px 0 !important;
-  }
-
-  /* PRINT HEADERS */
-  .print-only-header {
-    display: block !important;
-    text-align: center;
-    border-bottom: 2px solid #333;
-    padding-bottom: 10px;
-    margin-bottom: 20px;
-  }
-
-  .print-only-header h2 { margin: 0 0 10px 0; font-size: 20px; }
-  .print-only-header p { margin: 2px 0; font-size: 14px; color: #555; }
 }
 </style>

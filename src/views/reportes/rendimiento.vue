@@ -73,6 +73,8 @@
     </div>
 
     <div v-else v-loading="loading" class="printable-area">
+      <!-- NOTE: Header/Footer are now handled by PDFMake natively -->
+
       <!-- Athlete Profile Mini Card -->
       <el-card shadow="hover" class="athlete-summary-card">
         <div class="summary-content">
@@ -156,7 +158,6 @@
 <script>
 import request from '@/utils/request'
 import * as echarts from 'echarts'
-
 export default {
   name: 'EvolucionAtletas',
   data() {
@@ -449,19 +450,76 @@ export default {
       }
       this.charts.anthropometric.setOption(option)
     },
-    printCurrentReport() {
-      this.$nextTick(() => {
-        Object.values(this.charts).forEach(chart => {
-          if (chart) {
-            chart.resize({
-              width: 800,
-              height: 320 /* Más compacto para que quepa en 2 hojas */
-            })
+    async printCurrentReport() {
+      try {
+        this.loading = true
+
+        // 1. Capture Charts as Base64 Images
+        const chartsImages = {}
+
+        if (this.charts.performance) {
+          chartsImages.performance = this.charts.performance.getDataURL({
+            type: 'png',
+            pixelRatio: 2, // Higher resolution
+            backgroundColor: '#fff'
+          })
+        }
+
+        if (this.charts.radar) {
+          chartsImages.radar = this.charts.radar.getDataURL({
+            type: 'png',
+            pixelRatio: 2,
+            backgroundColor: '#fff'
+          })
+        }
+
+        if (this.charts.anthropometric) {
+          chartsImages.anthropometric = this.charts.anthropometric.getDataURL({
+            type: 'png',
+            pixelRatio: 2,
+            backgroundColor: '#fff'
+          })
+        }
+
+        // Convert Profile Photo to Base64
+        let photoBase64 = null
+        if (this.atleta.foto) {
+          try {
+            const url = this.getFotoUrl(this.atleta.foto)
+            photoBase64 = await this.toDataURL(url)
+          } catch (e) {
+            console.warn('Could not load profile photo for PDF', e)
           }
-        })
-        setTimeout(() => {
-          window.print()
-        }, 1000)
+        }
+
+        // 2. Import and Use Service
+        const { PdfReportService } = await import('@/utils/pdfReportService')
+
+        // 3. Generate PDF
+        PdfReportService.generatePerformanceReport(this.atleta, chartsImages, this.trends, photoBase64)
+
+        this.$message.success('Generando PDF...')
+      } catch (error) {
+        console.error('Error generando PDF:', error)
+        this.$message.error('Error al generar el PDF')
+      } finally {
+        this.loading = false
+      }
+    },
+    toDataURL(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image()
+        img.crossOrigin = 'Anonymous'
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          canvas.width = img.width
+          canvas.height = img.height
+          const ctx = canvas.getContext('2d')
+          ctx.drawImage(img, 0, 0)
+          resolve(canvas.toDataURL('image/png'))
+        }
+        img.onerror = reject
+        img.src = url
       })
     },
     async printCategoryReports() {
@@ -774,17 +832,70 @@ export default {
     background: white !important;
   }
 
+  /* Allow global margin-top to apply or set it explicitly here */
   .printable-area {
     width: 100% !important;
     display: block !important;
-    margin: 0 !important;
-    padding: 20px !important;
+    margin-top: 0 !important; /* Managed by @page now */
+    padding: 0 10px !important;
   }
 
   .el-row {
-    display: block !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
     margin: 0 !important;
     width: 100% !important;
+  }
+
+  /* Compact styles for print */
+  .athlete-summary-card {
+    margin-bottom: 10px !important;
+    border-left: none !important;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+
+  .athlete-summary-card .el-card__body {
+    padding: 10px !important;
+  }
+
+  .athlete-avatar {
+    width: 50px !important;
+    height: 50px !important;
+    font-size: 1.5rem !important;
+  }
+
+  .athlete-details h2 {
+    font-size: 1.2rem !important;
+    margin-bottom: 5px !important;
+  }
+
+  .stat-mini .label {
+    font-size: 0.7rem !important;
+  }
+
+  .stat-mini .value {
+    font-size: 1.1rem !important;
+  }
+
+  .trend-card {
+    margin-bottom: 10px !important;
+    padding: 5px !important;
+    box-shadow: none !important;
+    border: 1px solid #eee !important;
+  }
+
+  .trend-card .el-card__body {
+    padding: 5px !important;
+  }
+
+  .trend-value {
+    font-size: 1.2rem !important;
+  }
+
+  .trend-label {
+    font-size: 0.8rem !important;
+    margin-bottom: 2px !important;
   }
 
   .el-col {
