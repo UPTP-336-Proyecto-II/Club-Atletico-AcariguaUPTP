@@ -15,8 +15,8 @@ const COMPANY_NAME = 'Club Atlético Deportivo Acarigua'
 
 export const PdfReportService = {
   /**
-       * Base configuration for all reports
-       */
+         * Base configuration for all reports
+         */
   _getBaseDocDefinition(content, title, subtitle) {
     return {
       pageSize: 'LETTER',
@@ -129,11 +129,11 @@ export const PdfReportService = {
   },
 
   /**
-       * Generates and opens a PDF for Athlete Performance
-       * @param {Object} employeeData - Basic data
-       * @param {Object} chartsImages - { performance: 'base64...', radar: 'base64...', anthropometric: 'base64...' }
-       * @param {Array} statsData - Computed statistics
-       */
+         * Generates and opens a PDF for Athlete Performance
+         * @param {Object} employeeData - Basic data
+         * @param {Object} chartsImages - { performance: 'base64...', radar: 'base64...', anthropometric: 'base64...' }
+         * @param {Array} statsData - Computed statistics
+         */
   generatePerformanceReport(atleta, chartsImages, statsData, photoBase64) {
     const content = []
 
@@ -219,8 +219,8 @@ export const PdfReportService = {
   },
 
   /**
-       * Generates Athlete List Report
-       */
+         * Generates Athlete List Report
+         */
   generateAthleteListReport(athletes) {
     const tableBody = [
       // Header Row
@@ -246,7 +246,7 @@ export const PdfReportService = {
       {
         table: {
           headerRows: 1,
-          widths: ['*', '100', 'auto', 'auto'],
+          widths: ['*', 'auto', 'auto', 'auto'],
           body: tableBody
         },
         layout: 'lightHorizontalLines'
@@ -258,8 +258,8 @@ export const PdfReportService = {
   },
 
   /**
-       * Generates Individual Athlete Card Report
-       */
+         * Generates Individual Athlete Card Report
+         */
   generateAthleteCardReport(atleta, medical, metrics, tests, tutor, photoBase64) {
     const content = []
 
@@ -364,8 +364,8 @@ export const PdfReportService = {
   },
 
   /**
-       * Generates Attendance Report (General Table)
-       */
+         * Generates Attendance Report (General Table)
+         */
   generateAttendanceReport(attendanceData, categoryName, dates) {
     const tableBody = [
       [
@@ -410,8 +410,8 @@ export const PdfReportService = {
   },
 
   /**
-       * Generates Individual Attendance Detail
-       */
+         * Generates Individual Attendance Detail
+         */
   generateIndividualAttendanceReport(athleteName, attendanceList) {
     const tableBody = [
       [
