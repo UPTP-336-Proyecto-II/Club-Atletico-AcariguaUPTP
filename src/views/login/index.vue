@@ -38,9 +38,6 @@
         >
           <el-form-item prop="username" class="form-item-custom">
             <div class="input-group">
-              <!-- <span class="input-icon" :class="{ 'input-icon-hidden': loginForm.username }">
-                <i class="el-icon-user" />
-              </span> -->
               <el-input
                 ref="username"
                 v-model="loginForm.username"
@@ -54,9 +51,6 @@
 
           <el-form-item prop="password" class="form-item-custom">
             <div class="input-group">
-              <!-- <span class="input-icon" :class="{ 'input-icon-hidden': loginForm.password }">
-                <i class="el-icon-lock" />
-              </span> -->
               <el-input
                 ref="password"
                 v-model="loginForm.password"
@@ -71,9 +65,11 @@
                 <i class="el-icon-view" />
               </button>
             </div>
+            <!-- Forgot password link -->
+            <div class="forgot-wrapper">
+              <a href="#" class="forgot-link" @click.prevent="forgotPassword">¿Olvidaste tu contraseña?</a>
+            </div>
           </el-form-item>
-
-          <!-- Form options removed: Recordarme and Olvidaste contraseña -->
 
           <el-button
             :loading="loading"
@@ -87,38 +83,71 @@
           </el-button>
         </el-form>
 
-        <!-- Información del Club - Comentado -->
-        <!--
-        <div class="club-info-section">
-          <div class="info-header">
-            <span class="info-title">Club Atlético Deportivo Acarigua</span>
-          </div>
-          <div class="info-content">
-            <div class="info-item">
-              <i class="el-icon-office-building"></i>
-              <span>Asociación Civil RIF: J-503114630</span>
-            </div>
-            <div class="info-item">
-              <i class="el-icon-medal"></i>
-              <span>Afiliada a la Asociación de Fútbol de Portuguesa</span>
-            </div>
-            <div class="info-item">
-              <i class="el-icon-document"></i>
-              <span>Inscrita en el Ministerio del Deporte</span>
-            </div>
-          </div>
-        -->
-
         <div class="login-footer">
           <p>¿Necesitas acceso?
-            <a href="#footer" class="register-link">Contacta a la directiva</a>
+            <a href="#" class="register-link" @click.prevent="showContactModal = true">Contacta a la directiva</a>
           </p>
         </div>
       </div> <!-- Fin login-card -->
     </div> <!-- Fin login-center-wrapper -->
 
-    <!-- Footer Seccional -->
-    <Footer />
+    <!-- Modal de Contacto -->
+    <el-dialog
+      title="Información de Contacto"
+      :visible.sync="showContactModal"
+      width="400px"
+      custom-class="contact-modal"
+      :top="'0'"
+    >
+      <div class="contact-modal-content">
+        <div class="modal-logo">
+          <img src="@/assets/icons/logo.png" alt="Logo">
+        </div>
+        <p class="modal-description">Para solicitar acceso o recuperar tu cuenta, por favor comunícate con la administración:</p>
+
+        <div class="contact-list">
+          <div class="contact-item">
+            <div class="icon-wrapper whatsapp">
+              <!-- Using same image but removing heavy filters to keep original look if desired, or matching footer exactly -->
+              <img src="@/assets/icons/whatsapp-icon.png" alt="WhatsApp">
+            </div>
+            <div class="info">
+              <span class="label">WhatsApp (Sr. Carlos Perez)</span>
+              <a href="https://wa.me/5841215562442" target="_blank" class="value">+58 412-15562442</a>
+            </div>
+          </div>
+
+          <div class="contact-item">
+            <div class="icon-wrapper email">
+              <img src="@/assets/icons/email-icon.png" alt="Email">
+            </div>
+            <div class="info">
+              <span class="label">Correo Electrónico</span>
+              <a href="mailto:clubatleticodeportivoacarigua@gmail.com" class="value">clubatleticodeportivoacarigua@gmail.com</a>
+            </div>
+          </div>
+
+          <div class="contact-item">
+            <div class="icon-wrapper location">
+              <img src="@/assets/icons/maps-icon.png" alt="Map">
+            </div>
+            <div class="info">
+              <span class="label">Ubicación</span>
+              <a href="https://goo.gl/maps/..." target="_blank" class="value">U.P.T.P Juan de Jesús Montilla, Acarigua</a>
+            </div>
+          </div>
+
+          <div class="social-links">
+            <a href="https://www.facebook.com/profile.php?id=100086449924024" target="_blank" class="social-btn facebook">
+              <img src="@/assets/icons/facebook-icon.png" alt="Facebook">
+            </a>
+            <a href="https://instagram.com/Deportivoacarigua_oficial" target="_blank" class="social-btn instagram">
+              <img src="@/assets/icons/instagram-icon.png" alt="Instagram">
+            </a>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
 
     <!-- Botón de volver -->
     <div class="back-to-home">
@@ -134,11 +163,8 @@
 </template>
 
 <script>
-import Footer from '@/components/Landing/Footer.vue'
-
 export default {
   name: 'Login',
-  components: { Footer },
   data() {
     const validateUsername = (rule, value, callback) => {
       if (!value || value.trim() === '') {
@@ -165,8 +191,8 @@ export default {
       },
       passwordType: 'password',
       loading: false,
-      rememberMe: false,
-      isMobile: false
+      isMobile: false,
+      showContactModal: false
     }
   },
   mounted() {
@@ -193,7 +219,6 @@ export default {
       })
     },
     handleInput() {
-      // Este método se usa para el binding de los iconos
     },
     handleLogin() {
       this.$refs.loginForm.validate(valid => {
@@ -212,6 +237,11 @@ export default {
     },
     goToLanding() {
       this.$router.push('/')
+    },
+    forgotPassword() {
+      // Will implement later, currently just placeholder functionality or reuse contact modal
+      this.$message.info('Contacte a la directiva para recuperar su acceso')
+      this.showContactModal = true
     }
   }
 }
@@ -223,6 +253,7 @@ export default {
   width: 100%;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
   position: relative;
   overflow-y: auto;
@@ -243,7 +274,7 @@ export default {
 }
 
 .soccer-field {
-  display: none; /* Quitamos las líneas de la cancha para no recargar la imagen */
+  display: none;
 }
 
 .gradient-overlay {
@@ -334,7 +365,7 @@ export default {
 }
 
 .welcome-section p {
-  color: #000; /* Texto en negro para mejor legibilidad */
+  color: #000;
   margin: 0;
   font-size: 0.9rem;
 }
@@ -343,7 +374,6 @@ export default {
   margin-bottom: 1.5rem;
 }
 
-/* Corregir posición de mensajes de error */
 :deep(.form-item-custom .el-form-item__error) {
   padding-top: 4px !important;
   margin-top: 2px !important;
@@ -356,31 +386,14 @@ export default {
   position: relative;
   display: flex;
   align-items: center;
-  margin-bottom: 0.5rem; /* Reducido para acercar el mensaje de error */
-}
-
-.input-icon {
-  position: absolute;
-  left: 16px;
-  z-index: 2;
-  color: var(--color-text-light);
-  font-size: 1.1rem;
-  pointer-events: none;
-  transition: all 0.3s ease;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.input-icon-hidden {
-  opacity: 0;
-  transform: translateY(-50%) translateX(-10px);
+  margin-bottom: 0.5rem;
 }
 
 .password-toggle {
   position: absolute;
   right: 12px;
   z-index: 3;
-  color: var(--color-text-dark); /* Color oscuro para mayor contraste */
+  color: var(--color-text-dark);
   cursor: pointer;
   font-size: 1.1rem;
   transition: all 0.2s ease;
@@ -395,7 +408,7 @@ export default {
   justify-content: center;
   top: 50%;
   transform: translateY(-50%);
-  opacity: 1; /* Asegura que siempre sea visible */
+  opacity: 1;
 }
 
 .password-toggle:hover {
@@ -417,7 +430,6 @@ export default {
   color: var(--color-text-dark);
 }
 
-/* Asegurar que el placeholder tenga suficiente espacio */
 :deep(.mobile-input .el-input__inner::placeholder) {
   color: var(--color-text-light);
   opacity: 1;
@@ -425,7 +437,6 @@ export default {
   transition: padding-left 0.3s ease;
 }
 
-/* Cuando hay texto, el placeholder desaparece naturalmente */
 :deep(.mobile-input .el-input__inner:not(:placeholder-shown)) {
   padding-left: 16px !important;
 }
@@ -440,48 +451,23 @@ export default {
   padding-left: 16px !important;
 }
 
-.form-options {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 1.25rem 0 1.5rem 0;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-:deep(.mobile-checkbox .el-checkbox__label) {
-  color: var(--color-text-dark);
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-:deep(.mobile-checkbox .el-checkbox__inner) {
-  width: 18px;
-  height: 18px;
-}
-
-:deep(.mobile-checkbox .el-checkbox__inner:hover) {
-  border-color: var(--color-primary);
-}
-
-:deep(.mobile-checkbox .el-checkbox__input.is-checked .el-checkbox__inner) {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
+/* Forgot Password */
+.forgot-wrapper {
+  text-align: right;
+  margin-top: -5px;
+  margin-bottom: 10px;
 }
 
 .forgot-link {
   font-size: 0.85rem;
-  color: var(--color-primary);
+  color: #64748b;
   text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease;
-  padding: 4px 8px;
-  border-radius: 4px;
+  transition: color 0.2s;
 }
 
 .forgot-link:hover {
-  color: #8B0000;
-  background: rgba(229, 29, 34, 0.05);
+  color: var(--color-primary);
+  text-decoration: underline;
 }
 
 .login-button.mobile-button {
@@ -500,61 +486,6 @@ export default {
 .login-button.mobile-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(229, 29, 34, 0.4);
-}
-
-/* Sección de Información del Club - Comentada */
-/*
-.club-info-section {
-  margin: 1.5rem 0;
-  padding: 1.25rem;
-  background: #f8f9fa;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-}
-
-.info-header {
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.info-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--color-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.info-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0;
-}
-
-.info-item i {
-  color: var(--color-primary);
-  font-size: 1rem;
-  flex-shrink: 0;
-}
-
-.info-item span {
-  font-size: 0.8rem;
-  color: var(--color-text-dark);
-  font-weight: 500;
-  line-height: 1.3;
-}
-*/
-
-.footer {
-  width: 100%;
-  z-index: 2;
 }
 
 .login-footer {
@@ -617,125 +548,147 @@ export default {
   transform: scale(0.98);
 }
 
+/* Modal Styles */
+.contact-modal-content {
+  text-align: center;
+  padding: 10px;
+}
+
+.modal-logo img {
+  height: 60px;
+  margin-bottom: 10px;
+}
+
+.modal-description {
+  color: #666;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  word-break: keep-all; /* Fixed line breaking */
+  white-space: normal;
+}
+
+.contact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  gap: 15px;
+}
+
+.icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Specific centering for icons */
+.icon-wrapper img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+/* Only filter whatsapp if not using original */
+.icon-wrapper.whatsapp { background: transparent; } /* Modified to transparent if using standard colored icon, or #e0f2f1 if using filtered */
+
+.icon-wrapper.location { background: #feebee; }
+.icon-wrapper.email { background: #e3f2fd; }
+
+.info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.info .label {
+  font-size: 0.75rem;
+  color: #888;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.info .value {
+  color: #2c3e50;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.95rem;
+  word-break: break-word; /* Ensure URLs/emails break if too long */
+}
+
+.info .value:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.social-links {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.social-btn {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.social-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+}
+
+.social-btn img {
+  width: 24px;
+  height: 24px;
+}
+
+/* Centrado del Modal */
+::v-deep .el-dialog__wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+::v-deep .contact-modal {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+::v-deep .vertical-center-modal .el-dialog__body {
+    overflow-y: auto;
+}
+
 /* Media Queries para móvil */
 @media (max-width: 768px) {
   .login-container {
-    align-items: flex-start;
-    padding-top: 2rem;
+    justify-content: center;
+    padding-top: 0;
   }
 
   .login-center-wrapper {
-    padding: 0.5rem;
-    max-width: 100%;
-    margin: 0 0.5rem;
-  }
-
-  .login-card {
-    padding: 1.5rem 1.25rem;
-    border-radius: 14px;
-  }
-
-  .logo-section {
-    flex-direction: column;
-    text-align: center;
-    gap: 0.5rem;
-  }
-
-  .logo-image {
-    width: 65px;
-    height: 65px;
-  }
-
-  .logo-text h1 {
-    font-size: 1.4rem;
-  }
-
-  .welcome-section h2 {
-    font-size: 1.5rem;
-  }
-
-  .form-options {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .back-to-home {
-    top: 0.5rem;
-    left: 0.5rem;
-  }
-
-  .back-button.mobile-back-button {
-    padding: 0.6rem 0.8rem;
-    font-size: 0.85rem;
-  }
-}
-
-@media (max-width: 480px) and (max-height: 700px) {
-  .login-container {
-    padding-top: 1rem;
-    align-items: flex-start;
-  }
-
-  .login-card {
-    padding: 1.25rem 1rem;
-  }
-
-  .login-header {
-    margin-bottom: 1rem;
-  }
-
-  .login-form {
-    margin-bottom: 1rem;
-  }
-}
-
-@media (max-width: 360px) {
-  .login-card {
-    padding: 1rem 0.75rem;
-  }
-
-  .logo-text h1 {
-    font-size: 1.2rem;
-  }
-
-  .welcome-section h2 {
-    font-size: 1.3rem;
-  }
-
-  :deep(.mobile-input .el-input__inner) {
-    font-size: 14px !important;
-  }
-}
-
-/* Soporte para modo landscape en móviles */
-@media (max-height: 500px) and (orientation: landscape) {
-  .login-container {
-    align-items: flex-start;
-    padding-top: 1rem;
-    min-height: auto;
-  }
-
-  .login-card {
-    padding: 1rem 1.5rem;
-    margin: 1rem 0;
-  }
-
-  .login-header {
-    margin-bottom: 1rem;
-  }
-
-  .logo-section {
-    flex-direction: row;
-    gap: 0.75rem;
-  }
-
-  .input-group {
-    margin-bottom: 0.75rem;
-  }
-
-  .login-copyright-card {
-    display: none;
+    padding: 1rem;
   }
 }
 </style>
