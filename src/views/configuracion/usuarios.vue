@@ -28,10 +28,31 @@
               <div class="filter-popover">
                 <h4>Filtro por Estatus</h4>
                 <div class="filter-item">
+                  <label style="display:block;margin-bottom:5px;font-size:0.85rem;color:#606266">Estatus</label>
                   <el-select v-model="filterEstatus" placeholder="Todos" clearable size="small" style="width: 100%">
                     <el-option label="Activos" value="ACTIVO" />
                     <el-option label="Inactivos" value="INACTIVO" />
                     <el-option label="Todos" value="TODOS" />
+                  </el-select>
+                </div>
+                <div class="filter-item">
+                  <label style="display:block;margin-bottom:5px;font-size:0.85rem;color:#606266">Rol</label>
+                  <el-select v-model="filterRol" placeholder="Todos los roles" clearable size="small" style="width: 100%">
+                    <el-option
+                      v-for="rol in roles"
+                      :key="rol.rol_id"
+                      :label="rol.nombre_rol"
+                      :value="rol.rol_id"
+                    />
+                  </el-select>
+                </div>
+                <div class="filter-item">
+                  <label style="display:block;margin-bottom:5px;font-size:0.85rem;color:#606266">Ordenar por</label>
+                  <el-select v-model="filterSort" placeholder="Seleccionar" size="small" style="width: 100%">
+                    <el-option label="Más Recientes" value="reciente" />
+                    <el-option label="Más Antiguos" value="antiguo" />
+                    <el-option label="Alfabético A-Z" value="az" />
+                    <el-option label="Alfabético Z-A" value="za" />
                   </el-select>
                 </div>
               </div>
@@ -211,6 +232,8 @@ export default {
       loading: false,
       searchQuery: '',
       filterEstatus: 'ACTIVO',
+      filterRol: '',
+      filterSort: 'reciente',
       showUsuarioModal: false,
       isEditing: false,
       usuarioForm: {
@@ -242,6 +265,12 @@ export default {
   watch: {
     filterEstatus() {
       this.loadUsuarios()
+    },
+    filterRol() {
+      this.loadUsuarios()
+    },
+    filterSort() {
+      this.loadUsuarios()
     }
   },
   created() {
@@ -260,8 +289,22 @@ export default {
         if (this.filterEstatus) {
           params.estatus = this.filterEstatus
         }
+        if (this.filterRol) {
+          params.rol = this.filterRol
+        }
+        params.sort = this.filterSort
+
         const response = await getUsuarios(params)
         this.usuarios = Array.isArray(response) ? response : []
+
+        // Validar si el usuario seleccionado sigue en la lista
+        if (this.currentUsuarioId) {
+          const exists = this.usuarios.find(u => u.usuario_id === this.currentUsuarioId)
+          if (!exists) {
+            this.currentUsuarioId = null
+            this.currentUsuario = {}
+          }
+        }
       } catch (error) {
         console.error('Error cargando usuarios:', error)
         this.$message.error('Error al cargar usuarios')

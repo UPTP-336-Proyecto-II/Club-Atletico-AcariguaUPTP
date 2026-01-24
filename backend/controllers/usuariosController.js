@@ -37,7 +37,7 @@ const { JWT_SECRET } = require('../middleware/auth');
 // Obtener todos los usuarios con información del rol
 const getUsuarios = async (req, res) => {
   try {
-    const { estatus } = req.query;
+    const { estatus, rol } = req.query;
 
     let query = `
       SELECT u.usuario_id, u.email, u.rol, u.estatus, u.ultimo_acceso, u.created_at,
@@ -46,13 +46,42 @@ const getUsuarios = async (req, res) => {
       LEFT JOIN rol_usuarios r ON u.rol = r.rol_id
     `;
 
+    const conditions = [];
     const params = [];
+
     if (estatus && estatus !== 'TODOS') {
-      query += ' WHERE u.estatus = ?';
+      conditions.push('u.estatus = ?');
       params.push(estatus);
     }
 
-    query += ' ORDER BY u.created_at DESC';
+    if (rol) {
+      conditions.push('u.rol = ?');
+      params.push(rol);
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    // Ordenamiento
+    const { sort } = req.query;
+    let orderBy = 'u.created_at DESC'; // Default: Más recientes
+
+    switch (sort) {
+      case 'antiguo':
+        orderBy = 'u.created_at ASC';
+        break;
+      case 'az':
+        orderBy = 'u.email ASC';
+        break;
+      case 'za':
+        orderBy = 'u.email DESC';
+        break;
+      default:
+        orderBy = 'u.created_at DESC';
+    }
+
+    query += ` ORDER BY ${orderBy}`;
 
     const [rows] = await pool.execute(query, params);
     res.json(rows);
