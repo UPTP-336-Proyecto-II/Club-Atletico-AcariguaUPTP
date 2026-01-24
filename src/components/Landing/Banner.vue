@@ -122,6 +122,7 @@ export default {
   justify-content: center;
   overflow: hidden;
   margin-top: 80px;
+  font-family: 'Figtree', 'Segoe UI', sans-serif;
 }
 
 /* Carrusel Styles */

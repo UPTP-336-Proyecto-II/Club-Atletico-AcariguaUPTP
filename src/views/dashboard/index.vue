@@ -54,7 +54,7 @@ export default {
     font-weight: 700;
     color: #333;
     margin: 0 0 40px 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Figtree', 'Segoe UI', sans-serif;
   }
 
   .user-info {
@@ -81,7 +81,7 @@ export default {
       font-weight: 600;
       color: #E51D22;
       margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Figtree', 'Segoe UI', sans-serif;
     }
 
     .user-role {

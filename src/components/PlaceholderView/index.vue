@@ -70,7 +70,7 @@ export default {
     font-weight: 700;
     color: #333;
     margin: 0 0 16px 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Figtree', 'Segoe UI', sans-serif;
   }
 
   .page-description {

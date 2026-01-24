@@ -97,6 +97,7 @@ export default {
 <style scoped>
 .landing-container {
   min-height: 100vh;
+  font-family: 'Figtree', 'Segoe UI', sans-serif;
 }
 
 .main-content {

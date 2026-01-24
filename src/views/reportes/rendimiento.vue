@@ -626,10 +626,16 @@ export default {
 }
 
 .control-label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #2c3e50;
-  margin-right: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-right: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.control-label i {
+  display: none;
 }
 
 .search-section, .filter-section {
@@ -638,11 +644,43 @@ export default {
 }
 
 .compact-search {
-  width: 250px;
+  width: 280px;
 }
 
 .compact-select {
-  width: 180px;
+  width: 200px;
+}
+
+/* Modern Input & Select Styles */
+.search-section ::v-deep .el-input__inner,
+.filter-section ::v-deep .el-input__inner {
+  background: #fff !important;
+  border: 2px solid #64748b !important;
+  border-radius: 12px;
+  padding: 12px 16px;
+  height: 46px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #1e293b;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.search-section ::v-deep .el-input__inner:hover,
+.filter-section ::v-deep .el-input__inner:hover {
+  border-color: #E51D22 !important;
+}
+
+.search-section ::v-deep .el-input.is-focus .el-input__inner,
+.filter-section ::v-deep .el-input.is-focus .el-input__inner {
+  border-color: #E51D22 !important;
+  box-shadow: 0 0 0 4px rgba(229, 29, 34, 0.12);
+}
+
+.search-section ::v-deep .el-input__inner::placeholder,
+.filter-section ::v-deep .el-input__inner::placeholder {
+  color: #64748b !important;
+  font-weight: 500;
 }
 
 .atleta-option {

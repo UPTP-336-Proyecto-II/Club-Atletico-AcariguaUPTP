@@ -1,5 +1,5 @@
 <template>
-  <div class="asistencia-reporte-container">
+  <div class="report-container">
     <!-- Header -->
     <div class="page-header">
       <div class="header-content">
@@ -8,92 +8,111 @@
           <p class="subtitle">Análisis detallado por atleta y categoría</p>
         </div>
         <div class="no-print">
-          <el-button icon="el-icon-printer" plain @click="handlePrint">
+          <el-button icon="el-icon-printer" plain class="header-action-btn" @click="handlePrint">
             Imprimir Reporte
           </el-button>
         </div>
       </div>
     </div>
 
-    <!-- Filters -->
-    <el-card shadow="hover" class="filters-card no-print">
-      <div class="filters-row">
-        <div class="filter-item">
-          <label>Categoría</label>
-          <el-select
-            v-model="filters.categoria_id"
-            placeholder="Seleccionar Categoría"
-            clearable
-            filterable
-            style="width: 100%"
-            @change="handleFilterChange"
-          >
-            <el-option
-              v-for="cat in categorias"
-              :key="cat.categoria_id"
-              :label="cat.nombre_categoria"
-              :value="cat.categoria_id"
+    <!-- Filters / Control Panel -->
+    <el-card shadow="hover" class="control-panel no-print">
+      <div class="control-content">
+        <div class="filter-section">
+
+          <div class="filter-item">
+            <span class="filter-label">Categoría</span>
+            <el-select
+              v-model="filters.categoria_id"
+              placeholder="Seleccionar Categoría"
+              clearable
+              filterable
+              class="filter-input-select"
+              @change="handleFilterChange"
+            >
+              <el-option
+                v-for="cat in categorias"
+                :key="cat.categoria_id"
+                :label="cat.nombre_categoria"
+                :value="cat.categoria_id"
+              />
+            </el-select>
+          </div>
+
+          <div class="filter-item date-range-item">
+            <span class="filter-label">Rango de Fechas</span>
+            <el-date-picker
+              v-model="filters.dateRange"
+              type="daterange"
+              range-separator="a"
+              start-placeholder="Inicio"
+              end-placeholder="Fin"
+              value-format="yyyy-MM-dd"
+              class="filter-date-picker"
+              @change="handleFilterChange"
             />
-          </el-select>
-        </div>
+          </div>
 
-        <div class="filter-item date-range">
-          <label>Rango de Fechas</label>
-          <el-date-picker
-            v-model="filters.dateRange"
-            type="daterange"
-            range-separator="a"
-            start-placeholder="Inicio"
-            end-placeholder="Fin"
-            value-format="yyyy-MM-dd"
-            style="width: 100%"
-            @change="handleFilterChange"
-          />
-        </div>
+          <div class="filter-item search-item">
+            <span class="filter-label">Buscar Atleta</span>
+            <el-input
+              v-model="filters.search"
+              placeholder="Nombre o apellido..."
+              prefix-icon="el-icon-search"
+              clearable
+              class="filter-input-search"
+            />
+          </div>
 
-        <div class="filter-item search-box">
-          <label>Buscar Atleta</label>
-          <el-input
-            v-model="filters.search"
-            placeholder="Nombre o apellido..."
-            prefix-icon="el-icon-search"
-            clearable
-          />
         </div>
       </div>
     </el-card>
 
     <!-- Main Content -->
-    <el-card shadow="hover" class="main-card">
+    <div class="table-container">
       <div v-if="loading" class="loading-state">
         <i class="el-icon-loading" /> Cargando datos...
       </div>
 
       <div v-else>
-
         <el-table
           :data="filteredAthletesStats"
           style="width: 100%"
-          border
-          stripe
-          :header-cell-style="{background: '#f8fafc', color: '#324157', fontWeight: 'bold'}"
+          class="custom-table"
+          :header-cell-style="{
+            background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+            color: '#1e293b',
+            fontWeight: '700',
+            borderBottom: '3px solid #E51D22',
+            textTransform: 'uppercase',
+            padding: '16px 12px'
+          }"
         >
-          <el-table-column label="Atleta" min-width="250">
+          <el-table-column label="Atleta" min-width="280">
             <template slot-scope="scope">
               <div class="athlete-cell">
-                <div class="athlete-photo">
-                  <img v-if="scope.row.foto" :src="getFotoUrl(scope.row.foto)" class="avatar-img">
-                  <i v-else class="el-icon-user" />
+                <div class="athlete-photo-wrapper">
+                  <img v-if="scope.row.foto" :src="getFotoUrl(scope.row.foto)" class="avatar-img" @error="handleImgError">
+                  <div v-else class="avatar-placeholder"><i class="el-icon-user" /></div>
                 </div>
                 <div class="athlete-info">
                   <span class="name">{{ scope.row.nombre }} {{ scope.row.apellido }}</span>
-                  <span class="category-tag">{{ scope.row.categoria_nombre }}</span>
+                  <span class="sub-text">{{ scope.row.telefono || 'Sin teléfono' }}</span>
                 </div>
               </div>
             </template>
           </el-table-column>
 
-          <el-table-column label="Estadísticas" min-width="300" align="center">
+          <!-- New Explicit Category Column -->
+          <el-table-column label="Categoría" min-width="120" align="center">
+            <template slot-scope="scope">
+              <el-tag size="medium" effect="plain" type="info" class="category-tag">
+                {{ scope.row.categoria_nombre }}
+              </el-tag>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="Estadísticas" min-width="320" align="center">
             <template slot-scope="scope">
               <div class="stats-mini-grid">
                 <div class="stat-box present" title="Asistencias">
@@ -112,35 +131,33 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="% Asistencia" width="160" align="center">
+          <el-table-column label="% Asistencia" width="180" align="center">
             <template slot-scope="scope">
               <div class="progress-col">
                 <el-progress
                   :percentage="scope.row.stats.percentage"
                   :color="getProgressColor(scope.row.stats.percentage)"
                   :format="p => p + '%'"
-                  :stroke-width="18"
+                  :stroke-width="16"
                   text-inside
                 />
               </div>
             </template>
           </el-table-column>
 
-          <el-table-column label="Acciones" width="150" align="center" class-name="no-print">
+          <el-table-column label="Acciones" width="140" align="center" class-name="no-print">
             <template slot-scope="scope">
               <el-button
-                size="mini"
+                size="small"
                 type="primary"
-                plain
                 circle
                 icon="el-icon-view"
                 title="Ver Detalle"
                 @click="viewDetail(scope.row)"
               />
               <el-button
-                size="mini"
+                size="small"
                 type="danger"
-                plain
                 circle
                 icon="el-icon-printer"
                 title="Imprimir Individual"
@@ -154,8 +171,12 @@
           <p>No se encontraron datos coincidente con los filtros.</p>
         </div>
 
+        <div v-if="filteredAthletesStats.length > 0" class="table-footer">
+          <span>Total: <strong>{{ filteredAthletesStats.length }}</strong> atletas</span>
+        </div>
+
       </div>
-    </el-card>
+    </div>
 
     <!-- Detailed Modal -->
     <el-dialog
@@ -164,10 +185,10 @@
       append-to-body
       custom-class="detail-modal"
     >
-      <div slot="title" class="modal-header">
+      <div slot="title" class="modal-header-custom">
         <span class="modal-title">Historial de Asistencia</span>
         <span v-if="selectedAthlete" class="modal-subtitle">
-          {{ selectedAthlete.nombre }} {{ selectedAthlete.apellido }}
+          - {{ selectedAthlete.nombre }} {{ selectedAthlete.apellido }}
         </span>
       </div>
 
@@ -428,24 +449,30 @@ export default {
         return `${this.backendUrl}${filename}`
       }
       return `${this.backendUrl}/uploads/atletas/${filename}`
+    },
+    handleImgError(e) {
+      e.target.style.display = 'none'
+      if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex'
     }
   }
 }
 </script>
 
 <style scoped>
-.asistencia-reporte-container {
+.report-container {
   padding: 20px;
+  background-color: #f0f2f5;
   min-height: 100vh;
 }
 
+/* Page Header - Red Gradient */
 .page-header {
-  background: linear-gradient(135deg, #E51D22, #c41a1d);
+  background: linear-gradient(135deg, #E51D22 0%, #a3161a 100%);
   color: white;
-  padding: 20px;
-  border-radius: 10px;
+  padding: 25px 20px;
+  border-radius: 8px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 12px rgba(229, 29, 34, 0.2);
+  box-shadow: 0 4px 10px rgba(229, 29, 34, 0.2);
 }
 
 .header-content {
@@ -454,72 +481,174 @@ export default {
   align-items: center;
 }
 
-.page-header h1 {
+.header-content h1 {
+  margin: 0;
   font-size: 1.8rem;
   font-weight: 700;
-  margin: 0 0 5px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .subtitle {
-  font-size: 1rem;
+  margin: 5px 0 0 32px;
   opacity: 0.9;
-  margin: 0;
+  font-size: 0.95rem;
 }
 
-/* Filters */
-.filters-card {
+/* Action Button in Header */
+.header-action-btn {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  color: #fff !important;
+  font-weight: 600;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+.header-action-btn:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* Control Panel */
+.control-panel {
   margin-bottom: 20px;
-  border-radius: 8px;
+  border-left: 5px solid #E51D22;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-.filters-row {
+.control-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-section {
   display: flex;
   gap: 20px;
-  align-items: flex-end;
   flex-wrap: wrap;
+  align-items: flex-end;
 }
 
 .filter-item {
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   min-width: 200px;
 }
 
-.filter-item label {
-  display: block;
-  font-size: 0.9rem;
-  color: #606266;
-  font-weight: 600;
-  margin-bottom: 5px;
+.filter-label {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
-.main-card {
-  min-height: 500px;
-  border-radius: 8px;
+/* Inputs styling */
+.filter-input-select,
+.filter-date-picker,
+.filter-input-search {
+  width: 100%;
+}
+
+::v-deep .el-input__inner,
+::v-deep .el-range-input {
+  background: #fff !important;
+  border: 2px solid #64748b !important;
+  border-radius: 12px;
+  height: 44px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #1e293b;
+  transition: all 0.3s ease;
+}
+
+::v-deep .el-input__inner:hover,
+::v-deep .el-range-editor:hover .el-input__inner {
+  border-color: #E51D22 !important;
+}
+
+::v-deep .el-input__inner:focus,
+::v-deep .el-input.is-focus .el-input__inner,
+::v-deep .el-range-editor.is-active .el-input__inner {
+  border-color: #E51D22 !important;
+  box-shadow: 0 0 0 4px rgba(229, 29, 34, 0.12);
+}
+
+::v-deep .el-input__inner::placeholder,
+::v-deep .el-range-input::placeholder {
+  color: #64748b !important;
+  font-weight: 600;
+  opacity: 1;
+}
+
+::v-deep .el-range-separator {
+  line-height: 36px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+/* Main Table Container */
+.table-container {
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 2px solid #e2e8f0;
+}
+
+.custom-table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Table Body Styles */
+::v-deep .el-table__body tr td {
+  padding: 16px 12px !important;
+  border-bottom: 2px solid #94a3b8 !important;
+}
+
+::v-deep .el-table__body tr:hover > td {
+  background: linear-gradient(135deg, #fff5f5, #fff) !important;
+  border-bottom-color: #E51D22 !important;
 }
 
 /* Athlete Cell */
 .athlete-cell {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
-.athlete-photo {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #f0f2f5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border: 1px solid #dcdfe6;
+.athlete-photo-wrapper {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
 }
 
 .avatar-img {
   width: 100%;
   height: 100%;
+  border-radius: 12px;
   object-fit: cover;
+  border: 2px solid #E51D22;
+  box-shadow: 0 3px 8px rgba(229, 29, 34, 0.2);
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #E51D22, #c41a1d);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 20px;
+  box-shadow: 0 3px 8px rgba(229, 29, 34, 0.3);
 }
 
 .athlete-info {
@@ -527,14 +656,21 @@ export default {
   flex-direction: column;
 }
 
-.athlete-info .name {
-  font-weight: 600;
-  color: #303133;
+.name {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 0.95rem;
 }
 
-.athlete-info .category-tag {
-  font-size: 0.75rem;
-  color: #909399;
+.sub-text {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.category-tag {
+  font-weight: 600;
+  border-radius: 6px;
 }
 
 /* Stats Mini Grid */
@@ -545,31 +681,43 @@ export default {
 }
 
 .stat-box {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
   font-weight: 600;
-  min-width: 50px;
+  display: flex;
+  align-items: center;
 }
 
 .stat-box.present { background: #f0f9eb; color: #67C23A; }
 .stat-box.absent { background: #fef0f0; color: #F56C6C; }
 .stat-box.justified { background: #fdf6ec; color: #E6A23C; }
 .stat-box.total { background: #f4f4f5; color: #909399; }
-.stat-box i { margin-right: 2px; }
+.stat-box i { margin-right: 4px; }
 
-/* Progress */
-.progress-col {
-  padding: 0 10px;
+/* Table Footer */
+.table-footer {
+  margin-top: 20px;
+  text-align: right;
+  color: #1e293b;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border-radius: 10px;
+  border: 2px solid #e2e8f0;
 }
 
-/* Modal Helpers */
-.modal-header {
+/* Modal Headers */
+.modal-header-custom {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
 }
-.modal-title { font-size: 1.2rem; font-weight: bold; color: #303133; }
-.modal-subtitle { font-size: 0.9rem; color: #909399; margin-top: 5px; }
+.modal-title { font-size: 1.2rem; font-weight: bold; color: #E51D22; }
+.modal-subtitle { color: #666; font-size: 1.1rem; }
 
 .modal-summary {
   display: grid;
@@ -592,9 +740,9 @@ export default {
 .summary-item .label { font-size: 0.8rem; color: #606266; margin-bottom: 5px; }
 .summary-item .value { font-size: 1.5rem; font-weight: bold; color: #303133; }
 
-.empty-state {
-  padding: 40px;
+.loading-state, .empty-state {
   text-align: center;
+  padding: 40px;
   color: #909399;
 }
 </style>

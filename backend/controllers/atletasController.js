@@ -7,12 +7,10 @@ const getAtletas = async (req, res) => {
     let query = `SELECT a.*, 
                 TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad,
                 c.nombre_categoria as categoria_nombre,
-                t.nombre_completo as tutor_nombre,
-                d.pais, d.estado, d.municipio, d.localidad
+                t.nombre_completo as tutor_nombre
          FROM atletas a 
          LEFT JOIN categoria c ON a.categoria_id = c.categoria_id
          LEFT JOIN tutor t ON a.tutor_id = t.tutor_id
-         LEFT JOIN direcciones d ON a.direccion_id = d.direccion_id
          WHERE 1=1`;
 
     const params = [];
@@ -41,7 +39,7 @@ const getAtletas = async (req, res) => {
     res.json(rows);
   } catch (error) {
     console.error('Error obteniendo atletas:', error);
-    res.status(500).json({ error: 'Error al obtener atletas' });
+    res.status(500).json({ error: 'Error al obtener atletas', details: error.message });
   }
 };
 
@@ -53,12 +51,10 @@ const getAtletaById = async (req, res) => {
               TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad,
               c.nombre_categoria as categoria_nombre,
               t.nombre_completo as tutor_nombre,
-              t.telefono as tutor_telefono,
-              d.pais, d.estado, d.municipio, d.localidad
+              t.telefono as tutor_telefono
        FROM atletas a 
        LEFT JOIN categoria c ON a.categoria_id = c.categoria_id
        LEFT JOIN tutor t ON a.tutor_id = t.tutor_id
-       LEFT JOIN direcciones d ON a.direccion_id = d.direccion_id
        WHERE a.atleta_id = ?`,
       [id]
     );

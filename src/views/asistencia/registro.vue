@@ -71,7 +71,6 @@
           <el-input
             v-model="searchQuery"
             placeholder="Nombre..."
-            prefix-icon="el-icon-search"
             clearable
           />
         </div>
@@ -385,11 +384,54 @@ export default {
   opacity: 0.9;
 }
 
+/* Header Date Picker - Modern Executive Style */
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.header-date-picker ::v-deep .el-input__inner {
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 12px 20px 12px 45px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.header-date-picker ::v-deep .el-input__inner:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.header-date-picker ::v-deep .el-input__inner:focus {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: #fff;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.2);
+}
+
+.header-date-picker ::v-deep .el-input__prefix {
+  left: 15px;
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.header-date-picker ::v-deep .el-input__inner::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
 /* Controls */
 .control-card {
   margin-bottom: 20px;
   border: none;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
 }
 
 .control-row {
@@ -412,9 +454,81 @@ export default {
 .control-item label {
   display: block;
   font-size: 0.85rem;
+  color: #1e293b;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Modern Input & Select Styles */
+.control-item ::v-deep .el-input__inner,
+.control-item ::v-deep .el-select .el-input__inner {
+  background: #ffffff !important;
+  border: 2px solid #64748b !important;
+  border-radius: 12px;
+  padding: 14px 16px;
+  height: 48px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #1e293b;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.control-item ::v-deep .el-input__inner:hover,
+.control-item ::v-deep .el-select .el-input__inner:hover {
+  border-color: #E51D22 !important;
+  background: #fff !important;
+}
+
+.control-item ::v-deep .el-input__inner:focus,
+.control-item ::v-deep .el-select .el-input.is-focus .el-input__inner {
+  border-color: #E51D22 !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 4px rgba(229, 29, 34, 0.15);
+  outline: none;
+}
+
+.control-item ::v-deep .el-input__inner::placeholder {
+  color: #475569 !important;
+  font-weight: 500;
+  font-style: normal;
+  opacity: 1 !important;
+}
+
+.control-item ::v-deep .el-input__prefix {
+  left: 12px;
   color: #64748b;
+  font-size: 1.1rem;
+}
+
+.control-item ::v-deep .el-select .el-input__suffix {
+  right: 12px;
+}
+
+.control-item ::v-deep .el-select .el-input__icon {
+  color: #64748b;
+  font-size: 1rem;
+  transition: transform 0.3s ease;
+}
+
+/* Primary Button Style */
+.control-item.actions ::v-deep .el-button--primary {
+  background: linear-gradient(135deg, #E51D22, #c41a1d);
+  border: none;
+  border-radius: 12px;
+  padding: 14px 28px;
+  height: 48px;
+  font-size: 0.95rem;
   font-weight: 600;
-  margin-bottom: 6px;
+  box-shadow: 0 4px 12px rgba(229, 29, 34, 0.3);
+  transition: all 0.3s ease;
+}
+
+.control-item.actions ::v-deep .el-button--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(229, 29, 34, 0.4);
 }
 
 /* Main Table */

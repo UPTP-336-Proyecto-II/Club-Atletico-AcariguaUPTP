@@ -84,7 +84,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="Edad" width="80" align="center">
+        <el-table-column label="Edad" width="100" align="center">
           <template slot-scope="{row}">
             {{ calculateAge(row.fecha_nacimiento) }}
           </template>
@@ -520,6 +520,8 @@ export default {
 .control-panel {
   margin-bottom: 20px;
   border-left: 5px solid #E51D22;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .control-content {
@@ -527,95 +529,186 @@ export default {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 15px;
+  gap: 20px;
 }
 
 .filter-section {
   display: flex;
-  gap: 15px;
+  gap: 20px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .filter-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .filter-label {
-  font-weight: 600;
-  color: #324157;
-  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.filter-label i {
+  display: none;
 }
 
 .filter-select {
-  width: 150px;
+  width: 160px;
+}
+
+/* Modern Select Styles */
+.filter-item ::v-deep .el-input__inner {
+  background: #fff !important;
+  border: 2px solid #64748b !important;
+  border-radius: 12px;
+  padding: 10px 14px;
+  height: 44px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #1e293b;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.filter-item ::v-deep .el-input__inner:hover {
+  border-color: #E51D22 !important;
+}
+
+.filter-item ::v-deep .el-input.is-focus .el-input__inner {
+  border-color: #E51D22 !important;
+  box-shadow: 0 0 0 4px rgba(229, 29, 34, 0.12);
+}
+
+.filter-item ::v-deep .el-input__inner::placeholder {
+  color: #64748b !important;
+  font-weight: 500;
 }
 
 .actions-section {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
 /* Table */
 .table-container {
   background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 2px solid #e2e8f0;
+}
+
+/* Modern Table Row Styles */
+.table-container ::v-deep .el-table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table-container ::v-deep .el-table__header-wrapper th {
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9) !important;
+  color: #1e293b !important;
+  font-weight: 700 !important;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 3px solid #E51D22 !important;
+  padding: 16px 12px !important;
+  white-space: nowrap;
+}
+
+.table-container ::v-deep .el-table__body tr {
+  transition: all 0.3s ease;
+}
+
+.table-container ::v-deep .el-table__body tr td {
+  padding: 16px 12px !important;
+  border-bottom: 2px solid #94a3b8 !important;
+}
+
+.table-container ::v-deep .el-table__body tr:hover > td {
+  background: linear-gradient(135deg, #fff5f5, #fff) !important;
+  border-bottom-color: #E51D22 !important;
+}
+
+.table-container ::v-deep .el-table--striped .el-table__body tr.el-table__row--striped td {
+  background: #f8fafc !important;
+}
+
+.table-container ::v-deep .el-table--striped .el-table__body tr.el-table__row--striped:hover > td {
+  background: linear-gradient(135deg, #fff5f5, #fff) !important;
+}
+
+.table-container ::v-deep .el-table--border td {
+  border-right: 2px solid #cbd5e1 !important;
 }
 
 .athlete-cell {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .cell-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   object-fit: cover;
-  border: 2px solid #eee;
+  border: 2px solid #E51D22;
+  box-shadow: 0 3px 8px rgba(229, 29, 34, 0.2);
 }
 
 .cell-avatar-placeholder {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #f5f7fa;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #E51D22, #c41a1d);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #909399;
+  color: #fff;
+  font-size: 20px;
+  box-shadow: 0 3px 8px rgba(229, 29, 34, 0.3);
 }
 
 .athlete-name {
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
 .name {
-  font-weight: 600;
-  color: #324157;
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 0.95rem;
 }
 
 .sub-text {
   font-size: 0.8rem;
-  color: #909399;
+  color: #64748b;
+  font-weight: 500;
 }
 
 .table-footer {
-  margin-top: 15px;
+  margin-top: 20px;
   text-align: right;
-  color: #606266;
-  font-size: 0.9rem;
+  color: #1e293b;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border-radius: 10px;
+  border: 2px solid #e2e8f0;
 }
 
 /* Modal Styling */
 .modal-content-wrapper {
   color: #333;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Figtree', 'Segoe UI', sans-serif;
 }
 
 .modal-header-custom {

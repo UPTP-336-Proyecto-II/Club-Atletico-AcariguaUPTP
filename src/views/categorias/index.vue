@@ -29,7 +29,6 @@
           <el-input
             v-model="searchQuery"
             placeholder="Nombre de categoría..."
-            prefix-icon="el-icon-search"
             clearable
           />
         </div>
@@ -357,15 +356,45 @@ export default {
   opacity: 0.9;
 }
 
+/* Header Button - Modern Executive Style */
+.header-actions ::v-deep .el-button--primary,
+.header-actions .red-btn {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  color: #fff !important;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 12px 24px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.header-actions ::v-deep .el-button--primary:hover,
+.header-actions .red-btn:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.header-actions ::v-deep .el-button--primary:active,
+.header-actions .red-btn:active {
+  transform: translateY(0);
+}
+
 /* Controls */
 .control-card {
   margin-bottom: 25px;
   border: none;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .control-row {
   display: flex;
-  gap: 20px;
+  gap: 24px;
   flex-wrap: wrap;
 }
 
@@ -377,29 +406,69 @@ export default {
 .control-item label {
   display: block;
   font-size: 0.85rem;
+  color: #1e293b;
+  font-weight: 700;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Modern Input & Select Styles for Controls */
+.control-item ::v-deep .el-input__inner,
+.control-item ::v-deep .el-select .el-input__inner {
+  background: #fff !important;
+  border: 2px solid #64748b !important;
+  border-radius: 12px;
+  padding: 14px 16px;
+  height: 48px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #1e293b;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.control-item ::v-deep .el-input__inner:hover,
+.control-item ::v-deep .el-select .el-input__inner:hover {
+  border-color: #E51D22 !important;
+}
+
+.control-item ::v-deep .el-input__inner:focus,
+.control-item ::v-deep .el-select .el-input.is-focus .el-input__inner {
+  border-color: #E51D22 !important;
+  box-shadow: 0 0 0 4px rgba(229, 29, 34, 0.12);
+}
+
+.control-item ::v-deep .el-input__inner::placeholder {
+  color: #64748b !important;
+  font-weight: 500;
+}
+
+.control-item ::v-deep .el-input__prefix {
+  left: 12px;
   color: #64748b;
-  font-weight: 600;
-  margin-bottom: 8px;
 }
 
 /* Grid */
 .categories-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  gap: 24px;
 }
 
 .category-card {
-  border: none;
-  border-radius: 12px;
-  transition: transform 0.2s, box-shadow 0.2s;
+  border: 2px solid #cbd5e1;
+  border-radius: 16px;
+  transition: all 0.3s ease;
   overflow: hidden;
   height: 100%;
+  background: #fff;
 }
 
 .category-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border-color: #E51D22;
+  transform: translateY(-6px);
+  box-shadow: 0 12px 24px rgba(229, 29, 34, 0.15);
 }
 
 .card-header {

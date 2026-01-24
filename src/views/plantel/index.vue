@@ -53,7 +53,6 @@
             <el-input
               v-model="searchQuery"
               placeholder="Buscar por nombre..."
-              prefix-icon="el-icon-search"
               size="small"
               clearable
             />
@@ -426,6 +425,31 @@ export default {
   margin: 0;
 }
 
+/* Header Button - Modern Executive Style */
+.header-content ::v-deep > .el-button--primary {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  color: #fff !important;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 12px 24px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.header-content ::v-deep > .el-button--primary:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.header-content ::v-deep > .el-button--primary:active {
+  transform: translateY(0);
+}
+
 .main-content {
   display: grid;
   grid-template-columns: 300px 1fr;
@@ -455,49 +479,89 @@ export default {
 }
 
 .search-container {
-  padding: 10px 15px;
-  background-color: #fff;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 15px;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.search-container ::v-deep .el-input__inner {
+  background: #fff !important;
+  border: 2px solid #64748b !important;
+  border-radius: 10px;
+  padding: 10px 14px 10px 36px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #1e293b;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.search-container ::v-deep .el-input__inner:hover {
+  border-color: #E51D22 !important;
+}
+
+.search-container ::v-deep .el-input__inner:focus {
+  border-color: #E51D22 !important;
+  box-shadow: 0 0 0 3px rgba(229, 29, 34, 0.12);
+}
+
+.search-container ::v-deep .el-input__inner::placeholder {
+  color: #64748b !important;
+  font-weight: 500;
+}
+
+.search-container ::v-deep .el-input__prefix {
+  color: #64748b;
 }
 
 .member-list {
   overflow-y: auto;
   flex: 1;
+  padding: 8px 0;
 }
 
 .member-item {
-  padding: 15px;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 16px;
+  margin: 8px 12px;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 14px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 .member-item:hover {
-  background-color: #f5f7fa;
+  border-color: #E51D22;
+  background: linear-gradient(135deg, #fff5f5, #fff);
+  box-shadow: 0 4px 12px rgba(229, 29, 34, 0.12);
+  transform: translateX(4px);
 }
 
 .member-item.active {
-  background-color: #fee;
-  border-left: 4px solid #E51D22;
+  background: linear-gradient(135deg, #fee2e2, #fff);
+  border: 2px solid #E51D22;
+  box-shadow: 0 4px 16px rgba(229, 29, 34, 0.2);
 }
 
 .member-photo {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  min-height: 40px;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
   flex-shrink: 0;
-  border-radius: 50%;
-  background-color: #E51D22;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #E51D22, #c41a1d);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 22px;
   overflow: hidden;
+  box-shadow: 0 3px 8px rgba(229, 29, 34, 0.3);
 }
 
 .member-info {
@@ -506,16 +570,17 @@ export default {
 }
 
 .member-info h3 {
-  font-size: 0.9rem;
-  margin: 0 0 4px 0;
-  color: #2c3e50;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+  color: #1e293b;
 }
 
 .member-info p {
   font-size: 0.8rem;
   color: #64748b;
-  margin: 2px 0;
+  margin: 3px 0;
+  font-weight: 500;
 }
 
 .empty-state-list {
@@ -599,26 +664,64 @@ export default {
   font-size: 1rem;
 }
 
+.filter-popover {
+  padding: 5px;
+}
+
 .filter-popover h4 {
-  margin: 0 0 15px 0;
-  font-size: 0.9rem;
-  color: #2c3e50;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
+  margin: 0 0 18px 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #E51D22;
+  border-bottom: 2px solid #E51D22;
+  padding-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .filter-item {
-  margin-bottom: 15px;
+  margin-bottom: 18px;
+}
+
+.filter-item label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.filter-item ::v-deep .el-select .el-input__inner {
+  background: #fff !important;
+  border: 2px solid #64748b !important;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #1e293b;
+  transition: all 0.3s ease;
+}
+
+.filter-item ::v-deep .el-select .el-input__inner:hover {
+  border-color: #E51D22 !important;
+}
+
+.filter-item ::v-deep .el-select .el-input.is-focus .el-input__inner {
+  border-color: #E51D22 !important;
+  box-shadow: 0 0 0 3px rgba(229, 29, 34, 0.12);
 }
 
 .filter-btn {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   color: #64748b;
-  padding: 0;
+  padding: 5px;
+  transition: all 0.3s ease;
 }
 
 .filter-btn:hover {
   color: #E51D22;
+  transform: rotate(90deg);
 }
 
 ::v-deep .el-button--primary {
