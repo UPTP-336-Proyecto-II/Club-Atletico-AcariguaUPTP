@@ -228,15 +228,51 @@ const logout = async (req, res) => {
 
 const createUsuario = async (req, res) => {
   try {
-    const { email, password, rol } = req.body;
+    let { email, password, rol } = req.body;
 
     if (!email) {
       return res.status(400).json({ error: 'El email es requerido' });
     }
 
+    // Normalizar email a minúsculas
+    email = email.toLowerCase().trim();
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'El formato del email no es válido' });
+    }
+
+    // Validar contraseña (cuando se proporciona)
+    if (password) {
+      const passwordErrors = [];
+      if (password.length < 12) {
+        passwordErrors.push('Mínimo 12 caracteres');
+      }
+      if (!/[A-Z]/.test(password)) {
+        passwordErrors.push('Al menos una mayúscula');
+      }
+      if (!/[a-z]/.test(password)) {
+        passwordErrors.push('Al menos una minúscula');
+      }
+      if (!/[0-9]/.test(password)) {
+        passwordErrors.push('Al menos un número');
+      }
+      if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+        passwordErrors.push('Al menos un carácter especial');
+      }
+
+      if (passwordErrors.length > 0) {
+        return res.status(400).json({
+          error: 'La contraseña no cumple los requisitos de seguridad',
+          detalles: passwordErrors
+        });
+      }
+    }
+
     // Verificar si el email ya existe
     const [existing] = await pool.execute(
-      'SELECT usuario_id FROM usuarios WHERE email = ?',
+      'SELECT usuario_id FROM usuarios WHERE LOWER(email) = ?',
       [email]
     );
 

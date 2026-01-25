@@ -126,6 +126,7 @@
                 {{ currentUsuario.estatus === 'ACTIVO' ? 'Desactivar' : 'Activar' }}
               </el-button>
               <el-button type="primary" icon="el-icon-edit" @click="handleEdit">Editar</el-button>
+              <el-button type="danger" icon="el-icon-delete" @click="handleDeleteUsuario">Eliminar</el-button>
             </div>
           </div>
 
@@ -166,21 +167,68 @@
     <el-dialog
       :title="isEditing ? 'Editar Usuario' : 'Agregar Nuevo Usuario'"
       :visible.sync="showUsuarioModal"
-      width="500px"
+      width="700px"
       :close-on-click-modal="false"
+      custom-class="usuario-modal"
     >
       <el-form ref="usuarioForm" :model="usuarioForm" :rules="usuarioRules" label-position="top">
         <el-form-item label="Email" prop="email">
-          <el-input v-model="usuarioForm.email" placeholder="correo@ejemplo.com" />
-        </el-form-item>
-        <el-form-item label="Contraseña" prop="password">
           <el-input
-            v-model="usuarioForm.password"
-            type="password"
-            :placeholder="isEditing ? 'Dejar en blanco para no cambiar' : 'Mínimo 6 caracteres'"
-            show-password
+            v-model="usuarioForm.email"
+            placeholder="correo@ejemplo.com"
+            @blur="checkEmailTypo"
           />
+          <div v-if="emailSuggestion" class="email-suggestion">
+            <i class="el-icon-info" />
+            ¿Quisiste decir <strong @click="applyEmailSuggestion">{{ emailSuggestion }}</strong>?
+          </div>
         </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="Contraseña" prop="password">
+              <el-input
+                v-model="usuarioForm.password"
+                type="password"
+                :placeholder="isEditing ? 'Dejar en blanco para no cambiar' : 'Crea una contraseña segura'"
+                show-password
+                @input="checkPasswordStrength"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <!-- Password Requirements Checklist -->
+            <div v-if="!isEditing || usuarioForm.password" class="password-checklist">
+              <div class="checklist-title">Tu contraseña debe tener:</div>
+              <div class="checklist-item" :class="{ valid: passwordChecks.length }">
+                <i :class="passwordChecks.length ? 'el-icon-check' : 'el-icon-close'" />
+                Mínimo 12 caracteres
+              </div>
+              <div class="checklist-item" :class="{ valid: passwordChecks.uppercase }">
+                <i :class="passwordChecks.uppercase ? 'el-icon-check' : 'el-icon-close'" />
+                Una letra mayúscula (A-Z)
+              </div>
+              <div class="checklist-item" :class="{ valid: passwordChecks.lowercase }">
+                <i :class="passwordChecks.lowercase ? 'el-icon-check' : 'el-icon-close'" />
+                Una letra minúscula (a-z)
+              </div>
+              <div class="checklist-item" :class="{ valid: passwordChecks.number }">
+                <i :class="passwordChecks.number ? 'el-icon-check' : 'el-icon-close'" />
+                Al menos un número (0-9)
+              </div>
+              <div class="checklist-item" :class="{ valid: passwordChecks.special }">
+                <i :class="passwordChecks.special ? 'el-icon-check' : 'el-icon-close'" />
+                Un carácter especial (!@#$%^&*)
+              </div>
+              <!-- Strength Bar -->
+              <div class="strength-bar">
+                <div class="strength-label">Fortaleza: <span :class="'strength-' + passwordStrength">{{ passwordStrengthLabel }}</span></div>
+                <div class="strength-track">
+                  <div class="strength-fill" :class="'strength-' + passwordStrength" :style="{ width: passwordStrengthPercent + '%' }" />
+                </div>
+              </div>
+            </div>
+          </el-col>
+        </el-row>
         <el-form-item label="Rol" prop="rol">
           <el-select v-model="usuarioForm.rol" placeholder="Seleccionar rol" style="width: 100%">
             <el-option
@@ -209,7 +257,7 @@
 </template>
 
 <script>
-import { getUsuarios, getUsuarioById, createUsuario, updateUsuario } from '@/api/usuarios'
+import { getUsuarios, getUsuarioById, createUsuario, updateUsuario, deleteUsuario } from '@/api/usuarios'
 import { getRoles } from '@/api/roles'
 
 export default {
@@ -218,8 +266,8 @@ export default {
     const validatePassword = (rule, value, callback) => {
       if (!this.isEditing && !value) {
         callback(new Error('La contraseña es requerida'))
-      } else if (value && value.length < 6) {
-        callback(new Error('Mínimo 6 caracteres'))
+      } else if (value && !this.isPasswordValid) {
+        callback(new Error('La contraseña no cumple todos los requisitos'))
       } else {
         callback()
       }
@@ -236,6 +284,14 @@ export default {
       filterSort: 'reciente',
       showUsuarioModal: false,
       isEditing: false,
+      emailSuggestion: '',
+      passwordChecks: {
+        length: false,
+        uppercase: false,
+        lowercase: false,
+        number: false,
+        special: false
+      },
       usuarioForm: {
         email: '',
         password: '',
@@ -260,6 +316,24 @@ export default {
         filtered = filtered.filter(u => u.email.toLowerCase().includes(query))
       }
       return filtered
+    },
+    isPasswordValid() {
+      const checks = this.passwordChecks
+      return checks.length && checks.uppercase && checks.lowercase && checks.number && checks.special
+    },
+    passwordStrength() {
+      const count = Object.values(this.passwordChecks).filter(v => v).length
+      if (count <= 2) return 'weak'
+      if (count <= 4) return 'medium'
+      return 'strong'
+    },
+    passwordStrengthLabel() {
+      const labels = { weak: 'Débil', medium: 'Media', strong: 'Fuerte' }
+      return labels[this.passwordStrength]
+    },
+    passwordStrengthPercent() {
+      const count = Object.values(this.passwordChecks).filter(v => v).length
+      return (count / 5) * 100
     }
   },
   watch: {
@@ -277,6 +351,45 @@ export default {
     this.loadData()
   },
   methods: {
+    checkPasswordStrength() {
+      const password = this.usuarioForm.password || ''
+      this.passwordChecks = {
+        length: password.length >= 12,
+        uppercase: /[A-Z]/.test(password),
+        lowercase: /[a-z]/.test(password),
+        number: /[0-9]/.test(password),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+      }
+    },
+    checkEmailTypo() {
+      const email = this.usuarioForm.email || ''
+      const domain = email.split('@')[1]?.toLowerCase()
+
+      const typoMap = {
+        'gmal.com': 'gmail.com',
+        'gmial.com': 'gmail.com',
+        'gamil.com': 'gmail.com',
+        'gnail.com': 'gmail.com',
+        'hotmal.com': 'hotmail.com',
+        'hotamil.com': 'hotmail.com',
+        'outloo.com': 'outlook.com',
+        'outlok.com': 'outlook.com',
+        'yaho.com': 'yahoo.com',
+        'yahooo.com': 'yahoo.com'
+      }
+
+      if (domain && typoMap[domain]) {
+        this.emailSuggestion = email.split('@')[0] + '@' + typoMap[domain]
+      } else {
+        this.emailSuggestion = ''
+      }
+    },
+    applyEmailSuggestion() {
+      if (this.emailSuggestion) {
+        this.usuarioForm.email = this.emailSuggestion
+        this.emailSuggestion = ''
+      }
+    },
     async loadData() {
       await Promise.all([
         this.loadUsuarios(),
@@ -402,6 +515,32 @@ export default {
         if (error !== 'cancel') {
           console.error('Error cambiando estatus:', error)
           this.$message.error('Error al cambiar estatus')
+        }
+      }
+    },
+    async handleDeleteUsuario() {
+      if (!this.currentUsuario) return
+
+      try {
+        await this.$confirm(
+          `¿Está seguro de eliminar permanentemente al usuario "${this.currentUsuario.email}"? Esta acción no se puede deshacer.`,
+          'Confirmar Eliminación',
+          {
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            type: 'warning'
+          }
+        )
+
+        await deleteUsuario(this.currentUsuarioId)
+        this.$message.success('Usuario eliminado exitosamente')
+        this.currentUsuarioId = null
+        this.currentUsuario = {}
+        await this.loadUsuarios()
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('Error eliminando usuario:', error)
+          this.$message.error(error.response?.data?.error || 'Error al eliminar usuario')
         }
       }
     },
@@ -678,5 +817,120 @@ aside.sidebar {
     flex-direction: column;
     width: 100%;
   }
+}
+
+/* Password Checklist Styles */
+.password-checklist {
+  margin-top: 10px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.checklist-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  padding: 4px 0;
+  transition: color 0.2s;
+}
+
+.checklist-item i {
+  font-size: 0.9rem;
+}
+
+.checklist-item.valid {
+  color: #22c55e;
+}
+
+.checklist-item.valid i {
+  color: #22c55e;
+}
+
+/* Strength Bar */
+.strength-bar {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.strength-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.strength-track {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.strength-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s, background 0.3s;
+}
+
+.strength-fill.strength-weak {
+  background: #ef4444;
+}
+
+.strength-fill.strength-medium {
+  background: #f59e0b;
+}
+
+.strength-fill.strength-strong {
+  background: #22c55e;
+}
+
+.strength-weak {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.strength-medium {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.strength-strong {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+/* Email Suggestion */
+.email-suggestion {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.email-suggestion strong {
+  color: #1d4ed8;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.email-suggestion strong:hover {
+  color: #1e40af;
 }
 </style>
