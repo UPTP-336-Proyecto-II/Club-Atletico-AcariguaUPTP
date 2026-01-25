@@ -28,10 +28,31 @@
               <div class="filter-popover">
                 <h4>Filtro por Estatus</h4>
                 <div class="filter-item">
+                  <label style="display:block;margin-bottom:5px;font-size:0.85rem;color:#606266">Estatus</label>
                   <el-select v-model="filterEstatus" placeholder="Todos" clearable size="small" style="width: 100%">
                     <el-option label="Activos" value="ACTIVO" />
                     <el-option label="Inactivos" value="INACTIVO" />
                     <el-option label="Todos" value="TODOS" />
+                  </el-select>
+                </div>
+                <div class="filter-item">
+                  <label style="display:block;margin-bottom:5px;font-size:0.85rem;color:#606266">Rol</label>
+                  <el-select v-model="filterRol" placeholder="Todos los roles" clearable size="small" style="width: 100%">
+                    <el-option
+                      v-for="rol in roles"
+                      :key="rol.rol_id"
+                      :label="rol.nombre_rol"
+                      :value="rol.rol_id"
+                    />
+                  </el-select>
+                </div>
+                <div class="filter-item">
+                  <label style="display:block;margin-bottom:5px;font-size:0.85rem;color:#606266">Ordenar por</label>
+                  <el-select v-model="filterSort" placeholder="Seleccionar" size="small" style="width: 100%">
+                    <el-option label="Más Recientes" value="reciente" />
+                    <el-option label="Más Antiguos" value="antiguo" />
+                    <el-option label="Alfabético A-Z" value="az" />
+                    <el-option label="Alfabético Z-A" value="za" />
                   </el-select>
                 </div>
               </div>
@@ -105,6 +126,7 @@
                 {{ currentUsuario.estatus === 'ACTIVO' ? 'Desactivar' : 'Activar' }}
               </el-button>
               <el-button type="primary" icon="el-icon-edit" @click="handleEdit">Editar</el-button>
+              <el-button type="danger" icon="el-icon-delete" @click="handleDeleteUsuario">Eliminar</el-button>
             </div>
           </div>
 
@@ -145,21 +167,68 @@
     <el-dialog
       :title="isEditing ? 'Editar Usuario' : 'Agregar Nuevo Usuario'"
       :visible.sync="showUsuarioModal"
-      width="500px"
+      width="700px"
       :close-on-click-modal="false"
+      custom-class="usuario-modal"
     >
       <el-form ref="usuarioForm" :model="usuarioForm" :rules="usuarioRules" label-position="top">
         <el-form-item label="Email" prop="email">
-          <el-input v-model="usuarioForm.email" placeholder="correo@ejemplo.com" />
-        </el-form-item>
-        <el-form-item label="Contraseña" prop="password">
           <el-input
-            v-model="usuarioForm.password"
-            type="password"
-            :placeholder="isEditing ? 'Dejar en blanco para no cambiar' : 'Mínimo 6 caracteres'"
-            show-password
+            v-model="usuarioForm.email"
+            placeholder="correo@ejemplo.com"
+            @blur="checkEmailTypo"
           />
+          <div v-if="emailSuggestion" class="email-suggestion">
+            <i class="el-icon-info" />
+            ¿Quisiste decir <strong @click="applyEmailSuggestion">{{ emailSuggestion }}</strong>?
+          </div>
         </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="Contraseña" prop="password">
+              <el-input
+                v-model="usuarioForm.password"
+                type="password"
+                :placeholder="isEditing ? 'Dejar en blanco para no cambiar' : 'Crea una contraseña segura'"
+                show-password
+                @input="checkPasswordStrength"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <!-- Password Requirements Checklist -->
+            <div v-if="!isEditing || usuarioForm.password" class="password-checklist">
+              <div class="checklist-title">Tu contraseña debe tener:</div>
+              <div class="checklist-item" :class="{ valid: passwordChecks.length }">
+                <i :class="passwordChecks.length ? 'el-icon-check' : 'el-icon-close'" />
+                Mínimo 12 caracteres
+              </div>
+              <div class="checklist-item" :class="{ valid: passwordChecks.uppercase }">
+                <i :class="passwordChecks.uppercase ? 'el-icon-check' : 'el-icon-close'" />
+                Una letra mayúscula (A-Z)
+              </div>
+              <div class="checklist-item" :class="{ valid: passwordChecks.lowercase }">
+                <i :class="passwordChecks.lowercase ? 'el-icon-check' : 'el-icon-close'" />
+                Una letra minúscula (a-z)
+              </div>
+              <div class="checklist-item" :class="{ valid: passwordChecks.number }">
+                <i :class="passwordChecks.number ? 'el-icon-check' : 'el-icon-close'" />
+                Al menos un número (0-9)
+              </div>
+              <div class="checklist-item" :class="{ valid: passwordChecks.special }">
+                <i :class="passwordChecks.special ? 'el-icon-check' : 'el-icon-close'" />
+                Un carácter especial (!@#$%^&*)
+              </div>
+              <!-- Strength Bar -->
+              <div class="strength-bar">
+                <div class="strength-label">Fortaleza: <span :class="'strength-' + passwordStrength">{{ passwordStrengthLabel }}</span></div>
+                <div class="strength-track">
+                  <div class="strength-fill" :class="'strength-' + passwordStrength" :style="{ width: passwordStrengthPercent + '%' }" />
+                </div>
+              </div>
+            </div>
+          </el-col>
+        </el-row>
         <el-form-item label="Rol" prop="rol">
           <el-select v-model="usuarioForm.rol" placeholder="Seleccionar rol" style="width: 100%">
             <el-option
@@ -172,10 +241,45 @@
         </el-form-item>
         <el-form-item v-if="isEditing" label="Estatus">
           <el-select v-model="usuarioForm.estatus" placeholder="Seleccionar estatus" style="width: 100%">
-            <el-option label="ACTIVO" value="ACTIVO" />
-            <el-option label="INACTIVO" value="INACTIVO" />
+            <el-option label="Activo" value="Activo" />
+            <el-option label="Inactivo" value="Inactivo" />
           </el-select>
         </el-form-item>
+
+        <!-- Sección de Preguntas de Seguridad -->
+        <div class="security-questions-section">
+          <el-divider content-position="left"><i class="el-icon-lock" /> Preguntas de Seguridad</el-divider>
+
+          <el-form-item label="Pregunta 1" prop="pregunta_1">
+            <el-select v-model="usuarioForm.pregunta_1" placeholder="Selecciona una pregunta" style="width: 100%">
+              <el-option
+                v-for="pregunta in preguntasDisponibles"
+                :key="pregunta"
+                :label="pregunta"
+                :value="pregunta"
+                :disabled="pregunta === usuarioForm.pregunta_2"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="Respuesta 1" prop="respuesta_1">
+            <el-input v-model="usuarioForm.respuesta_1" placeholder="Tu respuesta" />
+          </el-form-item>
+
+          <el-form-item label="Pregunta 2" prop="pregunta_2">
+            <el-select v-model="usuarioForm.pregunta_2" placeholder="Selecciona una pregunta" style="width: 100%">
+              <el-option
+                v-for="pregunta in preguntasDisponibles"
+                :key="pregunta"
+                :label="pregunta"
+                :value="pregunta"
+                :disabled="pregunta === usuarioForm.pregunta_1"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="Respuesta 2" prop="respuesta_2">
+            <el-input v-model="usuarioForm.respuesta_2" placeholder="Tu respuesta" />
+          </el-form-item>
+        </div>
       </el-form>
       <span slot="footer">
         <el-button @click="showUsuarioModal = false">Cancelar</el-button>
@@ -188,8 +292,9 @@
 </template>
 
 <script>
-import { getUsuarios, getUsuarioById, createUsuario, updateUsuario } from '@/api/usuarios'
+import { getUsuarios, getUsuarioById, createUsuario, updateUsuario, deleteUsuario } from '@/api/usuarios'
 import { getRoles } from '@/api/roles'
+import { getPreguntasDisponibles, guardarPreguntas, obtenerPreguntasRespuestasUsuario } from '@/api/preguntasSeguridad'
 
 export default {
   name: 'UsuariosSistema',
@@ -197,8 +302,8 @@ export default {
     const validatePassword = (rule, value, callback) => {
       if (!this.isEditing && !value) {
         callback(new Error('La contraseña es requerida'))
-      } else if (value && value.length < 6) {
-        callback(new Error('Mínimo 6 caracteres'))
+      } else if (value && !this.isPasswordValid) {
+        callback(new Error('La contraseña no cumple todos los requisitos'))
       } else {
         callback()
       }
@@ -210,14 +315,29 @@ export default {
       currentUsuario: {},
       loading: false,
       searchQuery: '',
-      filterEstatus: 'ACTIVO',
+      filterEstatus: 'Activo',
+      filterRol: '',
+      filterSort: 'reciente',
       showUsuarioModal: false,
       isEditing: false,
+      emailSuggestion: '',
+      passwordChecks: {
+        length: false,
+        uppercase: false,
+        lowercase: false,
+        number: false,
+        special: false
+      },
+      preguntasDisponibles: [],
       usuarioForm: {
         email: '',
         password: '',
         rol: null,
-        estatus: 'ACTIVO'
+        estatus: 'Activo',
+        pregunta_1: '',
+        respuesta_1: '',
+        pregunta_2: '',
+        respuesta_2: ''
       },
       usuarioRules: {
         email: [
@@ -225,7 +345,11 @@ export default {
           { type: 'email', message: 'Ingrese un email válido', trigger: 'blur' }
         ],
         password: [{ required: true, trigger: 'blur', validator: validatePassword }],
-        rol: [{ required: true, message: 'El rol es requerido', trigger: 'change' }]
+        rol: [{ required: true, message: 'El rol es requerido', trigger: 'change' }],
+        pregunta_1: [{ required: true, message: 'Selecciona una pregunta', trigger: 'change' }],
+        respuesta_1: [{ required: true, message: 'Ingresa tu respuesta', trigger: 'blur' }],
+        pregunta_2: [{ required: true, message: 'Selecciona una pregunta', trigger: 'change' }],
+        respuesta_2: [{ required: true, message: 'Ingresa tu respuesta', trigger: 'blur' }]
       }
     }
   },
@@ -237,10 +361,34 @@ export default {
         filtered = filtered.filter(u => u.email.toLowerCase().includes(query))
       }
       return filtered
+    },
+    isPasswordValid() {
+      const checks = this.passwordChecks
+      return checks.length && checks.uppercase && checks.lowercase && checks.number && checks.special
+    },
+    passwordStrength() {
+      const count = Object.values(this.passwordChecks).filter(v => v).length
+      if (count <= 2) return 'weak'
+      if (count <= 4) return 'medium'
+      return 'strong'
+    },
+    passwordStrengthLabel() {
+      const labels = { weak: 'Débil', medium: 'Media', strong: 'Fuerte' }
+      return labels[this.passwordStrength]
+    },
+    passwordStrengthPercent() {
+      const count = Object.values(this.passwordChecks).filter(v => v).length
+      return (count / 5) * 100
     }
   },
   watch: {
     filterEstatus() {
+      this.loadUsuarios()
+    },
+    filterRol() {
+      this.loadUsuarios()
+    },
+    filterSort() {
       this.loadUsuarios()
     }
   },
@@ -248,11 +396,61 @@ export default {
     this.loadData()
   },
   methods: {
+    checkPasswordStrength() {
+      const password = this.usuarioForm.password || ''
+      this.passwordChecks = {
+        length: password.length >= 12,
+        uppercase: /[A-Z]/.test(password),
+        lowercase: /[a-z]/.test(password),
+        number: /[0-9]/.test(password),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+      }
+    },
+    checkEmailTypo() {
+      const email = this.usuarioForm.email || ''
+      const domain = email.split('@')[1]?.toLowerCase()
+
+      const typoMap = {
+        'gmal.com': 'gmail.com',
+        'gmial.com': 'gmail.com',
+        'gamil.com': 'gmail.com',
+        'gnail.com': 'gmail.com',
+        'hotmal.com': 'hotmail.com',
+        'hotamil.com': 'hotmail.com',
+        'outloo.com': 'outlook.com',
+        'outlok.com': 'outlook.com',
+        'yaho.com': 'yahoo.com',
+        'yahooo.com': 'yahoo.com'
+      }
+
+      if (domain && typoMap[domain]) {
+        this.emailSuggestion = email.split('@')[0] + '@' + typoMap[domain]
+      } else {
+        this.emailSuggestion = ''
+      }
+    },
+    applyEmailSuggestion() {
+      if (this.emailSuggestion) {
+        this.usuarioForm.email = this.emailSuggestion
+        this.emailSuggestion = ''
+      }
+    },
     async loadData() {
       await Promise.all([
         this.loadUsuarios(),
-        this.loadRoles()
+        this.loadRoles(),
+        this.loadPreguntasDisponibles()
       ])
+    },
+    async loadPreguntasDisponibles() {
+      try {
+        const response = await getPreguntasDisponibles()
+        // publicService devuelve la respuesta cruda de axios, así que accedemos a .data
+        const data = response.data || response
+        this.preguntasDisponibles = Array.isArray(data) ? data : []
+      } catch (error) {
+        console.error('Error cargando preguntas:', error)
+      }
     },
     async loadUsuarios() {
       try {
@@ -260,8 +458,22 @@ export default {
         if (this.filterEstatus) {
           params.estatus = this.filterEstatus
         }
+        if (this.filterRol) {
+          params.rol = this.filterRol
+        }
+        params.sort = this.filterSort
+
         const response = await getUsuarios(params)
         this.usuarios = Array.isArray(response) ? response : []
+
+        // Validar si el usuario seleccionado sigue en la lista
+        if (this.currentUsuarioId) {
+          const exists = this.usuarios.find(u => u.usuario_id === this.currentUsuarioId)
+          if (!exists) {
+            this.currentUsuarioId = null
+            this.currentUsuario = {}
+          }
+        }
       } catch (error) {
         console.error('Error cargando usuarios:', error)
         this.$message.error('Error al cargar usuarios')
@@ -287,15 +499,36 @@ export default {
     },
     async openUsuarioModal(isEdit) {
       this.isEditing = isEdit
-      if (isEdit && this.currentUsuario) {
+      if (!isEdit) {
+        this.resetForm()
+      } else {
+        if (!this.currentUsuarioId) return
+
+        // Cargar datos básicos del usuario
         this.usuarioForm = {
           email: this.currentUsuario.email,
           password: '',
           rol: this.currentUsuario.rol,
-          estatus: this.currentUsuario.estatus
+          estatus: this.currentUsuario.estatus,
+          // Inicializar preguntas vacías, se cargarán desde la API
+          pregunta_1: '',
+          respuesta_1: '',
+          pregunta_2: '',
+          respuesta_2: ''
         }
-      } else {
-        this.resetForm()
+
+        // Cargar preguntas de seguridad del usuario
+        try {
+          const res = await obtenerPreguntasRespuestasUsuario(this.currentUsuarioId)
+          if (res && res.tiene_preguntas) {
+            this.usuarioForm.pregunta_1 = res.pregunta_1
+            this.usuarioForm.respuesta_1 = res.respuesta_1
+            this.usuarioForm.pregunta_2 = res.pregunta_2
+            this.usuarioForm.respuesta_2 = res.respuesta_2
+          }
+        } catch (error) {
+          console.error('Error al cargar preguntas:', error)
+        }
       }
 
       this.showUsuarioModal = true
@@ -321,9 +554,40 @@ export default {
               dataToUpdate.password = this.usuarioForm.password
             }
             await updateUsuario(this.currentUsuarioId, dataToUpdate)
+
+            // Actualizar preguntas de seguridad si se llenaron
+            if (this.usuarioForm.pregunta_1 && this.usuarioForm.respuesta_1 &&
+                this.usuarioForm.pregunta_2 && this.usuarioForm.respuesta_2) {
+              await guardarPreguntas({
+                usuario_id: this.currentUsuarioId,
+                pregunta_1: this.usuarioForm.pregunta_1,
+                respuesta_1: this.usuarioForm.respuesta_1,
+                pregunta_2: this.usuarioForm.pregunta_2,
+                respuesta_2: this.usuarioForm.respuesta_2
+              })
+            }
+
             this.$message.success('Usuario actualizado exitosamente')
           } else {
-            await createUsuario(this.usuarioForm)
+            // Crear usuario
+            const createResponse = await createUsuario({
+              email: this.usuarioForm.email,
+              password: this.usuarioForm.password,
+              rol: this.usuarioForm.rol
+            })
+
+            // Guardar preguntas de seguridad
+            const nuevoUsuarioId = createResponse.usuario_id
+            if (nuevoUsuarioId) {
+              await guardarPreguntas({
+                usuario_id: nuevoUsuarioId,
+                pregunta_1: this.usuarioForm.pregunta_1,
+                respuesta_1: this.usuarioForm.respuesta_1,
+                pregunta_2: this.usuarioForm.pregunta_2,
+                respuesta_2: this.usuarioForm.respuesta_2
+              })
+            }
+
             this.$message.success('Usuario creado exitosamente')
           }
 
@@ -341,8 +605,8 @@ export default {
       })
     },
     async toggleEstatus() {
-      const newEstatus = this.currentUsuario.estatus === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO'
-      const action = newEstatus === 'ACTIVO' ? 'activar' : 'desactivar'
+      const newEstatus = this.currentUsuario.estatus === 'Activo' ? 'Inactivo' : 'Activo'
+      const action = newEstatus === 'Activo' ? 'activar' : 'desactivar'
 
       try {
         await this.$confirm(`¿Está seguro de ${action} este usuario?`, 'Confirmar', {
@@ -352,7 +616,7 @@ export default {
         })
 
         await updateUsuario(this.currentUsuarioId, { estatus: newEstatus })
-        this.$message.success(`Usuario ${newEstatus === 'ACTIVO' ? 'activado' : 'desactivado'} exitosamente`)
+        this.$message.success(`Usuario ${newEstatus === 'Activo' ? 'activado' : 'desactivado'} exitosamente`)
         await this.loadUsuarios()
         await this.selectUsuario(this.currentUsuarioId)
       } catch (error) {
@@ -362,13 +626,51 @@ export default {
         }
       }
     },
+    async handleDeleteUsuario() {
+      if (!this.currentUsuario) return
+
+      try {
+        await this.$confirm(
+          `¿Está seguro de eliminar permanentemente al usuario "${this.currentUsuario.email}"? Esta acción no se puede deshacer.`,
+          'Confirmar Eliminación',
+          {
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            type: 'warning'
+          }
+        )
+
+        await deleteUsuario(this.currentUsuarioId)
+        this.$message.success('Usuario eliminado exitosamente')
+        this.currentUsuarioId = null
+        this.currentUsuario = {}
+        await this.loadUsuarios()
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('Error eliminando usuario:', error)
+          this.$message.error(error.response?.data?.error || 'Error al eliminar usuario')
+        }
+      }
+    },
     resetForm() {
       this.usuarioForm = {
         email: '',
         password: '',
         rol: null,
-        estatus: 'ACTIVO'
+        estatus: 'Activo',
+        pregunta_1: '',
+        respuesta_1: '',
+        pregunta_2: '',
+        respuesta_2: ''
       }
+      this.passwordChecks = {
+        length: false,
+        uppercase: false,
+        lowercase: false,
+        number: false,
+        special: false
+      }
+      this.emailSuggestion = ''
     },
     formatDate(dateString) {
       if (!dateString) return 'Nunca'
@@ -744,5 +1046,144 @@ aside.sidebar {
     flex-direction: column;
     width: 100%;
   }
+}
+
+/* Password Checklist Styles */
+.password-checklist {
+  margin-top: 10px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.checklist-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  padding: 4px 0;
+  transition: color 0.2s;
+}
+
+.checklist-item i {
+  font-size: 0.9rem;
+}
+
+.checklist-item.valid {
+  color: #22c55e;
+}
+
+.checklist-item.valid i {
+  color: #22c55e;
+}
+
+/* Strength Bar */
+.strength-bar {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.strength-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.strength-track {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.strength-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s, background 0.3s;
+}
+
+.strength-fill.strength-weak {
+  background: #ef4444;
+}
+
+.strength-fill.strength-medium {
+  background: #f59e0b;
+}
+
+.strength-fill.strength-strong {
+  background: #22c55e;
+}
+
+.strength-weak {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.strength-medium {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.strength-strong {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+/* Email Suggestion */
+.email-suggestion {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.email-suggestion strong {
+  color: #1d4ed8;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.email-suggestion strong:hover {
+  color: #1e40af;
+}
+
+/* Security Questions Section */
+.security-questions-section {
+  margin-top: 10px;
+}
+
+.security-questions-section .el-divider {
+  margin: 15px 0;
+}
+
+.security-questions-section .el-divider__text {
+  color: #E51D22;
+  font-weight: 600;
+}
+
+.security-hint {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0 0 15px 0;
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 6px;
+  border-left: 3px solid #E51D22;
 }
 </style>

@@ -5,7 +5,9 @@ const getRoles = async (req, res) => {
   try {
     const [rows] = await pool.execute(
       `SELECT r.*, 
-        (SELECT COUNT(*) FROM usuarios u WHERE u.rol = r.rol_id) as usuarios_count
+        (SELECT COUNT(*) FROM usuarios u WHERE u.rol = r.rol_id) as usuarios_count,
+        (SELECT COUNT(*) FROM usuarios u WHERE u.rol = r.rol_id AND u.estatus = 'ACTIVO') as usuarios_activos,
+        (SELECT COUNT(*) FROM usuarios u WHERE u.rol = r.rol_id AND u.estatus = 'INACTIVO') as usuarios_inactivos
        FROM rol_usuarios r 
        ORDER BY r.rol_id ASC`
     );
@@ -27,11 +29,11 @@ const getRolById = async (req, res) => {
        WHERE r.rol_id = ?`,
       [id]
     );
-    
+
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Rol no encontrado' });
     }
-    
+
     res.json(rows[0]);
   } catch (error) {
     console.error('Error obteniendo rol:', error);
@@ -135,7 +137,7 @@ const deleteRol = async (req, res) => {
     );
 
     if (users.length > 0) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'No se puede eliminar el rol porque tiene usuarios asignados',
         usuarios_count: users.length
       });

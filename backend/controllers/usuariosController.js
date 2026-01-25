@@ -37,7 +37,7 @@ const { JWT_SECRET } = require('../middleware/auth');
 // Obtener todos los usuarios con información del rol
 const getUsuarios = async (req, res) => {
   try {
-    const { estatus } = req.query;
+    const { estatus, rol } = req.query;
 
     let query = `
       SELECT u.usuario_id, u.email, u.rol, u.estatus, u.ultimo_acceso, u.created_at,
@@ -46,13 +46,42 @@ const getUsuarios = async (req, res) => {
       LEFT JOIN rol_usuarios r ON u.rol = r.rol_id
     `;
 
+    const conditions = [];
     const params = [];
+
     if (estatus && estatus !== 'TODOS') {
-      query += ' WHERE u.estatus = ?';
+      conditions.push('u.estatus = ?');
       params.push(estatus);
     }
 
-    query += ' ORDER BY u.created_at DESC';
+    if (rol) {
+      conditions.push('u.rol = ?');
+      params.push(rol);
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    // Ordenamiento
+    const { sort } = req.query;
+    let orderBy = 'u.created_at DESC'; // Default: Más recientes
+
+    switch (sort) {
+      case 'antiguo':
+        orderBy = 'u.created_at ASC';
+        break;
+      case 'az':
+        orderBy = 'u.email ASC';
+        break;
+      case 'za':
+        orderBy = 'u.email DESC';
+        break;
+      default:
+        orderBy = 'u.created_at DESC';
+    }
+
+    query += ` ORDER BY ${orderBy}`;
 
     const [rows] = await pool.execute(query, params);
     res.json(rows);
@@ -199,15 +228,51 @@ const logout = async (req, res) => {
 
 const createUsuario = async (req, res) => {
   try {
-    const { email, password, rol } = req.body;
+    let { email, password, rol } = req.body;
 
     if (!email) {
       return res.status(400).json({ error: 'El email es requerido' });
     }
 
+    // Normalizar email a minúsculas
+    email = email.toLowerCase().trim();
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'El formato del email no es válido' });
+    }
+
+    // Validar contraseña (cuando se proporciona)
+    if (password) {
+      const passwordErrors = [];
+      if (password.length < 12) {
+        passwordErrors.push('Mínimo 12 caracteres');
+      }
+      if (!/[A-Z]/.test(password)) {
+        passwordErrors.push('Al menos una mayúscula');
+      }
+      if (!/[a-z]/.test(password)) {
+        passwordErrors.push('Al menos una minúscula');
+      }
+      if (!/[0-9]/.test(password)) {
+        passwordErrors.push('Al menos un número');
+      }
+      if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+        passwordErrors.push('Al menos un carácter especial');
+      }
+
+      if (passwordErrors.length > 0) {
+        return res.status(400).json({
+          error: 'La contraseña no cumple los requisitos de seguridad',
+          detalles: passwordErrors
+        });
+      }
+    }
+
     // Verificar si el email ya existe
     const [existing] = await pool.execute(
-      'SELECT usuario_id FROM usuarios WHERE email = ?',
+      'SELECT usuario_id FROM usuarios WHERE LOWER(email) = ?',
       [email]
     );
 
@@ -416,7 +481,7 @@ const uploadAvatar = (req, res) => {
 };
 
 
-// Eliminar usuario (soft delete - cambiar estatus a INACTIVO)
+// Eliminar usuario (HARD DELETE - Eliminar físicamente)
 const deleteUsuario = async (req, res) => {
   try {
     const { id } = req.params;
@@ -431,16 +496,24 @@ const deleteUsuario = async (req, res) => {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    // Soft delete - cambiar estatus a INACTIVO
+    // Hard delete - Eliminar de la base de datos
+    // Nota: Las restricciones de clave foránea (ON DELETE CASCADE) deberían encargarse de eliminar datos relacionados si están configuradas así en la DB.
+    // Si no, habría que eliminar datos relacionados manualmente antes.
     await pool.execute(
-      'UPDATE usuarios SET estatus = ?, token = NULL WHERE usuario_id = ?',
-      ['INACTIVO', id]
+      'DELETE FROM usuarios WHERE usuario_id = ?',
+      [id]
     );
 
-    res.json({ message: 'Usuario desactivado exitosamente' });
+    res.json({ message: 'Usuario eliminado físicamente exitosamente' });
 
   } catch (error) {
     console.error('Error eliminando usuario:', error);
+    // Verificar si es error de constraint
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+      return res.status(400).json({
+        error: 'No se puede eliminar el usuario porque tiene registros relacionados (historial, etc). Considere desactivarlo en su lugar.'
+      });
+    }
     res.status(500).json({ error: 'Error al eliminar usuario' });
   }
 };

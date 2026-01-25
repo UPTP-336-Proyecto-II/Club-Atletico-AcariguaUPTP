@@ -30,6 +30,7 @@ const pagosRoutes = require('./routes/pagos');
 const plantelRoutes = require('./routes/plantel');
 const tutorRoutes = require('./routes/tutor');
 const rolesRoutes = require('./routes/roles');
+const preguntasSeguridadRoutes = require('./routes/preguntasSeguridad');
 
 // Usar rutas existentes
 app.use('/api/usuarios', usuariosRoutes);
@@ -47,6 +48,7 @@ app.use('/api/pagos', pagosRoutes);
 app.use('/api/plantel', plantelRoutes);
 app.use('/api/tutor', tutorRoutes);
 app.use('/api/roles', rolesRoutes);
+app.use('/api/preguntas-seguridad', preguntasSeguridadRoutes);
 
 // Ruta de prueba
 app.get('/api', (req, res) => {
@@ -67,7 +69,8 @@ app.get('/api', (req, res) => {
       pagos: '/api/pagos',
       plantel: '/api/plantel',
       tutor: '/api/tutor',
-      roles: '/api/roles'
+      roles: '/api/roles',
+      preguntasSeguridad: '/api/preguntas-seguridad'
     }
   });
 });
@@ -110,4 +113,5 @@ app.listen(PORT, () => {
   console.log('   - Plantel: /api/plantel');
   console.log('   - Tutores: /api/tutor');
   console.log('   - Roles: /api/roles');
+  console.log('   - Preguntas Seguridad: /api/preguntas-seguridad');
 });

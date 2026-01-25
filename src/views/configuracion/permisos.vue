@@ -36,11 +36,17 @@
             <span>{{ row.descripcion || 'Sin descripción' }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="usuarios_count" label="Usuarios" width="120" align="center">
+        <el-table-column prop="usuarios_count" label="Usuarios" width="180" align="center">
           <template slot-scope="{ row }">
-            <el-tag :type="row.usuarios_count > 0 ? 'primary' : 'info'">
-              {{ row.usuarios_count }} {{ row.usuarios_count === 1 ? 'usuario' : 'usuarios' }}
-            </el-tag>
+            <div class="usuarios-stats">
+              <el-tag :type="row.usuarios_count > 0 ? 'primary' : 'info'" size="small">
+                {{ row.usuarios_count }} Total
+              </el-tag>
+              <div v-if="row.usuarios_count > 0" class="usuarios-breakdown">
+                <span class="stat-activo"><i class="el-icon-check" /> {{ row.usuarios_activos || 0 }}</span>
+                <span class="stat-inactivo"><i class="el-icon-close" /> {{ row.usuarios_inactivos || 0 }}</span>
+              </div>
+            </div>
           </template>
         </el-table-column>
         <el-table-column prop="fecha_creacion" label="Fecha Creación" width="180" align="center">
@@ -412,5 +418,32 @@ export default {
 /* Info Section */
 .info-section {
   margin-top: 20px;
+}
+
+.usuarios-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.usuarios-breakdown {
+  display: flex;
+  gap: 10px;
+  font-size: 0.8rem;
+}
+
+.stat-activo {
+  color: #67C23A;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.stat-inactivo {
+  color: #909399;
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 </style>
