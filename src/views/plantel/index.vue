@@ -45,6 +45,15 @@
                     />
                   </el-select>
                 </div>
+                <div class="filter-item">
+                  <label>Ordenar por</label>
+                  <el-select v-model="filterSort" placeholder="Seleccionar" size="small" style="width: 100%" @change="fetchPlantel">
+                    <el-option label="Más Recientes" value="reciente" />
+                    <el-option label="Más Antiguos" value="antiguo" />
+                    <el-option label="Alfabético A-Z" value="az" />
+                    <el-option label="Alfabético Z-A" value="za" />
+                  </el-select>
+                </div>
               </div>
               <el-button slot="reference" type="text" icon="el-icon-s-operation" class="filter-btn" />
             </el-popover>
@@ -70,7 +79,7 @@
               </div>
               <div class="member-info">
                 <h3>{{ miembro.nombre }} {{ miembro.apellido }}</h3>
-                <p>{{ miembro.rol }}</p>
+                <p>{{ miembro.nombre_rol }}</p>
                 <p><i class="el-icon-phone-outline" /> {{ miembro.telefono || 'Sin teléfono' }}</p>
               </div>
             </div>
@@ -99,7 +108,7 @@
             </div>
             <div class="member-details-info">
               <h2>{{ currentMember.nombre }} {{ currentMember.apellido }}</h2>
-              <el-tag :type="getRolTagType(currentMember.rol)">{{ currentMember.rol }}</el-tag>
+              <el-tag :type="getRolTagType(currentMember.nombre_rol)">{{ currentMember.nombre_rol }}</el-tag>
               <p style="margin-top: 10px"><i class="el-icon-phone" /> {{ currentMember.telefono || 'No especificado' }}</p>
             </div>
             <div class="member-actions">
@@ -123,7 +132,24 @@
                 </div>
                 <div class="form-item">
                   <label>Rol</label>
-                  <p>{{ currentMember.rol }}</p>
+                  <p>{{ currentMember.nombre_rol }}</p>
+                </div>
+                <div class="form-item">
+                  <label>Cédula</label>
+                  <p>{{ currentMember.cedula || 'No especificada' }}</p>
+                </div>
+                <div class="form-item">
+                  <label>Fecha de Nacimiento</label>
+                  <p>
+                    {{ currentMember.fecha_nac ? new Date(currentMember.fecha_nac).toLocaleDateString() : 'No especificada' }}
+                    <span v-if="currentMember.fecha_nac" style="color: #64748b; font-size: 0.9em">
+                      ({{ calculateAge(currentMember.fecha_nac) }} años)
+                    </span>
+                  </p>
+                </div>
+                <div class="form-item">
+                  <label>Dirección</label>
+                  <p>{{ currentMember.dirreccion || 'No especificada' }}</p>
                 </div>
                 <div class="form-item">
                   <label>Teléfono</label>
@@ -153,12 +179,52 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="Nombre" prop="nombre">
-              <el-input v-model="formData.nombre" placeholder="Ingrese nombre" />
+              <el-input
+                v-model="formData.nombre"
+                placeholder="Ingrese nombre"
+                @input="v => formData.nombre = v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="Apellido" prop="apellido">
-              <el-input v-model="formData.apellido" placeholder="Ingrese apellido" />
+              <el-input
+                v-model="formData.apellido"
+                placeholder="Ingrese apellido"
+                @input="v => formData.apellido = v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="Cédula" prop="cedula">
+              <el-input
+                v-model="formData.cedula"
+                placeholder="Ingrese cédula"
+                maxlength="10"
+                @input="v => formData.cedula = v.replace(/[^0-9]/g, '')"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="Fecha de Nacimiento" prop="fecha_nac">
+              <el-date-picker
+                v-model="formData.fecha_nac"
+                type="date"
+                placeholder="Seleccione fecha"
+                style="width: 100%"
+                value-format="yyyy-MM-dd"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="Dirección" prop="dirreccion">
+              <el-input v-model="formData.dirreccion" placeholder="Ingrese dirección" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -202,6 +268,7 @@
 
 <script>
 import { getPlantel, createPlantel, updatePlantel, deletePlantel } from '@/api/plantel'
+import { getRoles } from '@/api/roles'
 
 export default {
   name: 'PlantelIndex',
@@ -211,6 +278,7 @@ export default {
       submitting: false,
       plantelList: [],
       filterRol: '',
+      filterSort: 'az',
       searchQuery: '',
       dialogVisible: false,
       isEdit: false,
@@ -222,7 +290,10 @@ export default {
         nombre: '',
         apellido: '',
         telefono: '',
-        rol: ''
+        rol: '',
+        cedula: '',
+        fecha_nac: '',
+        dirreccion: ''
       },
       formRules: {
         nombre: [
@@ -231,20 +302,19 @@ export default {
         apellido: [
           { required: true, message: 'El apellido es obligatorio', trigger: 'blur' }
         ],
+        cedula: [
+          { required: true, message: 'La cédula es obligatoria', trigger: 'blur' },
+          { min: 7, message: 'Mínimo 7 dígitos', trigger: 'blur' }
+        ],
         telefono: [
+          { required: true, message: 'El teléfono es obligatorio', trigger: 'blur' },
           { pattern: /^[0-9]*$/, message: 'Solo se permiten números', trigger: 'blur' }
         ],
         rol: [
           { required: true, message: 'Seleccione un rol', trigger: 'change' }
         ]
       },
-      rolesOptions: [
-        { value: 'ENTRENADOR', label: 'Entrenador' },
-        { value: 'ASISTENTE', label: 'Asistente / Auxiliar' },
-        { value: 'PREPARADOR_FISICO', label: 'Preparador Físico' },
-        { value: 'MEDICO', label: 'Médico' },
-        { value: 'ADMINISTRATIVO', label: 'Administrativo / Directivo' }
-      ]
+      rolesOptions: []
     }
   },
   computed: {
@@ -261,9 +331,21 @@ export default {
     }
   },
   created() {
+    this.loadRoles()
     this.fetchPlantel()
   },
   methods: {
+    async loadRoles() {
+      try {
+        const response = await getRoles()
+        this.rolesOptions = response.map(r => ({
+          value: r.rol_id,
+          label: r.nombre_rol
+        }))
+      } catch (error) {
+        console.error('Error cargando roles:', error)
+      }
+    },
     filterOnlyNumbers() {
       // Remover cualquier carácter que no sea número
       this.formData.telefono = this.formData.telefono.replace(/[^0-9]/g, '')
@@ -275,6 +357,7 @@ export default {
         if (this.filterRol) {
           params.rol = this.filterRol
         }
+        params.sort = this.filterSort
         const response = await getPlantel(params)
         this.plantelList = response.data || response || []
 
@@ -298,15 +381,25 @@ export default {
       this.currentMemberId = member.plantel_id
       this.currentMember = member
     },
-    getRolTagType(rol) {
-      const types = {
-        'ENTRENADOR': 'success',
-        'ASISTENTE': 'info',
-        'PREPARADOR_FISICO': '',
-        'MEDICO': 'warning',
-        'ADMINISTRATIVO': 'danger'
+    getRolTagType(rolName) {
+      if (!rolName) return ''
+      const name = rolName.toUpperCase()
+      if (name.includes('ENTRENADOR')) return 'success'
+      if (name.includes('ASISTENTE')) return 'info'
+      if (name.includes('MEDICO') || name.includes('MÉDICO')) return 'warning'
+      if (name.includes('ADMINISTRATIVO') || name.includes('DIRECTIVO')) return 'danger'
+      return ''
+    },
+    calculateAge(dateString) {
+      if (!dateString) return 0
+      const today = new Date()
+      const birthDate = new Date(dateString)
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const m = today.getMonth() - birthDate.getMonth()
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--
       }
-      return types[rol] || ''
+      return age
     },
     handleCreate() {
       this.isEdit = false
@@ -321,7 +414,10 @@ export default {
         nombre: row.nombre,
         apellido: row.apellido,
         telefono: row.telefono || '',
-        rol: row.rol
+        rol: row.rol_id, // Usar ID para el select
+        cedula: row.cedula ? String(row.cedula) : '',
+        fecha_nac: row.fecha_nac ? row.fecha_nac.split('T')[0] : '', // Formato YYYY-MM-DD
+        dirreccion: row.dirreccion || ''
       }
       this.dialogVisible = true
     },
@@ -382,7 +478,10 @@ export default {
         nombre: '',
         apellido: '',
         telefono: '',
-        rol: ''
+        rol: '',
+        cedula: '',
+        fecha_nac: '',
+        dirreccion: ''
       }
       if (this.$refs.plantelForm) {
         this.$refs.plantelForm.resetFields()

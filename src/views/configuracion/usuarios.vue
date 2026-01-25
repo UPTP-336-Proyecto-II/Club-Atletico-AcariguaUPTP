@@ -26,7 +26,7 @@
               trigger="click"
             >
               <div class="filter-popover">
-                <h4>Filtro por Estatus</h4>
+                <h4>Filtros Avanzados</h4>
                 <div class="filter-item">
                   <label style="display:block;margin-bottom:5px;font-size:0.85rem;color:#606266">Estatus</label>
                   <el-select v-model="filterEstatus" placeholder="Todos" clearable size="small" style="width: 100%">
@@ -62,7 +62,7 @@
           <div class="search-container">
             <el-input
               v-model="searchQuery"
-              placeholder="Buscar por email..."
+              placeholder="Buscar..."
               prefix-icon="el-icon-search"
               size="small"
               clearable
@@ -81,6 +81,9 @@
               </div>
               <div class="user-info">
                 <h3>{{ usuario.email }}</h3>
+                <p v-if="usuario.plantel_nombre" class="linked-member">
+                  <i class="el-icon-link" /> {{ usuario.plantel_nombre }} {{ usuario.plantel_apellido }}
+                </p>
                 <p>{{ usuario.nombre_rol || 'Sin rol' }}</p>
                 <el-tag :type="usuario.estatus === 'ACTIVO' ? 'success' : 'info'" size="mini">
                   {{ usuario.estatus }}
@@ -119,11 +122,11 @@
             </div>
             <div class="user-actions">
               <el-button
-                :type="currentUsuario.estatus === 'ACTIVO' ? 'warning' : 'success'"
-                :icon="currentUsuario.estatus === 'ACTIVO' ? 'el-icon-close' : 'el-icon-check'"
+                :type="currentUsuario.estatus === 'ACTIVO' || currentUsuario.estatus === 'Activo' ? 'warning' : 'success'"
+                :icon="currentUsuario.estatus === 'ACTIVO' || currentUsuario.estatus === 'Activo' ? 'el-icon-close' : 'el-icon-check'"
                 @click="toggleEstatus"
               >
-                {{ currentUsuario.estatus === 'ACTIVO' ? 'Desactivar' : 'Activar' }}
+                {{ currentUsuario.estatus === 'ACTIVO' || currentUsuario.estatus === 'Activo' ? 'Desactivar' : 'Activar' }}
               </el-button>
               <el-button type="primary" icon="el-icon-edit" @click="handleEdit">Editar</el-button>
               <el-button type="danger" icon="el-icon-delete" @click="handleDeleteUsuario">Eliminar</el-button>
@@ -139,6 +142,13 @@
             <div class="form-item">
               <label>Rol</label>
               <el-tag type="primary">{{ currentUsuario.nombre_rol || 'Sin rol' }}</el-tag>
+            </div>
+            <div class="form-item">
+              <label>Vinculado a</label>
+              <p v-if="currentUsuario.plantel_nombre">
+                <i class="el-icon-link" /> {{ currentUsuario.plantel_nombre }} {{ currentUsuario.plantel_apellido }}
+              </p>
+              <p v-else style="color: #909399; font-style: italic;">No vinculado</p>
             </div>
             <div class="form-item">
               <label>Descripción del Rol</label>
@@ -239,6 +249,24 @@
             />
           </el-select>
         </el-form-item>
+
+        <el-form-item label="Vincular con Miembro del Plantel (Opcional)">
+          <el-select
+            v-model="usuarioForm.plantel_id"
+            placeholder="Seleccionar miembro del plantel"
+            style="width: 100%"
+            filterable
+            clearable
+          >
+            <el-option
+              v-for="miembro in plantelList"
+              :key="miembro.plantel_id"
+              :label="`${miembro.nombre} ${miembro.apellido} (${miembro.nombre_rol})`"
+              :value="miembro.plantel_id"
+            />
+          </el-select>
+        </el-form-item>
+
         <el-form-item v-if="isEditing" label="Estatus">
           <el-select v-model="usuarioForm.estatus" placeholder="Seleccionar estatus" style="width: 100%">
             <el-option label="Activo" value="Activo" />
@@ -293,7 +321,9 @@
 
 <script>
 import { getUsuarios, getUsuarioById, createUsuario, updateUsuario, deleteUsuario } from '@/api/usuarios'
+
 import { getRoles } from '@/api/roles'
+import { getPlantel } from '@/api/plantel'
 import { getPreguntasDisponibles, guardarPreguntas, obtenerPreguntasRespuestasUsuario } from '@/api/preguntasSeguridad'
 
 export default {
@@ -311,6 +341,7 @@ export default {
     return {
       usuarios: [],
       roles: [],
+      plantelList: [],
       currentUsuarioId: null,
       currentUsuario: {},
       loading: false,
@@ -334,6 +365,7 @@ export default {
         password: '',
         rol: null,
         estatus: 'Activo',
+        plantel_id: null,
         pregunta_1: '',
         respuesta_1: '',
         pregunta_2: '',
@@ -439,8 +471,17 @@ export default {
       await Promise.all([
         this.loadUsuarios(),
         this.loadRoles(),
+        this.loadPlantel(),
         this.loadPreguntasDisponibles()
       ])
+    },
+    async loadPlantel() {
+      try {
+        const response = await getPlantel()
+        this.plantelList = response.data || response || []
+      } catch (error) {
+        console.error('Error cargando plantel:', error)
+      }
     },
     async loadPreguntasDisponibles() {
       try {
@@ -510,6 +551,7 @@ export default {
           password: '',
           rol: this.currentUsuario.rol,
           estatus: this.currentUsuario.estatus,
+          plantel_id: this.currentUsuario.plantel_id || null,
           // Inicializar preguntas vacías, se cargarán desde la API
           pregunta_1: '',
           respuesta_1: '',
@@ -532,8 +574,11 @@ export default {
       }
 
       this.showUsuarioModal = true
-      // Refrescar roles para asegurar que aparezcan los recién creados
-      await this.loadRoles()
+      // Refrescar roles y plantel para asegurar datos frescos
+      await Promise.all([
+        this.loadRoles(),
+        this.loadPlantel()
+      ])
     },
     handleEdit() {
       this.openUsuarioModal(true)
@@ -548,7 +593,8 @@ export default {
             const dataToUpdate = {
               email: this.usuarioForm.email,
               rol: this.usuarioForm.rol,
-              estatus: this.usuarioForm.estatus
+              estatus: this.usuarioForm.estatus,
+              plantel_id: this.usuarioForm.plantel_id
             }
             if (this.usuarioForm.password) {
               dataToUpdate.password = this.usuarioForm.password
@@ -573,7 +619,8 @@ export default {
             const createResponse = await createUsuario({
               email: this.usuarioForm.email,
               password: this.usuarioForm.password,
-              rol: this.usuarioForm.rol
+              rol: this.usuarioForm.rol,
+              plantel_id: this.usuarioForm.plantel_id
             })
 
             // Guardar preguntas de seguridad
@@ -618,7 +665,11 @@ export default {
         await updateUsuario(this.currentUsuarioId, { estatus: newEstatus })
         this.$message.success(`Usuario ${newEstatus === 'Activo' ? 'activado' : 'desactivado'} exitosamente`)
         await this.loadUsuarios()
-        await this.selectUsuario(this.currentUsuarioId)
+
+        // Solo intentar seleccionar si el usuario sigue visible en la lista
+        if (this.currentUsuarioId) {
+          await this.selectUsuario(this.currentUsuarioId)
+        }
       } catch (error) {
         if (error !== 'cancel') {
           console.error('Error cambiando estatus:', error)
@@ -658,6 +709,7 @@ export default {
         password: '',
         rol: null,
         estatus: 'Activo',
+        plantel_id: null,
         pregunta_1: '',
         respuesta_1: '',
         pregunta_2: '',
