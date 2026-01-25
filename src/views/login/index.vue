@@ -239,9 +239,7 @@ export default {
       this.$router.push('/')
     },
     forgotPassword() {
-      // Will implement later, currently just placeholder functionality or reuse contact modal
-      this.$message.info('Contacte a la directiva para recuperar su acceso')
-      this.showContactModal = true
+      this.$router.push('/recuperar-password')
     }
   }
 }
@@ -690,5 +688,60 @@ export default {
   .login-center-wrapper {
     padding: 1rem;
   }
+}
+
+/* Recovery Modal Styles */
+.recovery-step {
+  padding: 10px 0;
+}
+
+.step-description {
+  color: #64748b;
+  margin-bottom: 15px;
+  font-size: 0.95rem;
+}
+
+.question-block {
+  margin-bottom: 15px;
+}
+
+.question-block label {
+  display: block;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.recovery-error {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-top: 10px;
+  padding: 10px;
+  background: #fef2f2;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.success-step {
+  text-align: center;
+  padding: 30px 10px;
+}
+
+.success-icon {
+  font-size: 4rem;
+  color: #22c55e;
+  margin-bottom: 15px;
+}
+
+.success-step h3 {
+  color: #22c55e;
+  margin-bottom: 10px;
+}
+
+.success-step p {
+  color: #64748b;
 }
 </style>

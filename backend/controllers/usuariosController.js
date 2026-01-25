@@ -481,7 +481,7 @@ const uploadAvatar = (req, res) => {
 };
 
 
-// Eliminar usuario (soft delete - cambiar estatus a INACTIVO)
+// Eliminar usuario (HARD DELETE - Eliminar físicamente)
 const deleteUsuario = async (req, res) => {
   try {
     const { id } = req.params;
@@ -496,16 +496,24 @@ const deleteUsuario = async (req, res) => {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    // Soft delete - cambiar estatus a INACTIVO
+    // Hard delete - Eliminar de la base de datos
+    // Nota: Las restricciones de clave foránea (ON DELETE CASCADE) deberían encargarse de eliminar datos relacionados si están configuradas así en la DB.
+    // Si no, habría que eliminar datos relacionados manualmente antes.
     await pool.execute(
-      'UPDATE usuarios SET estatus = ?, token = NULL WHERE usuario_id = ?',
-      ['INACTIVO', id]
+      'DELETE FROM usuarios WHERE usuario_id = ?',
+      [id]
     );
 
-    res.json({ message: 'Usuario desactivado exitosamente' });
+    res.json({ message: 'Usuario eliminado físicamente exitosamente' });
 
   } catch (error) {
     console.error('Error eliminando usuario:', error);
+    // Verificar si es error de constraint
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+      return res.status(400).json({
+        error: 'No se puede eliminar el usuario porque tiene registros relacionados (historial, etc). Considere desactivarlo en su lugar.'
+      });
+    }
     res.status(500).json({ error: 'Error al eliminar usuario' });
   }
 };

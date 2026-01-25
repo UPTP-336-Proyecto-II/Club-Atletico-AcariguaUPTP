@@ -241,10 +241,45 @@
         </el-form-item>
         <el-form-item v-if="isEditing" label="Estatus">
           <el-select v-model="usuarioForm.estatus" placeholder="Seleccionar estatus" style="width: 100%">
-            <el-option label="ACTIVO" value="ACTIVO" />
-            <el-option label="INACTIVO" value="INACTIVO" />
+            <el-option label="Activo" value="Activo" />
+            <el-option label="Inactivo" value="Inactivo" />
           </el-select>
         </el-form-item>
+
+        <!-- Sección de Preguntas de Seguridad -->
+        <div class="security-questions-section">
+          <el-divider content-position="left"><i class="el-icon-lock" /> Preguntas de Seguridad</el-divider>
+
+          <el-form-item label="Pregunta 1" prop="pregunta_1">
+            <el-select v-model="usuarioForm.pregunta_1" placeholder="Selecciona una pregunta" style="width: 100%">
+              <el-option
+                v-for="pregunta in preguntasDisponibles"
+                :key="pregunta"
+                :label="pregunta"
+                :value="pregunta"
+                :disabled="pregunta === usuarioForm.pregunta_2"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="Respuesta 1" prop="respuesta_1">
+            <el-input v-model="usuarioForm.respuesta_1" placeholder="Tu respuesta" />
+          </el-form-item>
+
+          <el-form-item label="Pregunta 2" prop="pregunta_2">
+            <el-select v-model="usuarioForm.pregunta_2" placeholder="Selecciona una pregunta" style="width: 100%">
+              <el-option
+                v-for="pregunta in preguntasDisponibles"
+                :key="pregunta"
+                :label="pregunta"
+                :value="pregunta"
+                :disabled="pregunta === usuarioForm.pregunta_1"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="Respuesta 2" prop="respuesta_2">
+            <el-input v-model="usuarioForm.respuesta_2" placeholder="Tu respuesta" />
+          </el-form-item>
+        </div>
       </el-form>
       <span slot="footer">
         <el-button @click="showUsuarioModal = false">Cancelar</el-button>
@@ -259,6 +294,7 @@
 <script>
 import { getUsuarios, getUsuarioById, createUsuario, updateUsuario, deleteUsuario } from '@/api/usuarios'
 import { getRoles } from '@/api/roles'
+import { getPreguntasDisponibles, guardarPreguntas, obtenerPreguntasRespuestasUsuario } from '@/api/preguntasSeguridad'
 
 export default {
   name: 'UsuariosSistema',
@@ -279,7 +315,7 @@ export default {
       currentUsuario: {},
       loading: false,
       searchQuery: '',
-      filterEstatus: 'ACTIVO',
+      filterEstatus: 'Activo',
       filterRol: '',
       filterSort: 'reciente',
       showUsuarioModal: false,
@@ -292,11 +328,16 @@ export default {
         number: false,
         special: false
       },
+      preguntasDisponibles: [],
       usuarioForm: {
         email: '',
         password: '',
         rol: null,
-        estatus: 'ACTIVO'
+        estatus: 'Activo',
+        pregunta_1: '',
+        respuesta_1: '',
+        pregunta_2: '',
+        respuesta_2: ''
       },
       usuarioRules: {
         email: [
@@ -304,7 +345,11 @@ export default {
           { type: 'email', message: 'Ingrese un email válido', trigger: 'blur' }
         ],
         password: [{ required: true, trigger: 'blur', validator: validatePassword }],
-        rol: [{ required: true, message: 'El rol es requerido', trigger: 'change' }]
+        rol: [{ required: true, message: 'El rol es requerido', trigger: 'change' }],
+        pregunta_1: [{ required: true, message: 'Selecciona una pregunta', trigger: 'change' }],
+        respuesta_1: [{ required: true, message: 'Ingresa tu respuesta', trigger: 'blur' }],
+        pregunta_2: [{ required: true, message: 'Selecciona una pregunta', trigger: 'change' }],
+        respuesta_2: [{ required: true, message: 'Ingresa tu respuesta', trigger: 'blur' }]
       }
     }
   },
@@ -393,8 +438,19 @@ export default {
     async loadData() {
       await Promise.all([
         this.loadUsuarios(),
-        this.loadRoles()
+        this.loadRoles(),
+        this.loadPreguntasDisponibles()
       ])
+    },
+    async loadPreguntasDisponibles() {
+      try {
+        const response = await getPreguntasDisponibles()
+        // publicService devuelve la respuesta cruda de axios, así que accedemos a .data
+        const data = response.data || response
+        this.preguntasDisponibles = Array.isArray(data) ? data : []
+      } catch (error) {
+        console.error('Error cargando preguntas:', error)
+      }
     },
     async loadUsuarios() {
       try {
@@ -443,15 +499,36 @@ export default {
     },
     async openUsuarioModal(isEdit) {
       this.isEditing = isEdit
-      if (isEdit && this.currentUsuario) {
+      if (!isEdit) {
+        this.resetForm()
+      } else {
+        if (!this.currentUsuarioId) return
+
+        // Cargar datos básicos del usuario
         this.usuarioForm = {
           email: this.currentUsuario.email,
           password: '',
           rol: this.currentUsuario.rol,
-          estatus: this.currentUsuario.estatus
+          estatus: this.currentUsuario.estatus,
+          // Inicializar preguntas vacías, se cargarán desde la API
+          pregunta_1: '',
+          respuesta_1: '',
+          pregunta_2: '',
+          respuesta_2: ''
         }
-      } else {
-        this.resetForm()
+
+        // Cargar preguntas de seguridad del usuario
+        try {
+          const res = await obtenerPreguntasRespuestasUsuario(this.currentUsuarioId)
+          if (res && res.tiene_preguntas) {
+            this.usuarioForm.pregunta_1 = res.pregunta_1
+            this.usuarioForm.respuesta_1 = res.respuesta_1
+            this.usuarioForm.pregunta_2 = res.pregunta_2
+            this.usuarioForm.respuesta_2 = res.respuesta_2
+          }
+        } catch (error) {
+          console.error('Error al cargar preguntas:', error)
+        }
       }
 
       this.showUsuarioModal = true
@@ -477,9 +554,40 @@ export default {
               dataToUpdate.password = this.usuarioForm.password
             }
             await updateUsuario(this.currentUsuarioId, dataToUpdate)
+
+            // Actualizar preguntas de seguridad si se llenaron
+            if (this.usuarioForm.pregunta_1 && this.usuarioForm.respuesta_1 &&
+                this.usuarioForm.pregunta_2 && this.usuarioForm.respuesta_2) {
+              await guardarPreguntas({
+                usuario_id: this.currentUsuarioId,
+                pregunta_1: this.usuarioForm.pregunta_1,
+                respuesta_1: this.usuarioForm.respuesta_1,
+                pregunta_2: this.usuarioForm.pregunta_2,
+                respuesta_2: this.usuarioForm.respuesta_2
+              })
+            }
+
             this.$message.success('Usuario actualizado exitosamente')
           } else {
-            await createUsuario(this.usuarioForm)
+            // Crear usuario
+            const createResponse = await createUsuario({
+              email: this.usuarioForm.email,
+              password: this.usuarioForm.password,
+              rol: this.usuarioForm.rol
+            })
+
+            // Guardar preguntas de seguridad
+            const nuevoUsuarioId = createResponse.usuario_id
+            if (nuevoUsuarioId) {
+              await guardarPreguntas({
+                usuario_id: nuevoUsuarioId,
+                pregunta_1: this.usuarioForm.pregunta_1,
+                respuesta_1: this.usuarioForm.respuesta_1,
+                pregunta_2: this.usuarioForm.pregunta_2,
+                respuesta_2: this.usuarioForm.respuesta_2
+              })
+            }
+
             this.$message.success('Usuario creado exitosamente')
           }
 
@@ -497,8 +605,8 @@ export default {
       })
     },
     async toggleEstatus() {
-      const newEstatus = this.currentUsuario.estatus === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO'
-      const action = newEstatus === 'ACTIVO' ? 'activar' : 'desactivar'
+      const newEstatus = this.currentUsuario.estatus === 'Activo' ? 'Inactivo' : 'Activo'
+      const action = newEstatus === 'Activo' ? 'activar' : 'desactivar'
 
       try {
         await this.$confirm(`¿Está seguro de ${action} este usuario?`, 'Confirmar', {
@@ -508,7 +616,7 @@ export default {
         })
 
         await updateUsuario(this.currentUsuarioId, { estatus: newEstatus })
-        this.$message.success(`Usuario ${newEstatus === 'ACTIVO' ? 'activado' : 'desactivado'} exitosamente`)
+        this.$message.success(`Usuario ${newEstatus === 'Activo' ? 'activado' : 'desactivado'} exitosamente`)
         await this.loadUsuarios()
         await this.selectUsuario(this.currentUsuarioId)
       } catch (error) {
@@ -549,8 +657,20 @@ export default {
         email: '',
         password: '',
         rol: null,
-        estatus: 'ACTIVO'
+        estatus: 'Activo',
+        pregunta_1: '',
+        respuesta_1: '',
+        pregunta_2: '',
+        respuesta_2: ''
       }
+      this.passwordChecks = {
+        length: false,
+        uppercase: false,
+        lowercase: false,
+        number: false,
+        special: false
+      }
+      this.emailSuggestion = ''
     },
     formatDate(dateString) {
       if (!dateString) return 'Nunca'
@@ -932,5 +1052,29 @@ aside.sidebar {
 
 .email-suggestion strong:hover {
   color: #1e40af;
+}
+
+/* Security Questions Section */
+.security-questions-section {
+  margin-top: 10px;
+}
+
+.security-questions-section .el-divider {
+  margin: 15px 0;
+}
+
+.security-questions-section .el-divider__text {
+  color: #E51D22;
+  font-weight: 600;
+}
+
+.security-hint {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0 0 15px 0;
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 6px;
+  border-left: 3px solid #E51D22;
 }
 </style>

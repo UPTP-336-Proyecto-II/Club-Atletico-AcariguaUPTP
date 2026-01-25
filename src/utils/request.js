@@ -59,9 +59,22 @@ service.interceptors.response.use(
     }
   },
   error => {
-    console.log('err' + error)
+    console.log('err' + error) // for debug
+    let message = error.message
+
+    // Personalizar mensaje para error 401 (No autorizado)
+    if (error.response && error.response.status === 401) {
+      if (error.response.data && error.response.data.error) {
+        message = error.response.data.error
+      } else {
+        message = 'Usuario o contraseña incorrectos'
+      }
+    } else if (error.response && error.response.data && error.response.data.error) {
+      message = error.response.data.error
+    }
+
     Message({
-      message: error.message,
+      message: message,
       type: 'error',
       duration: 5 * 1000
     })
@@ -69,4 +82,11 @@ service.interceptors.response.use(
   }
 )
 
+// Instancia pública (sin token) para endpoints de recuperación de contraseña
+const publicService = axios.create({
+  baseURL: 'http://localhost:3000/api',
+  timeout: 5000
+})
+
 export default service
+export { publicService }
