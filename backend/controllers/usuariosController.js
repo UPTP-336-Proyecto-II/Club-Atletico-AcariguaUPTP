@@ -34,16 +34,18 @@ const upload = multer({
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../middleware/auth');
 
-// Obtener todos los usuarios con información del rol
+// Obtener todos los usuarios con información del rol y plantel
 const getUsuarios = async (req, res) => {
   try {
-    const { estatus, rol } = req.query;
+    const { estatus, rol, sort, search } = req.query;
 
     let query = `
-      SELECT u.usuario_id, u.email, u.rol, u.estatus, u.ultimo_acceso, u.created_at,
-             r.nombre_rol, r.descripcion as rol_descripcion
+      SELECT u.usuario_id, u.email, u.rol, u.estatus, u.ultimo_acceso, u.created_at, u.plantel_id,
+             r.nombre_rol, r.descripcion as rol_descripcion,
+             p.nombre as plantel_nombre, p.apellido as plantel_apellido
       FROM usuarios u
       LEFT JOIN rol_usuarios r ON u.rol = r.rol_id
+      LEFT JOIN plantel p ON u.plantel_id = p.plantel_id
     `;
 
     const conditions = [];
@@ -59,12 +61,22 @@ const getUsuarios = async (req, res) => {
       params.push(rol);
     }
 
+    if (search) {
+      const searchTerm = `%${search}%`;
+      conditions.push(`(
+        LOWER(u.email) LIKE LOWER(?) OR 
+        LOWER(p.nombre) LIKE LOWER(?) OR 
+        LOWER(p.apellido) LIKE LOWER(?) OR 
+        LOWER(CONCAT_WS(' ', p.nombre, p.apellido)) LIKE LOWER(?)
+      )`);
+      params.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+
     if (conditions.length > 0) {
       query += ' WHERE ' + conditions.join(' AND ');
     }
 
     // Ordenamiento
-    const { sort } = req.query;
     let orderBy = 'u.created_at DESC'; // Default: Más recientes
 
     switch (sort) {
@@ -96,10 +108,12 @@ const getUsuarioById = async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await pool.execute(
-      `SELECT u.usuario_id, u.email, u.rol, u.estatus, u.ultimo_acceso, u.created_at,
-              r.nombre_rol, r.descripcion as rol_descripcion
+      `SELECT u.usuario_id, u.email, u.rol, u.estatus, u.ultimo_acceso, u.created_at, u.plantel_id,
+              r.nombre_rol, r.descripcion as rol_descripcion,
+              p.nombre as plantel_nombre, p.apellido as plantel_apellido
        FROM usuarios u
        LEFT JOIN rol_usuarios r ON u.rol = r.rol_id
+       LEFT JOIN plantel p ON u.plantel_id = p.plantel_id
        WHERE u.usuario_id = ?`,
       [id]
     );
@@ -311,7 +325,7 @@ const createUsuario = async (req, res) => {
 const updateUsuario = async (req, res) => {
   try {
     const { id } = req.params;
-    const { email, password, rol, estatus } = req.body;
+    const { email, password, rol, estatus, plantel_id } = req.body;
 
     // Verificar que existe
     const [existing] = await pool.execute(
@@ -364,6 +378,10 @@ const updateUsuario = async (req, res) => {
     if (estatus) {
       updates.push('estatus = ?');
       params.push(estatus);
+    }
+    if (plantel_id !== undefined) { // Permitir null para desvincular
+      updates.push('plantel_id = ?');
+      params.push(plantel_id);
     }
 
     if (updates.length === 0) {

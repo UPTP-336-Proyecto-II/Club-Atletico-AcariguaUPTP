@@ -3,17 +3,39 @@ const pool = require('../config/database');
 // Obtener todo el plantel
 const getPlantel = async (req, res) => {
     try {
-        const { rol } = req.query;
+        const { rol, sort } = req.query;
 
-        let query = 'SELECT * FROM plantel WHERE 1=1';
+        let query = `
+            SELECT p.*, r.nombre_rol 
+            FROM plantel p
+            LEFT JOIN rol_usuarios r ON p.rol_id = r.rol_id
+            WHERE 1=1`;
         const params = [];
 
         if (rol) {
-            query += ' AND rol = ?';
+            query += ' AND p.rol_id = ?';
             params.push(rol);
         }
 
-        query += ' ORDER BY rol ASC, nombre ASC';
+        // Ordenamiento
+        let orderBy = 'p.rol_id ASC, p.nombre ASC'; // Default
+
+        switch (sort) {
+            case 'reciente':
+                orderBy = 'p.created_at DESC';
+                break;
+            case 'antiguo':
+                orderBy = 'p.created_at ASC';
+                break;
+            case 'az':
+                orderBy = 'p.nombre ASC';
+                break;
+            case 'za':
+                orderBy = 'p.nombre DESC';
+                break;
+        }
+
+        query += ` ORDER BY ${orderBy}`;
 
         const [rows] = await pool.execute(query, params);
         res.json(rows);
@@ -50,7 +72,7 @@ const getPlantelByRol = async (req, res) => {
         const { rol } = req.params;
 
         const [rows] = await pool.execute(
-            'SELECT * FROM plantel WHERE rol = ? ORDER BY nombre ASC',
+            'SELECT * FROM plantel WHERE rol_id = ? ORDER BY nombre ASC',
             [rol]
         );
 
@@ -64,12 +86,12 @@ const getPlantelByRol = async (req, res) => {
 // Crear miembro del plantel
 const createMiembroPlantel = async (req, res) => {
     try {
-        const { nombre, apellido, telefono, rol } = req.body;
+        const { nombre, apellido, telefono, rol, cedula, fecha_nac, dirreccion } = req.body;
 
         const [result] = await pool.execute(
-            `INSERT INTO plantel (nombre, apellido, telefono, rol) 
-       VALUES (?, ?, ?, ?)`,
-            [nombre, apellido, telefono, rol]
+            `INSERT INTO plantel (nombre, apellido, telefono, rol_id, cedula, fecha_nac, dirreccion) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [nombre, apellido, telefono, rol, cedula || null, fecha_nac || null, dirreccion || null]
         );
 
         res.status(201).json({
@@ -87,13 +109,13 @@ const createMiembroPlantel = async (req, res) => {
 const updateMiembroPlantel = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre, apellido, telefono, rol } = req.body;
+        const { nombre, apellido, telefono, rol, cedula, fecha_nac, dirreccion } = req.body;
 
         const [result] = await pool.execute(
             `UPDATE plantel 
-       SET nombre = ?, apellido = ?, telefono = ?, rol = ?
+       SET nombre = ?, apellido = ?, telefono = ?, rol_id = ?, cedula = ?, fecha_nac = ?, dirreccion = ?
        WHERE plantel_id = ?`,
-            [nombre, apellido, telefono, rol, id]
+            [nombre, apellido, telefono, rol, cedula || null, fecha_nac || null, dirreccion || null, id]
         );
 
         if (result.affectedRows === 0) {
