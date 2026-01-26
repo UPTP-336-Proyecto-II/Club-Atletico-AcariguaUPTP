@@ -31,6 +31,7 @@ const plantelRoutes = require('./routes/plantel');
 const tutorRoutes = require('./routes/tutor');
 const rolesRoutes = require('./routes/roles');
 const preguntasSeguridadRoutes = require('./routes/preguntasSeguridad');
+const posicionesRoutes = require('./routes/posiciones');
 
 // Usar rutas existentes
 app.use('/api/usuarios', usuariosRoutes);
@@ -49,6 +50,7 @@ app.use('/api/plantel', plantelRoutes);
 app.use('/api/tutor', tutorRoutes);
 app.use('/api/roles', rolesRoutes);
 app.use('/api/preguntas-seguridad', preguntasSeguridadRoutes);
+app.use('/api/posiciones', posicionesRoutes);
 
 // Ruta de prueba
 app.get('/api', (req, res) => {

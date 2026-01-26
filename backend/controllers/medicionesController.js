@@ -10,7 +10,8 @@ const getMediciones = async (req, res) => {
              atl.nombre as atleta_nombre, 
              atl.apellido as atleta_apellido,
              c.nombre_categoria as categoria_nombre,
-             TIMESTAMPDIFF(YEAR, atl.fecha_nacimiento, CURDATE()) as edad
+             TIMESTAMPDIFF(YEAR, atl.fecha_nacimiento, CURDATE()) as edad,
+             (m.peso / ((m.altura / 100) * (m.altura / 100))) as indice_de_masa
       FROM medidas_antropometricas m
       LEFT JOIN atletas atl ON m.atleta_id = atl.atleta_id
       LEFT JOIN categoria c ON atl.categoria_id = c.categoria_id
@@ -40,7 +41,8 @@ const getMedicionesByAtleta = async (req, res) => {
 
     const [rows] = await pool.execute(
       `SELECT m.*, 
-              TIMESTAMPDIFF(YEAR, atl.fecha_nacimiento, CURDATE()) as edad
+              TIMESTAMPDIFF(YEAR, atl.fecha_nacimiento, CURDATE()) as edad,
+              (m.peso / ((m.altura / 100) * (m.altura / 100))) as indice_de_masa
        FROM medidas_antropometricas m
        LEFT JOIN atletas atl ON m.atleta_id = atl.atleta_id
        WHERE m.atleta_id = ? AND atl.estatus IN ('ACTIVO', 'LESIONADO')
@@ -63,30 +65,25 @@ const createMedicion = async (req, res) => {
       fecha_medicion,
       peso,
       altura,
-      indice_de_masa,
+      porcentaje_grasa,
+      porcentaje_musculatura,
       envergadura,
       largo_de_pierna,
       largo_de_torso
     } = req.body;
 
-    // Calcular IMC si no se proporciona
-    let calculatedIMC = indice_de_masa;
-    if (!indice_de_masa && peso && altura) {
-      const alturaMetros = altura / 100;
-      calculatedIMC = (peso / (alturaMetros * alturaMetros)).toFixed(2);
-    }
+
 
     const [result] = await pool.execute(
       `INSERT INTO medidas_antropometricas 
-       (atleta_id, fecha_medicion, peso, altura, indice_de_masa, envergadura, largo_de_pierna, largo_de_torso) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [atleta_id, fecha_medicion, peso, altura, calculatedIMC, envergadura, largo_de_pierna, largo_de_torso]
+       (atleta_id, fecha_medicion, peso, altura, envergadura, largo_de_pierna, largo_de_torso, porcentaje_grasa, porcentaje_musculatura) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [atleta_id, fecha_medicion, peso, altura, envergadura, largo_de_pierna, largo_de_torso, porcentaje_grasa || null, porcentaje_musculatura || null]
     );
 
     res.status(201).json({
       message: 'Medición registrada exitosamente',
-      id: result.insertId,
-      imc_calculado: calculatedIMC
+      id: result.insertId
     });
 
   } catch (error) {
@@ -101,7 +98,8 @@ const getUltimaMedicion = async (req, res) => {
     const { atleta_id } = req.params;
 
     const [rows] = await pool.execute(
-      `SELECT m.*
+      `SELECT m.*,
+              (m.peso / ((m.altura / 100) * (m.altura / 100))) as indice_de_masa
        FROM medidas_antropometricas m
        WHERE m.atleta_id = ?
        ORDER BY m.fecha_medicion DESC, m.medidas_id DESC
@@ -126,7 +124,7 @@ const getEvolucionPeso = async (req, res) => {
     const { atleta_id } = req.params;
 
     const [rows] = await pool.execute(
-      `SELECT fecha_medicion, peso, indice_de_masa
+      `SELECT fecha_medicion, peso, (peso / ((altura / 100) * (altura / 100))) as indice_de_masa
        FROM medidas_antropometricas 
        WHERE atleta_id = ? AND peso IS NOT NULL
        ORDER BY fecha_medicion ASC`,
