@@ -222,9 +222,39 @@
         </el-row>
 
         <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="País">
+              <el-select v-model="formData.direccion.pais" placeholder="Seleccionar" style="width: 100%">
+                <el-option label="Venezuela" value="Venezuela" />
+                <el-option label="Colombia" value="Colombia" />
+                <el-option label="Otro" value="Otro" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="Estado">
+              <el-input v-model="formData.direccion.estado" placeholder="Estado" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="Municipio">
+              <el-input v-model="formData.direccion.municipio" placeholder="Municipio" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="Parroquia">
+              <el-input v-model="formData.direccion.parroquia" placeholder="Parroquia" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
           <el-col :span="24">
-            <el-form-item label="Dirección" prop="dirreccion">
-              <el-input v-model="formData.dirreccion" placeholder="Ingrese dirección" />
+            <el-form-item label="Descripción de la Dirección">
+              <el-input v-model="formData.direccion.descripcion_descriptiva" placeholder="Calle, casa, edificio, referencias..." type="textarea" :rows="2" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -293,7 +323,13 @@ export default {
         rol: '',
         cedula: '',
         fecha_nac: '',
-        dirreccion: ''
+        direccion: {
+          pais: 'Venezuela',
+          estado: '',
+          municipio: '',
+          parroquia: '',
+          descripcion_descriptiva: ''
+        }
       },
       formRules: {
         nombre: [
@@ -417,7 +453,13 @@ export default {
         rol: row.rol_id, // Usar ID para el select
         cedula: row.cedula ? String(row.cedula) : '',
         fecha_nac: row.fecha_nac ? row.fecha_nac.split('T')[0] : '', // Formato YYYY-MM-DD
-        dirreccion: row.dirreccion || ''
+        direccion: {
+          pais: row.pais || 'Venezuela',
+          estado: row.estado || '',
+          municipio: row.municipio || '',
+          parroquia: row.parroquia || '',
+          descripcion_descriptiva: row.descripcion_descriptiva || ''
+        }
       }
       this.dialogVisible = true
     },
@@ -481,7 +523,13 @@ export default {
         rol: '',
         cedula: '',
         fecha_nac: '',
-        dirreccion: ''
+        direccion: {
+          pais: 'Venezuela',
+          estado: '',
+          municipio: '',
+          parroquia: '',
+          descripcion_descriptiva: ''
+        }
       }
       if (this.$refs.plantelForm) {
         this.$refs.plantelForm.resetFields()

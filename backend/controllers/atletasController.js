@@ -2,15 +2,19 @@ const pool = require('../config/database');
 
 const getAtletas = async (req, res) => {
   try {
-    const { search, categoria_id, estatus } = req.query;
+    const { search, categoria_id, estatus, order } = req.query;
 
     let query = `SELECT a.*, 
                 TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad,
                 c.nombre_categoria as categoria_nombre,
-                t.nombre_completo as tutor_nombre
+                t.nombre_completo as tutor_nombre,
+                d.pais, d.estado, d.municipio, d.parroquia, d.descripcion_descriptiva,
+                p.nombre_posicion as posicion_de_juego_nombre
          FROM atletas a 
          LEFT JOIN categoria c ON a.categoria_id = c.categoria_id
          LEFT JOIN tutor t ON a.tutor_id = t.tutor_id
+         LEFT JOIN direcciones d ON a.direccion_id = d.direccion_id
+         LEFT JOIN \`posicion de juego\` p ON a.posicion_de_juego = p.posicion_id
          WHERE 1=1`;
 
     const params = [];
@@ -30,10 +34,23 @@ const getAtletas = async (req, res) => {
       params.push(estatus);
     } else if (!estatus) {
       // Por defecto ocultamos inactivos si no se especifica filtro de estatus
-      query += " AND a.estatus IN ('ACTIVO', 'LESIONADO')";
+      query += " AND a.estatus IN ('ACTIVO', 'LESIONADO', 'Activo', 'Lesionado')";
     }
 
-    query += ' ORDER BY a.created_at DESC';
+    // Ordenamiento
+    switch (order) {
+      case 'oldest':
+        query += ' ORDER BY a.created_at ASC';
+        break;
+      case 'name_asc':
+        query += ' ORDER BY a.nombre ASC, a.apellido ASC';
+        break;
+      case 'name_desc':
+        query += ' ORDER BY a.nombre DESC, a.apellido DESC';
+        break;
+      default: // recent
+        query += ' ORDER BY a.created_at DESC';
+    }
 
     const [rows] = await pool.execute(query, params);
     res.json(rows);
@@ -51,10 +68,14 @@ const getAtletaById = async (req, res) => {
               TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad,
               c.nombre_categoria as categoria_nombre,
               t.nombre_completo as tutor_nombre,
-              t.telefono as tutor_telefono
+              t.telefono as tutor_telefono,
+              d.pais, d.estado, d.municipio, d.parroquia, d.descripcion_descriptiva,
+              p.nombre_posicion as posicion_de_juego_nombre
        FROM atletas a 
        LEFT JOIN categoria c ON a.categoria_id = c.categoria_id
        LEFT JOIN tutor t ON a.tutor_id = t.tutor_id
+       LEFT JOIN direcciones d ON a.direccion_id = d.direccion_id
+       LEFT JOIN \`posicion de juego\` p ON a.posicion_de_juego = p.posicion_id
        WHERE a.atleta_id = ?`,
       [id]
     );
@@ -76,7 +97,7 @@ const createAtleta = async (req, res) => {
       nombre,
       apellido,
       telefono,
-      direccion, // Ahora es un objeto { pais, estado, municipio, localidad }
+      direccion, // Objeto { pais, estado, municipio, parroquia, descripcion_descriptiva }
       fecha_nacimiento,
       posicion_de_juego,
       pierna_dominante,
@@ -88,19 +109,19 @@ const createAtleta = async (req, res) => {
 
     let direccion_id = null;
 
-    if (direccion && (direccion.pais || direccion.estado || direccion.municipio || direccion.localidad)) {
+    if (direccion && (direccion.pais || direccion.estado || direccion.municipio || direccion.parroquia || direccion.descripcion_descriptiva)) {
       const [dirResult] = await pool.execute(
-        `INSERT INTO direcciones (pais, estado, municipio, localidad) VALUES (?, ?, ?, ?)`,
-        [direccion.pais || '', direccion.estado || '', direccion.municipio || '', direccion.localidad || '']
+        `INSERT INTO direcciones (pais, estado, municipio, parroquia, descripcion_descriptiva) VALUES (?, ?, ?, ?, ?)`,
+        [direccion.pais || 'Venezuela', direccion.estado || '', direccion.municipio || '', direccion.parroquia || '', direccion.descripcion_descriptiva || '']
       );
       direccion_id = dirResult.insertId;
     }
 
     const [result] = await pool.execute(
       `INSERT INTO atletas 
-       (nombre, apellido, telefono, direccion_id, fecha_nacimiento, posicion_de_juego, pierna_dominante, categoria_id, tutor_id, estatus, foto) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [nombre, apellido, telefono, direccion_id, fecha_nacimiento, posicion_de_juego, pierna_dominante || 'Derecha', categoria_id, tutor_id, estatus || 'ACTIVO', foto]
+       (nombre, apellido, cedula, telefono, direccion_id, fecha_nacimiento, posicion_de_juego, pierna_dominante, categoria_id, tutor_id, estatus, foto) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nombre, apellido, cedula || null, telefono, direccion_id, fecha_nacimiento, posicion_de_juego, pierna_dominante || 'Derecha', categoria_id, tutor_id, estatus || 'ACTIVO', foto]
     );
 
     res.status(201).json({
@@ -121,14 +142,15 @@ const updateAtleta = async (req, res) => {
       nombre,
       apellido,
       telefono,
-      direccion, // Objeto { pais, estado, municipio, localidad }
+      direccion, // Objeto { pais, estado, municipio, parroquia, descripcion_descriptiva }
       fecha_nacimiento,
       posicion_de_juego,
       pierna_dominante,
       categoria_id,
       tutor_id,
       estatus,
-      foto
+      foto,
+      cedula
     } = req.body;
 
     // 1. Obtener el direccion_id actual del atleta
@@ -144,15 +166,15 @@ const updateAtleta = async (req, res) => {
       if (currentDireccionId) {
         // Actualizar existente
         await pool.execute(
-          `UPDATE direcciones SET pais = ?, estado = ?, municipio = ?, localidad = ? WHERE direccion_id = ?`,
-          [direccion.pais || '', direccion.estado || '', direccion.municipio || '', direccion.localidad || '', currentDireccionId]
+          `UPDATE direcciones SET pais = ?, estado = ?, municipio = ?, parroquia = ?, descripcion_descriptiva = ? WHERE direccion_id = ?`,
+          [direccion.pais || 'Venezuela', direccion.estado || '', direccion.municipio || '', direccion.parroquia || '', direccion.descripcion_descriptiva || '', currentDireccionId]
         );
       } else {
         // Crear nueva si no tenía
-        if (direccion.pais || direccion.estado || direccion.municipio || direccion.localidad) {
+        if (direccion.pais || direccion.estado || direccion.municipio || direccion.parroquia || direccion.descripcion_descriptiva) {
           const [dirResult] = await pool.execute(
-            `INSERT INTO direcciones (pais, estado, municipio, localidad) VALUES (?, ?, ?, ?)`,
-            [direccion.pais || '', direccion.estado || '', direccion.municipio || '', direccion.localidad || '']
+            `INSERT INTO direcciones (pais, estado, municipio, parroquia, descripcion_descriptiva) VALUES (?, ?, ?, ?, ?)`,
+            [direccion.pais || 'Venezuela', direccion.estado || '', direccion.municipio || '', direccion.parroquia || '', direccion.descripcion_descriptiva || '']
           );
           currentDireccionId = dirResult.insertId;
         }
@@ -162,10 +184,10 @@ const updateAtleta = async (req, res) => {
     // 3. Actualizar atleta con el (posiblemente nuevo) direccion_id
     await pool.execute(
       `UPDATE atletas 
-       SET nombre = ?, apellido = ?, telefono = ?, direccion_id = ?, fecha_nacimiento = ?, 
+       SET nombre = ?, apellido = ?, cedula = ?, telefono = ?, direccion_id = ?, fecha_nacimiento = ?, 
            posicion_de_juego = ?, pierna_dominante = ?, categoria_id = ?, tutor_id = ?, estatus = ?, foto = ?
        WHERE atleta_id = ?`,
-      [nombre, apellido, telefono, currentDireccionId, fecha_nacimiento, posicion_de_juego, pierna_dominante, categoria_id, tutor_id, estatus, foto, id]
+      [nombre, apellido, cedula || null, telefono, currentDireccionId, fecha_nacimiento, posicion_de_juego, pierna_dominante, categoria_id, tutor_id, estatus, foto, id]
     );
 
     res.json({ message: 'Atleta actualizado exitosamente' });

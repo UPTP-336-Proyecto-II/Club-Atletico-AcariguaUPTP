@@ -36,6 +36,15 @@
               <div class="filter-popover">
                 <h4>Filtros Avanzados</h4>
                 <div class="filter-item">
+                  <label>Ordenar por</label>
+                  <el-select v-model="filterOrder" placeholder="Seleccionar" size="small" style="width: 100%">
+                    <el-option label="Más Recientes" value="recent" />
+                    <el-option label="Más Antiguos" value="oldest" />
+                    <el-option label="Nombre (A-Z)" value="name_asc" />
+                    <el-option label="Nombre (Z-A)" value="name_desc" />
+                  </el-select>
+                </div>
+                <div class="filter-item">
                   <label>Categoría</label>
                   <el-select v-model="filterCategoria" placeholder="Todas" clearable size="small" style="width: 100%">
                     <el-option
@@ -84,7 +93,7 @@
               </div>
               <div class="athlete-info">
                 <h3>{{ atleta.nombre }} {{ atleta.apellido }}</h3>
-                <p>{{ atleta.posicion_de_juego || 'Sin posición' }}</p>
+                <p>{{ formatEnum(atleta.posicion_de_juego_nombre) || 'Sin posición' }}</p>
                 <p>{{ atleta.categoria_nombre || 'Sin categoría' }}</p>
               </div>
             </div>
@@ -148,7 +157,7 @@
                 </div>
                 <div class="form-item">
                   <label>Posición de Juego</label>
-                  <p>{{ currentAtleta.posicion_de_juego || 'No especificada' }}</p>
+                  <p>{{ formatEnum(currentAtleta.posicion_de_juego_nombre) || 'No especificada' }}</p>
                 </div>
                 <div class="form-item">
                   <label>Categoría</label>
@@ -170,13 +179,18 @@
                   <label>Pierna Dominante</label>
                   <p>{{ currentAtleta.pierna_dominante || 'Derecha' }}</p>
                 </div>
+                <div class="form-item">
+                  <label>Cédula</label>
+                  <p>{{ currentAtleta.cedula || 'No registrada' }}</p>
+                </div>
                 <div class="form-item full-width">
                   <label>Dirección</label>
                   <p>
-                    {{ currentAtleta.localidad || '' }}
-                    {{ currentAtleta.municipio ? ', ' + currentAtleta.municipio : '' }}
+                    {{ currentAtleta.pais ? formatEnum(currentAtleta.pais) : '' }}
                     {{ currentAtleta.estado ? ', ' + formatEnum(currentAtleta.estado) : '' }}
-                    {{ currentAtleta.pais ? ', ' + formatEnum(currentAtleta.pais) : '' }}
+                    {{ currentAtleta.municipio ? ', ' + currentAtleta.municipio : '' }}
+                    {{ currentAtleta.parroquia ? ', ' + currentAtleta.parroquia : '' }}
+                    {{ currentAtleta.descripcion_descriptiva ? '. ' + currentAtleta.descripcion_descriptiva : '' }}
                   </p>
                 </div>
               </div>
@@ -227,6 +241,14 @@
                 <div class="form-item">
                   <label>Índice de Masa Corporal</label>
                   <p>{{ medidas[0].indice_de_masa || '-' }}</p>
+                </div>
+                <div class="form-item">
+                  <label>Porcentaje de Grasa</label>
+                  <p>{{ medidas[0].porcentaje_grasa || '-' }} %</p>
+                </div>
+                <div class="form-item">
+                  <label>Porcentaje de Musculatura</label>
+                  <p>{{ medidas[0].porcentaje_musculatura || '-' }} %</p>
                 </div>
                 <div class="form-item">
                   <label>Envergadura (cm)</label>
@@ -296,6 +318,11 @@
                   <label>Nombre Completo</label>
                   <p>{{ tutor.nombre_completo }}</p>
                 </div>
+
+                <div class="form-item">
+                  <label>Cédula</label>
+                  <p>{{ tutor.cedula || 'No registrada' }}</p>
+                </div>
                 <div class="form-item">
                   <label>Tipo de Relación</label>
                   <el-tag>{{ tutor.tipo_relacion }}</el-tag>
@@ -310,7 +337,13 @@
                 </div>
                 <div class="form-item full-width">
                   <label>Dirección</label>
-                  <p>{{ tutor.direccion || 'No especificada' }}</p>
+                  <p>
+                    {{ tutor.pais ? formatEnum(tutor.pais) : '' }}
+                    {{ tutor.estado ? ', ' + formatEnum(tutor.estado) : '' }}
+                    {{ tutor.municipio ? ', ' + tutor.municipio : '' }}
+                    {{ tutor.parroquia ? ', ' + tutor.parroquia : '' }}
+                    {{ tutor.descripcion_descriptiva ? '. ' + tutor.descripcion_descriptiva : '' }}
+                  </p>
                 </div>
               </div>
               <div v-else class="empty-tab">
@@ -341,7 +374,12 @@
             :before-upload="beforeAvatarUpload"
             name="foto"
           >
-            <img v-if="atletaForm.foto" :src="getFotoUrl(atletaForm.foto)" class="avatar-preview">
+            <div v-if="atletaForm.foto" class="photo-preview-wrapper">
+              <img :src="getFotoUrl(atletaForm.foto)" class="avatar-preview">
+              <div class="photo-overlay">
+                <i class="el-icon-delete" @click.stop="removePhoto" />
+              </div>
+            </div>
             <div v-else class="avatar-uploader-icon">
               <i class="el-icon-plus" />
               <span>Subir Foto</span>
@@ -362,6 +400,16 @@
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
+            <el-form-item label="Cédula (Opcional)">
+              <el-input
+                v-model="atletaForm.cedula"
+                placeholder="Ej: 12345678"
+                maxlength="10"
+                @input="v => atletaForm.cedula = v.replace(/\D/g, '')"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="Fecha de Nacimiento" prop="fecha_nacimiento">
               <el-date-picker
                 v-model="atletaForm.fecha_nacimiento"
@@ -375,16 +423,13 @@
           <el-col :span="12">
             <el-form-item label="Posición de Juego">
               <el-select v-model="atletaForm.posicion_de_juego" placeholder="Seleccionar" style="width: 100%">
-                <el-option label="Sin definir" value="" />
-                <el-option label="Portero" value="Portero" />
-                <el-option label="Defensa Central" value="Defensa Central" />
-                <el-option label="Lateral Derecho" value="Lateral Derecho" />
-                <el-option label="Lateral Izquierdo" value="Lateral Izquierdo" />
-                <el-option label="Mediocampista Central" value="Mediocampista Central" />
-                <el-option label="Mediocampista Ofensivo" value="Mediocampista Ofensivo" />
-                <el-option label="Extremo Derecho" value="Extremo Derecho" />
-                <el-option label="Extremo Izquierdo" value="Extremo Izquierdo" />
-                <el-option label="Delantero Centro" value="Delantero Centro" />
+                <el-option label="Sin definir" :value="null" />
+                <el-option
+                  v-for="pos in posiciones"
+                  :key="pos.posicion_id"
+                  :label="formatEnum(pos.nombre_posicion)"
+                  :value="pos.posicion_id"
+                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -469,8 +514,15 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="Localidad">
-              <el-input v-model="atletaForm.direccion.localidad" placeholder="Localidad / Sector" />
+            <el-form-item label="Parroquia">
+              <el-input v-model="atletaForm.direccion.parroquia" placeholder="Parroquia" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="Descripción de la Dirección">
+              <el-input v-model="atletaForm.direccion.descripcion_descriptiva" placeholder="Calle, casa, edificio, referencias..." type="textarea" :rows="2" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -550,10 +602,17 @@
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="Índice de Masa Corporal">
-              <el-input-number v-model="anthropometricForm.indice_de_masa" :min="0" :step="0.1" style="width: 100%" />
+            <el-form-item label="Porcentaje de Grasa">
+              <el-input-number v-model="anthropometricForm.porcentaje_grasa" :min="0" :step="0.1" style="width: 100%" />
             </el-form-item>
           </el-col>
+          <el-col :span="12">
+            <el-form-item label="Porcentaje de Musculatura">
+              <el-input-number v-model="anthropometricForm.porcentaje_musculatura" :min="0" :step="0.1" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="Envergadura (cm)">
               <el-input-number v-model="anthropometricForm.envergadura" :min="0" :step="0.1" style="width: 100%" />
@@ -656,9 +715,12 @@
         <el-form-item label="Nombre Completo" prop="nombre_completo">
           <el-input v-model="tutorForm.nombre_completo" placeholder="Nombre completo del tutor" />
         </el-form-item>
+        <el-form-item label="Cédula" prop="cedula">
+          <el-input v-model="tutorForm.cedula" placeholder="Ej: 12345678" maxlength="10" @input="v => tutorForm.cedula = v.replace(/\D/g, '')" />
+        </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="Teléfono">
+            <el-form-item label="Teléfono" prop="telefono">
               <el-input
                 v-model="tutorForm.telefono"
                 placeholder="Ej: 04141234567"
@@ -668,21 +730,50 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="Correo">
+            <el-form-item label="Correo" prop="correo">
               <el-input v-model="tutorForm.correo" placeholder="correo@ejemplo.com" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-form-item label="Tipo de Relación" prop="tipo_relacion">
           <el-select v-model="tutorForm.tipo_relacion" placeholder="Seleccionar" style="width: 100%">
-            <el-option label="PADRE" value="PADRE" />
-            <el-option label="MADRE" value="MADRE" />
-            <el-option label="TUTOR_LEGAL" value="TUTOR_LEGAL" />
-            <el-option label="OTRO" value="OTRO" />
+            <el-option label="Familiar (Padre/Madre)" value="Familiar" />
+            <el-option label="Allegado a familia" value="adyegado a familia" />
+            <el-option label="Representante Legal" value="Representante legal" />
+            <el-option label="Otro" value="OTRO" />
           </el-select>
         </el-form-item>
-        <el-form-item label="Dirección">
-          <el-input v-model="tutorForm.direccion" type="textarea" :rows="2" placeholder="Dirección completa" />
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="País" prop="direccion.pais">
+              <el-select v-model="tutorForm.direccion.pais" placeholder="Seleccionar" style="width: 100%" filterable>
+                <el-option v-for="pais in paises" :key="pais" :label="formatEnum(pais)" :value="pais" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="Estado" prop="direccion.estado">
+              <el-select v-if="tutorForm.direccion.pais === 'venezuela'" v-model="tutorForm.direccion.estado" placeholder="Seleccionar" style="width: 100%" filterable>
+                <el-option v-for="estado in estadosVenezuela" :key="estado" :label="formatEnum(estado)" :value="estado" />
+              </el-select>
+              <el-input v-else v-model="tutorForm.direccion.estado" placeholder="Estado / Provincia" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="Municipio" prop="direccion.municipio">
+              <el-input v-model="tutorForm.direccion.municipio" placeholder="Municipio" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="Parroquia" prop="direccion.parroquia">
+              <el-input v-model="tutorForm.direccion.parroquia" placeholder="Parroquia" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="Dirección Detallada">
+          <el-input v-model="tutorForm.direccion.descripcion_descriptiva" type="textarea" :rows="2" placeholder="Calle, casa, edificio..." />
         </el-form-item>
       </el-form>
       <span slot="footer">
@@ -699,6 +790,7 @@
 import request from '@/utils/request'
 import { canEdit, isMedico, getVisibleAtletasTabs } from '@/utils/permission'
 import { mapGetters } from 'vuex'
+import { getPosiciones } from '@/api/posiciones'
 
 export default {
   name: 'Atletas',
@@ -707,6 +799,7 @@ export default {
       atletas: [],
       categorias: [],
       tutores: [],
+      posiciones: [],
       currentAtletaId: null,
       currentAtleta: {},
       fichaMedica: null,
@@ -733,6 +826,7 @@ export default {
       searchQuery: '',
       filterCategoria: '',
       filterEstatus: '', // "" significa por defecto (Activos/Lesionados)
+      filterOrder: 'recent',
       searchTimeout: null,
 
       // Listas para dirección
@@ -743,6 +837,7 @@ export default {
       atletaForm: {
         nombre: '',
         apellido: '',
+        cedula: '',
         fecha_nacimiento: '',
         posicion_de_juego: '',
         categoria_id: '',
@@ -752,7 +847,8 @@ export default {
           pais: 'venezuela',
           estado: '',
           municipio: '',
-          localidad: ''
+          parroquia: '',
+          descripcion_descriptiva: ''
         },
         estatus: 'ACTIVO',
         foto: null,
@@ -768,7 +864,8 @@ export default {
       anthropometricForm: {
         peso: null,
         altura: null,
-        indice_de_masa: null,
+        porcentaje_grasa: null,
+        porcentaje_musculatura: null,
         envergadura: null,
         largo_de_pierna: null,
         largo_de_torso: null,
@@ -784,22 +881,51 @@ export default {
       },
       tutorForm: {
         nombre_completo: '',
+        cedula: '',
         telefono: '',
         correo: '',
-        direccion: '',
+        direccion: {
+          pais: '',
+          estado: '',
+          municipio: '',
+          parroquia: '',
+          descripcion_descriptiva: ''
+        },
         tipo_relacion: ''
       },
 
       // Reglas de validación
       atletaRules: {
-        nombre: [{ required: true, message: 'El nombre es requerido', trigger: 'blur' }],
-        apellido: [{ required: true, message: 'El apellido es requerido', trigger: 'blur' }],
+        nombre: [
+          { required: true, message: 'El nombre es requerido', trigger: 'blur' },
+          { pattern: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, message: 'Solo se permiten letras', trigger: 'blur' }
+        ],
+        apellido: [
+          { required: true, message: 'El apellido es requerido', trigger: 'blur' },
+          { pattern: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, message: 'Solo se permiten letras', trigger: 'blur' }
+        ],
         fecha_nacimiento: [{ required: true, message: 'La fecha de nacimiento es requerida', trigger: 'change' }],
         categoria_id: [{ required: true, message: 'La categoría es requerida', trigger: 'change' }]
       },
       tutorRules: {
-        nombre_completo: [{ required: true, message: 'El nombre es requerido', trigger: 'blur' }],
-        tipo_relacion: [{ required: true, message: 'El tipo de relación es requerido', trigger: 'change' }]
+        nombre_completo: [
+          { required: true, message: 'El nombre es requerido', trigger: 'blur' },
+          { pattern: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, message: 'Solo se permiten letras', trigger: 'blur' }
+        ],
+        cedula: [{ required: true, message: 'La cédula es requerida', trigger: 'blur' }],
+        telefono: [
+          { required: true, message: 'El teléfono es requerido', trigger: 'blur' },
+          { pattern: /^[0-9]{11}$/, message: 'El teléfono debe tener 11 dígitos numéricos', trigger: 'blur' }
+        ],
+        correo: [
+          { required: false },
+          { pattern: /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/, message: 'Formato de correo inválido (ej: usuario@dominio.com)', trigger: 'blur' }
+        ],
+        tipo_relacion: [{ required: true, message: 'El tipo de relación es requerido', trigger: 'change' }],
+        'direccion.pais': [{ required: true, message: 'El país es requerido', trigger: 'change' }],
+        'direccion.estado': [{ required: true, message: 'El estado es requerido', trigger: 'change' }],
+        'direccion.municipio': [{ required: true, message: 'El municipio es requerido', trigger: 'blur' }],
+        'direccion.parroquia': [{ required: true, message: 'La parroquia es requerida', trigger: 'blur' }]
       }
     }
   },
@@ -841,6 +967,12 @@ export default {
     filterEstatus() {
       this.loadAtletas()
     },
+    filterOrder() {
+      this.loadAtletas()
+    },
+    filterOrden() {
+      this.loadAtletas()
+    },
     currentAtletaId: {
       immediate: false,
       handler(newId) {
@@ -858,7 +990,8 @@ export default {
       await this.loadCategorias()
       await Promise.all([
         this.loadAtletas(),
-        this.loadTutores()
+        this.loadTutores(),
+        this.loadPosiciones()
       ])
     },
 
@@ -867,8 +1000,11 @@ export default {
       try {
         const params = {}
         if (this.searchQuery) params.search = this.searchQuery
+
         if (this.filterCategoria) params.categoria_id = this.filterCategoria
         if (this.filterEstatus) params.estatus = this.filterEstatus
+        if (this.filterOrder) params.order = this.filterOrder
+        if (this.filterOrden) params.orderBy = this.filterOrden
 
         const response = await request({
           url: '/atletas',
@@ -899,6 +1035,15 @@ export default {
         this.tutores = Array.isArray(response) ? response : []
       } catch (error) {
         console.error('Error cargando tutores:', error)
+      }
+    },
+
+    async loadPosiciones() {
+      try {
+        const response = await getPosiciones()
+        this.posiciones = Array.isArray(response) ? response : []
+      } catch (error) {
+        console.error('Error cargando posiciones:', error)
       }
     },
 
@@ -989,6 +1134,8 @@ export default {
         this.atletaForm = {
           nombre: this.currentAtleta.nombre,
           apellido: this.currentAtleta.apellido,
+
+          cedula: this.currentAtleta.cedula,
           fecha_nacimiento: this.currentAtleta.fecha_nacimiento,
           posicion_de_juego: this.currentAtleta.posicion_de_juego || '',
           categoria_id: this.currentAtleta.categoria_id,
@@ -998,7 +1145,8 @@ export default {
             pais: this.currentAtleta.pais || 'venezuela',
             estado: this.currentAtleta.estado || '',
             municipio: this.currentAtleta.municipio || '',
-            localidad: this.currentAtleta.localidad || ''
+            parroquia: this.currentAtleta.parroquia || '',
+            descripcion_descriptiva: this.currentAtleta.descripcion_descriptiva || ''
           },
           estatus: this.currentAtleta.estatus || 'ACTIVO',
           foto: this.currentAtleta.foto || '',
@@ -1032,7 +1180,8 @@ export default {
         this.anthropometricForm = {
           peso: ultimaMedida.peso,
           altura: ultimaMedida.altura,
-          indice_de_masa: ultimaMedida.indice_de_masa,
+          porcentaje_grasa: ultimaMedida.porcentaje_grasa,
+          porcentaje_musculatura: ultimaMedida.porcentaje_musculatura,
           envergadura: ultimaMedida.envergadura,
           largo_de_pierna: ultimaMedida.largo_de_pierna,
           largo_de_torso: ultimaMedida.largo_de_torso,
@@ -1068,14 +1217,31 @@ export default {
         this.isEditingTutor = true
         this.tutorForm = {
           nombre_completo: this.tutor.nombre_completo,
+          cedula: this.tutor.cedula,
           telefono: this.tutor.telefono || '',
           correo: this.tutor.correo || '',
-          direccion: this.tutor.direccion || '',
+          direccion: {
+            pais: this.tutor.pais || '',
+            estado: this.tutor.estado || '',
+            municipio: this.tutor.municipio || '',
+            parroquia: this.tutor.parroquia || '',
+            descripcion_descriptiva: this.tutor.descripcion_descriptiva || ''
+          },
           tipo_relacion: this.tutor.tipo_relacion
         }
       } else {
         this.isEditingTutor = false
         this.resetTutorForm()
+        // Pre-fill address from athlete
+        if (this.currentAtleta) {
+          this.tutorForm.direccion = {
+            pais: this.currentAtleta.pais || 'venezuela',
+            estado: this.currentAtleta.estado || '',
+            municipio: this.currentAtleta.municipio || '',
+            parroquia: this.currentAtleta.parroquia || '',
+            descripcion_descriptiva: this.currentAtleta.descripcion_descriptiva || ''
+          }
+        }
       }
       this.showTutorModal = true
     },
@@ -1253,6 +1419,11 @@ export default {
       })
     },
 
+    formatEnum(value) {
+      if (!value) return ''
+      return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
+    },
+
     deleteAtleta() {
       this.$confirm('¿Estás seguro de eliminar este atleta?', 'Advertencia', {
         confirmButtonText: 'Eliminar',
@@ -1286,6 +1457,7 @@ export default {
       this.atletaForm = {
         nombre: '',
         apellido: '',
+        cedula: '',
         fecha_nacimiento: '',
         posicion_de_juego: '',
         categoria_id: '',
@@ -1295,7 +1467,8 @@ export default {
           pais: 'venezuela',
           estado: '',
           municipio: '',
-          localidad: ''
+          parroquia: '',
+          descripcion_descriptiva: ''
         },
         estatus: 'ACTIVO',
         foto: null,
@@ -1317,7 +1490,8 @@ export default {
       this.anthropometricForm = {
         peso: null,
         altura: null,
-        indice_de_masa: null,
+        porcentaje_grasa: null,
+        porcentaje_musculatura: null,
         envergadura: null,
         largo_de_pierna: null,
         largo_de_torso: null,
@@ -1339,9 +1513,16 @@ export default {
     resetTutorForm() {
       this.tutorForm = {
         nombre_completo: '',
+        cedula: '',
         telefono: '',
         correo: '',
-        direccion: '',
+        direccion: {
+          pais: '',
+          estado: '',
+          municipio: '',
+          parroquia: '',
+          descripcion_descriptiva: ''
+        },
         tipo_relacion: ''
       }
     },
@@ -1395,6 +1576,10 @@ export default {
       this.atletaForm.direccion.estado = ''
     },
 
+    removePhoto() {
+      this.atletaForm.foto = ''
+    },
+
     beforeAvatarUpload(file) {
       const isJPGorPNG = file.type === 'image/jpeg' || file.type === 'image/png'
       const isLt2M = file.size / 1024 / 1024 < 2
@@ -1409,13 +1594,8 @@ export default {
         this.$message.error('La imagen no puede exceder los 2MB')
       }
       return isJPGorPNG && isLt2M
-    },
-
-    // Helper para capitalizar textos de enum
-    formatEnum(text) {
-      if (!text) return ''
-      return text.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
     }
+
   }
 }
 
@@ -1611,14 +1791,14 @@ aside.sidebar {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 50%;
+  border-radius: 12px;
 }
 
 .avatar-img-large {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 50%;
+  border-radius: 12px;
 }
 
 .photo-upload-container {
@@ -1752,7 +1932,7 @@ aside.sidebar {
 .athlete-details-photo {
   width: 100px;
   height: 100px;
-  border-radius: 50%;
+  border-radius: 12px;
   background-color: #E51D22;
   color: white;
   display: flex;
@@ -1938,5 +2118,38 @@ aside.sidebar {
   .performance-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.photo-preview-wrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.photo-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.photo-overlay:hover {
+  opacity: 1;
+}
+
+.photo-overlay i {
+  color: white;
+  font-size: 24px;
 }
 </style>

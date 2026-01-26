@@ -6,9 +6,11 @@ const getPlantel = async (req, res) => {
         const { rol, sort } = req.query;
 
         let query = `
-            SELECT p.*, r.nombre_rol 
+            SELECT p.*, r.nombre_rol,
+                   d.pais, d.estado, d.municipio, d.parroquia, d.descripcion_descriptiva
             FROM plantel p
             LEFT JOIN rol_usuarios r ON p.rol_id = r.rol_id
+            LEFT JOIN direcciones d ON p.direccion_id = d.direccion_id
             WHERE 1=1`;
         const params = [];
 
@@ -51,7 +53,10 @@ const getPlantelById = async (req, res) => {
         const { id } = req.params;
 
         const [rows] = await pool.execute(
-            'SELECT * FROM plantel WHERE plantel_id = ?',
+            `SELECT p.*, d.pais, d.estado, d.municipio, d.parroquia, d.descripcion_descriptiva
+             FROM plantel p
+             LEFT JOIN direcciones d ON p.direccion_id = d.direccion_id
+             WHERE p.plantel_id = ?`,
             [id]
         );
 
@@ -86,12 +91,23 @@ const getPlantelByRol = async (req, res) => {
 // Crear miembro del plantel
 const createMiembroPlantel = async (req, res) => {
     try {
-        const { nombre, apellido, telefono, rol, cedula, fecha_nac, dirreccion } = req.body;
+        const { nombre, apellido, telefono, rol, cedula, fecha_nac, direccion } = req.body;
+
+        let direccion_id = null;
+
+        // Si hay datos de dirección, crear registro en tabla direcciones
+        if (direccion && (direccion.pais || direccion.estado || direccion.municipio || direccion.parroquia || direccion.descripcion_descriptiva)) {
+            const [dirResult] = await pool.execute(
+                `INSERT INTO direcciones (pais, estado, municipio, parroquia, descripcion_descriptiva) VALUES (?, ?, ?, ?, ?)`,
+                [direccion.pais || 'Venezuela', direccion.estado || '', direccion.municipio || '', direccion.parroquia || '', direccion.descripcion_descriptiva || '']
+            );
+            direccion_id = dirResult.insertId;
+        }
 
         const [result] = await pool.execute(
-            `INSERT INTO plantel (nombre, apellido, telefono, rol_id, cedula, fecha_nac, dirreccion) 
+            `INSERT INTO plantel (nombre, apellido, telefono, rol_id, cedula, fecha_nac, direccion_id) 
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [nombre, apellido, telefono, rol, cedula || null, fecha_nac || null, dirreccion || null]
+            [nombre, apellido, telefono, rol, cedula || null, fecha_nac || null, direccion_id]
         );
 
         res.status(201).json({
@@ -109,13 +125,42 @@ const createMiembroPlantel = async (req, res) => {
 const updateMiembroPlantel = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre, apellido, telefono, rol, cedula, fecha_nac, dirreccion } = req.body;
+        const { nombre, apellido, telefono, rol, cedula, fecha_nac, direccion } = req.body;
 
+        // 1. Obtener el direccion_id actual del miembro
+        const [miembroRows] = await pool.execute('SELECT direccion_id FROM plantel WHERE plantel_id = ?', [id]);
+        if (miembroRows.length === 0) {
+            return res.status(404).json({ error: 'Miembro del plantel no encontrado' });
+        }
+
+        let currentDireccionId = miembroRows[0].direccion_id;
+
+        // 2. Manejar la dirección (Crear si no existe, actualizar si existe)
+        if (direccion) {
+            if (currentDireccionId) {
+                // Actualizar existente
+                await pool.execute(
+                    `UPDATE direcciones SET pais = ?, estado = ?, municipio = ?, parroquia = ?, descripcion_descriptiva = ? WHERE direccion_id = ?`,
+                    [direccion.pais || 'Venezuela', direccion.estado || '', direccion.municipio || '', direccion.parroquia || '', direccion.descripcion_descriptiva || '', currentDireccionId]
+                );
+            } else {
+                // Crear nueva si no tenía
+                if (direccion.pais || direccion.estado || direccion.municipio || direccion.parroquia || direccion.descripcion_descriptiva) {
+                    const [dirResult] = await pool.execute(
+                        `INSERT INTO direcciones (pais, estado, municipio, parroquia, descripcion_descriptiva) VALUES (?, ?, ?, ?, ?)`,
+                        [direccion.pais || 'Venezuela', direccion.estado || '', direccion.municipio || '', direccion.parroquia || '', direccion.descripcion_descriptiva || '']
+                    );
+                    currentDireccionId = dirResult.insertId;
+                }
+            }
+        }
+
+        // 3. Actualizar miembro del plantel
         const [result] = await pool.execute(
             `UPDATE plantel 
-       SET nombre = ?, apellido = ?, telefono = ?, rol_id = ?, cedula = ?, fecha_nac = ?, dirreccion = ?
+       SET nombre = ?, apellido = ?, telefono = ?, rol_id = ?, cedula = ?, fecha_nac = ?, direccion_id = ?
        WHERE plantel_id = ?`,
-            [nombre, apellido, telefono, rol, cedula || null, fecha_nac || null, dirreccion || null, id]
+            [nombre, apellido, telefono, rol, cedula || null, fecha_nac || null, currentDireccionId, id]
         );
 
         if (result.affectedRows === 0) {

@@ -215,11 +215,15 @@ export default {
     await this.loadAtletas()
 
     // 2. Incrementamos la clave para forzar al Buscador (el-select) a re-renderizarse
-    // Esto borra cualquier "cache" visual del nombre viejo en el campo
     this.searchKey++
 
-    // 3. Si hay un atleta seleccionado, sincronizamos su ficha técnica
-    if (this.selectedAtletaId) {
+    // 3. Verificar si hay un ID en la URL (al navegar desde la lista de atletas)
+    const queryId = this.$route.query.atleta_id
+    if (queryId && parseInt(queryId) !== this.selectedAtletaId) {
+      this.selectedAtletaId = parseInt(queryId)
+      await this.handleAtletaChange(this.selectedAtletaId)
+    } else if (this.selectedAtletaId) {
+      // Si no cambiamos de atleta, solo refrescar los datos del actual
       this.handleAtletaChange(this.selectedAtletaId)
     }
   },
