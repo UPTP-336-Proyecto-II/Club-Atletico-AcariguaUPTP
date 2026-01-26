@@ -84,16 +84,85 @@
       <div class="footer-divider" />
 
       <div class="footer-bottom">
-        <p>&copy; 2024 Club Atlético Deportivo Acarigua. Todos los derechos reservados.</p>
+        <div class="copyright-section">
+          <p>&copy; 2025 - 2026 <strong>Asociación Civil “Club Atlético Deportivo Acarigua”</strong>. Todos los derechos reservados.</p>
+          <p class="credits">
+            Sistema Antropométrico desarrollado por el Equipo de Proyecto II - UPTP.
+            <a href="#" class="license-link" @click.prevent="licenseVisible = true">Ver Licencia MIT</a>
+          </p>
+        </div>
         <p class="ministerio-info">Inscrito en el Ministerio del Poder Popular del Deporte</p>
       </div>
     </div>
+    <el-dialog
+      title="Licencia de Software"
+      :visible.sync="licenseVisible"
+      width="60%"
+      append-to-body
+      custom-class="license-modal"
+    >
+      <div class="license-content">
+        <h3>LICENCIA DE SOFTWARE - PROYECTO II UPTP</h3>
+        <p><strong>Copyright (c) 2025 - 2026</strong></p>
+
+        <h4>Autores:</h4>
+        <ul>
+          <li>Colmenarez S. Luis A. (V-27.414.006)</li>
+          <li>Legón F. Robert A. (V-31.492.108)</li>
+          <li>Gómez C. Sergio J. (V-30.966.012)</li>
+          <li>Medina A. Gabriela N. (V-30.239.788)</li>
+          <li>Torrealba E. Albany P. (V-30.440.776)</li>
+          <li>Abreu A. José A. (V-31.558.506)</li>
+        </ul>
+
+        <h4>Título del Proyecto:</h4>
+        <p>"Aplicación Web para la recopilación, monitoreo y análisis antropométrico del rendimiento deportivo"</p>
+
+        <h4>Comunidad Beneficiada:</h4>
+        <p>Asociación Civil “Club Atlético Deportivo Acarigua” (RIF: J-503114630)</p>
+
+        <h4>Institución:</h4>
+        <p>Universidad Politécnica Territorial de Portuguesa "Juan de Jesús Montilla" (UPTP)<br>
+          Docente: Elsio Sánchez | Tutor: Juan Carlos Esteller</p>
+
+        <hr>
+
+        <p class="license-tech">
+          Este software incluye componentes de terceros bajo la siguiente licencia:<br>
+          Copyright (c) 2017-present PanJiaChen (MIT License)
+        </p>
+
+        <hr>
+
+        <h4>POR LA PRESENTE SE CONCEDE PERMISO:</h4>
+        <p>
+          Se otorga permiso, sin cargo, a cualquier persona que obtenga una copia de este software y los archivos de documentación asociados (el "Software"), para utilizar el Software sin restricción, incluyendo, sin limitación, los derechos de usar, copiar, modificar, fusionar, publicar, distribuir, sublicenciar y/o entregar copias del Software a la comunidad beneficiaria, bajo las siguientes condiciones:
+        </p>
+        <p>
+          1. El aviso de copyright anterior y este aviso de permiso se incluirán en todas las copias o partes sustanciales del Software.
+        </p>
+        <p>
+          2. EL SOFTWARE SE PROPORCIONA "TAL CUAL", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A GARANTÍAS DE COMERCIALIZACIÓN, IDONEIDAD PARA UN PROPÓSITO PARTICULAR Y NO INFRACCIÓN.
+        </p>
+        <p>
+          3. EN NINGÚN CASO LOS AUTORES O TITULARES DEL COPYRIGHT SERÁN RESPONSABLES DE NINGUNA RECLAMACIÓN, DAÑO U OTRA RESPONSABILIDAD, YA SEA EN UNA ACCIÓN DE CONTRATO, AGRAVIO O DE OTRO MODO, QUE SURJA DE, FUERA DE O EN CONEXIÓN CON EL SOFTWARE O EL USO U OTROS TRATOS EN EL SOFTWARE.
+        </p>
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="licenseVisible = false">Cerrar</el-button>
+      </span>
+    </el-dialog>
   </footer>
 </template>
 
 <script>
 export default {
-  name: 'LandingFooter'
+  name: 'LandingFooter',
+  data() {
+    return {
+      licenseVisible: false
+    }
+  }
 }
 </script>
 
@@ -236,7 +305,7 @@ export default {
 .footer-bottom {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
   gap: 1.5rem;
   font-size: 0.9rem;
@@ -246,6 +315,75 @@ export default {
 .ministerio-info {
   font-size: 0.8rem;
   opacity: 0.8;
+}
+
+.copyright-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.credits {
+  font-size: 0.85em;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+.license-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  margin-left: 5px;
+  opacity: 0.8;
+  transition: opacity 0.3s;
+  cursor: pointer;
+}
+
+.license-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* License Modal Styles */
+.license-content {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  line-height: 1.6;
+  color: #2c3e50;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.license-content h3 {
+  color: #E51D22;
+  margin-bottom: 1rem;
+}
+
+.license-content h4 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: #444;
+}
+
+.license-content p {
+  margin-bottom: 1rem;
+  text-align: justify;
+}
+
+.license-content ul {
+  padding-left: 20px;
+}
+
+.license-content hr {
+  border: 0;
+  border-top: 1px solid #eee;
+  margin: 2rem 0;
+}
+
+.license-tech {
+  font-family: monospace;
+  background: #f4f4f5;
+  padding: 10px;
+  border-radius: 4px;
 }
 
 /* Responsive */
