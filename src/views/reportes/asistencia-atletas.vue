@@ -310,9 +310,9 @@ export default {
         })
 
         const total = records.length
-        const presente = records.filter(r => r.estatus === 'PRESENTE').length
-        const ausente = records.filter(r => r.estatus === 'AUSENTE').length
-        const justificado = records.filter(r => r.estatus === 'JUSTIFICADO').length
+        const presente = records.filter(r => r.estatus === 'presente').length
+        const ausente = records.filter(r => r.estatus === 'ausente').length
+        const justificado = records.filter(r => r.estatus === 'justificativo').length
 
         const percentage = total > 0 ? Math.round((presente / total) * 100) : 0
 
@@ -424,17 +424,17 @@ export default {
     },
     getStatusType(estatus) {
       const map = {
-        'PRESENTE': 'success',
-        'AUSENTE': 'danger',
-        'JUSTIFICADO': 'warning'
+        'presente': 'success',
+        'ausente': 'danger',
+        'justificativo': 'warning'
       }
       return map[estatus] || 'info'
     },
     getStatusLabel(estatus) {
       const map = {
-        'PRESENTE': 'Presente',
-        'AUSENTE': 'Ausente',
-        'JUSTIFICADO': 'Justificado'
+        'presente': 'Presente',
+        'ausente': 'Ausente',
+        'justificativo': 'Justificado'
       }
       return map[estatus] || estatus
     },

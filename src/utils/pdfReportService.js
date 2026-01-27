@@ -150,21 +150,31 @@ export const PdfReportService = {
             { text: 'Datos Personales', style: 'sectionHeader' },
             {
               columns: [
+                { width: 'auto', text: 'Cédula: ', style: 'label' },
+                { width: '*', text: atleta.cedula || `ID: ${atleta.atleta_id}`, style: 'value' },
                 { width: 'auto', text: 'Categoría: ', style: 'label' },
-                { width: '*', text: atleta.categoria_nombre || 'N/A', style: 'value' },
-                { width: 'auto', text: 'Posición: ', style: 'label' },
-                { width: '*', text: atleta.posicion_de_juego || 'N/A', style: 'value' }
+                { width: '*', text: atleta.categoria_nombre || 'N/A', style: 'value' }
               ],
               columnGap: 10,
               margin: [0, 0, 0, 5]
             },
             {
               columns: [
-                { width: 'auto', text: 'Pierna Dominante: ', style: 'label' },
+                { width: 'auto', text: 'Posición: ', style: 'label' },
+                { width: '*', text: atleta.posicion_de_juego_nombre || 'N/A', style: 'value' },
+                { width: 'auto', text: 'Pierna: ', style: 'label' },
                 { width: '*', text: atleta.pierna_dominante || 'Derecha', style: 'value' }
+              ],
+              columnGap: 10,
+              margin: [0, 0, 0, 5]
+            },
+            atleta.entrenador_nombre ? {
+              columns: [
+                { width: 'auto', text: 'Entrenador: ', style: 'label' },
+                { width: '*', text: atleta.entrenador_nombre, style: 'value' }
               ]
-            }
-          ]
+            } : null
+          ].filter(Boolean)
         }
       ],
       columnGap: 20,
@@ -225,7 +235,9 @@ export const PdfReportService = {
     const tableBody = [
       // Header Row
       [
+        { text: 'Cédula/ID', style: 'tableHeader' },
         { text: 'Nombre y Apellido', style: 'tableHeader' },
+        { text: 'Teléfono', style: 'tableHeader' },
         { text: 'Categoría', style: 'tableHeader' },
         { text: 'Posición', style: 'tableHeader' },
         { text: 'Estatus', style: 'tableHeader' }
@@ -235,9 +247,11 @@ export const PdfReportService = {
     // Data Rows
     athletes.forEach(a => {
       tableBody.push([
+        { text: a.cedula || `ID: ${a.atleta_id}`, style: 'tableCell' },
         { text: `${a.nombre} ${a.apellido}`, style: 'tableCell' },
+        { text: a.telefono || '-', style: 'tableCell' },
         { text: a.categoria_nombre || '', style: 'tableCell' },
-        { text: a.posicion_de_juego || '', style: 'tableCell' },
+        { text: a.posicion_de_juego_nombre || '', style: 'tableCell' },
         { text: a.estatus || 'Activo', style: 'tableCell' }
       ])
     })
@@ -246,7 +260,7 @@ export const PdfReportService = {
       {
         table: {
           headerRows: 1,
-          widths: ['*', 'auto', 'auto', 'auto'],
+          widths: ['auto', '*', 'auto', 'auto', 'auto', 'auto'],
           body: tableBody
         },
         layout: 'lightHorizontalLines'
@@ -263,6 +277,19 @@ export const PdfReportService = {
   generateAthleteCardReport(atleta, medical, metrics, tests, tutor, photoBase64) {
     const content = []
 
+    // Helper to calculate age
+    const calculateAge = (dateString) => {
+      if (!dateString) return '-'
+      const today = new Date()
+      const birthDate = new Date(dateString)
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const m = today.getMonth() - birthDate.getMonth()
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+      }
+      return age + ' años'
+    }
+
     // 1. Header Info (Personal)
     content.push({
       columns: [
@@ -276,19 +303,22 @@ export const PdfReportService = {
             { text: 'Datos Personales', style: 'sectionHeader' },
             {
               columns: [
+                { width: 'auto', text: 'Cédula: ', style: 'label' },
+                { width: '*', text: atleta.cedula || `ID: ${atleta.atleta_id}`, style: 'value' },
                 { width: 'auto', text: 'Edad: ', style: 'label' },
-                { width: '*', text: atleta.fecha_nacimiento || '-', style: 'value' },
-                { width: 'auto', text: 'Télefono: ', style: 'label' },
-                { width: '*', text: atleta.telefono || 'N/A', style: 'value' }
+                { width: '*', text: calculateAge(atleta.fecha_nacimiento), style: 'value' }
               ],
               columnGap: 10,
               margin: [0, 0, 0, 5]
             },
             {
               columns: [
+                { width: 'auto', text: 'Télefono: ', style: 'label' },
+                { width: '*', text: atleta.telefono || 'N/A', style: 'value' },
                 { width: 'auto', text: 'Dirección: ', style: 'label' },
                 { width: '*', text: atleta.direccion || 'No registrada', style: 'value' }
-              ]
+              ],
+              columnGap: 10
             }
           ]
         }
@@ -423,9 +453,9 @@ export const PdfReportService = {
 
     attendanceList.forEach(item => {
       let statusColor = 'black'
-      if (item.estatus === 'PRESENTE') statusColor = 'green'
-      if (item.estatus === 'AUSENTE') statusColor = 'red'
-      if (item.estatus === 'JUSTIFICADO') statusColor = 'orange'
+      if (item.estatus === 'presente') statusColor = 'green'
+      if (item.estatus === 'ausente') statusColor = 'red'
+      if (item.estatus === 'justificativo') statusColor = 'orange'
 
       tableBody.push([
         { text: new Date(item.fecha).toLocaleDateString(), style: 'tableCell' },
@@ -447,5 +477,59 @@ export const PdfReportService = {
 
     const docDef = this._getBaseDocDefinition(content, 'Detalle de Asistencia', athleteName)
     pdfMake.createPdf(docDef).open()
+  },
+
+  /**
+   * Generates Category Performance Report (PDF)
+   */
+  generateCategoryPerformanceReport(athletesData, categoryName, coachName) {
+    const tableBody = [
+      // Header Row
+      [
+        { text: 'Cédula/ID', style: 'tableHeader' },
+        { text: 'Nombre', style: 'tableHeader' },
+        { text: 'Posición', style: 'tableHeader' },
+        { text: 'Peso', style: 'tableHeader' },
+        { text: 'Altura', style: 'tableHeader' },
+        { text: 'IMC', style: 'tableHeader' },
+        { text: 'Fuerza', style: 'tableHeader' },
+        { text: 'Vel.', style: 'tableHeader' },
+        { text: 'Resist.', style: 'tableHeader' },
+        { text: 'Coord.', style: 'tableHeader' }
+      ]
+    ]
+
+    // Data Rows
+    athletesData.forEach(a => {
+      tableBody.push([
+        { text: a.cedula || '-', style: 'tableCell', fontSize: 8 },
+        { text: a.nombre, style: 'tableCell', fontSize: 8 },
+        { text: a.posicion, style: 'tableCell', fontSize: 8 },
+        { text: a.peso, style: 'tableCell', alignment: 'center', fontSize: 8 },
+        { text: a.altura, style: 'tableCell', alignment: 'center', fontSize: 8 },
+        { text: a.imc, style: 'tableCell', alignment: 'center', fontSize: 8 },
+        { text: a.fuerza, style: 'tableCell', alignment: 'center', fontSize: 8 },
+        { text: a.velocidad, style: 'tableCell', alignment: 'center', fontSize: 8 },
+        { text: a.resistencia, style: 'tableCell', alignment: 'center', fontSize: 8 },
+        { text: a.coordinacion, style: 'tableCell', alignment: 'center', fontSize: 8 }
+      ])
+    })
+
+    const content = [
+      coachName ? { text: `Entrenador: ${coachName}`, style: 'reportSubtitle', fontSize: 11, margin: [0, -10, 0, 15] } : null,
+      {
+        table: {
+          headerRows: 1,
+          widths: ['auto', '*', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
+          body: tableBody
+        },
+        layout: 'lightHorizontalLines'
+      },
+      { text: `Total: ${athletesData.length} atletas`, margin: [0, 15, 0, 0], fontSize: 10, alignment: 'right' }
+    ].filter(Boolean)
+
+    const docDef = this._getBaseDocDefinition(content, 'Reporte de Rendimiento por Categoría', categoryName || 'Sin Categoría')
+    pdfMake.createPdf(docDef).open()
   }
 }
+
