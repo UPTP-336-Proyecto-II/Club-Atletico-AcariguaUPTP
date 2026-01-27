@@ -50,14 +50,14 @@ const createRol = async (req, res) => {
       return res.status(400).json({ error: 'El nombre del rol es requerido' });
     }
 
-    // Verificar si ya existe
+    // Verificar si ya existe (nombre + descripcion)
     const [existing] = await pool.execute(
-      'SELECT rol_id FROM rol_usuarios WHERE nombre_rol = ?',
-      [nombre_rol]
+      'SELECT rol_id FROM rol_usuarios WHERE nombre_rol = ? AND descripcion = ?',
+      [nombre_rol, descripcion || null]
     );
 
     if (existing.length > 0) {
-      return res.status(400).json({ error: 'Ya existe un rol con ese nombre' });
+      return res.status(400).json({ error: 'Ya existe un rol con ese nombre y descripción' });
     }
 
     const [result] = await pool.execute(
@@ -92,14 +92,14 @@ const updateRol = async (req, res) => {
       return res.status(404).json({ error: 'Rol no encontrado' });
     }
 
-    // Verificar nombre duplicado
+    // Verificar duplicado (nombre + descripcion, excluyendo el actual)
     const [duplicate] = await pool.execute(
-      'SELECT rol_id FROM rol_usuarios WHERE nombre_rol = ? AND rol_id != ?',
-      [nombre_rol, id]
+      'SELECT rol_id FROM rol_usuarios WHERE nombre_rol = ? AND descripcion = ? AND rol_id != ?',
+      [nombre_rol, descripcion || null, id]
     );
 
     if (duplicate.length > 0) {
-      return res.status(400).json({ error: 'Ya existe otro rol con ese nombre' });
+      return res.status(400).json({ error: 'Ya existe otro rol con ese nombre y descripción' });
     }
 
     await pool.execute(

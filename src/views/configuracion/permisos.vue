@@ -199,7 +199,6 @@ export default {
       } catch (error) {
         if (error !== 'cancel') {
           console.error('Error eliminando rol:', error)
-          this.$message.error(error.response?.data?.error || 'Error al eliminar rol')
         }
       }
     },
@@ -221,7 +220,6 @@ export default {
           await this.loadRoles()
         } catch (error) {
           console.error('Error guardando rol:', error)
-          this.$message.error(error.response?.data?.error || 'Error al guardar rol')
         } finally {
           this.saving = false
         }
