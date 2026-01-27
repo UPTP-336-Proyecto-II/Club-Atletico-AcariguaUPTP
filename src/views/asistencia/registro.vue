@@ -60,9 +60,9 @@
         <div class="control-item event-select">
           <label>Tipo de Evento</label>
           <el-select v-model="tipo_evento" placeholder="Tipo">
-            <el-option label="Entrenamiento" value="ENTRENAMIENTO" />
-            <el-option label="Partido" value="PARTIDO" />
-            <el-option label="Evento Especial" value="EVENTO_ESPECIAL" />
+            <el-option label="Entrenamiento" value="Entrenamiento" />
+            <el-option label="Partido" value="Partido" />
+            <el-option label="Evento Especial" value="Evento especial" />
           </el-select>
         </div>
 
@@ -104,8 +104,8 @@
         <!-- Bulk Actions -->
         <div class="bulk-actions">
           <el-button-group>
-            <el-button size="mini" type="success" plain @click="setAllStatus('PRESENTE')">Todos Presentes</el-button>
-            <el-button size="mini" type="danger" plain @click="setAllStatus('AUSENTE')">Todos Ausentes</el-button>
+            <el-button size="mini" type="success" plain @click="setAllStatus('presente')">Todos Presentes</el-button>
+            <el-button size="mini" type="danger" plain @click="setAllStatus('ausente')">Todos Ausentes</el-button>
           </el-button-group>
           <span class="summary-text">
             Total: {{ filteredAtletas.length }} |
@@ -119,6 +119,7 @@
           border
           row-key="atleta_id"
           :row-class-name="tableRowClassName"
+          empty-text="No hay atletas registrados en esta categoría"
         >
           <el-table-column label="Atleta" min-width="250">
             <template slot-scope="scope">
@@ -140,13 +141,13 @@
           <el-table-column label="Asistencia" min-width="320" align="center">
             <template slot-scope="scope">
               <el-radio-group v-model="scope.row.status" size="small" class="status-group" @change="scope.row.isSaved = false">
-                <el-radio-button label="PRESENTE">
+                <el-radio-button label="presente">
                   <i class="el-icon-check" /> Presente
                 </el-radio-button>
-                <el-radio-button label="AUSENTE">
+                <el-radio-button label="ausente">
                   <i class="el-icon-close" /> Ausente
                 </el-radio-button>
-                <el-radio-button label="JUSTIFICADO">
+                <el-radio-button label="justificativo">
                   <i class="el-icon-warning-outline" /> Justif.
                 </el-radio-button>
               </el-radio-group>
@@ -193,7 +194,7 @@ export default {
       categoria_id: '',
       entrenador_id: '',
       fecha: '',
-      tipo_evento: 'ENTRENAMIENTO',
+      tipo_evento: 'Entrenamiento',
       listaAtletas: [],
       searchQuery: '',
       backendUrl: 'http://localhost:3000'
@@ -209,7 +210,7 @@ export default {
       )
     },
     countPresentes() {
-      return this.listaAtletas.filter(a => a.status === 'PRESENTE').length
+      return this.listaAtletas.filter(a => a.status === 'presente').length
     }
   },
   created() {
@@ -266,7 +267,7 @@ export default {
 
           return {
             ...atleta,
-            status: record ? record.estatus : 'PRESENTE',
+            status: record ? record.estatus : 'presente',
             observaciones: record ? record.observaciones : '',
             asistencia_id: record ? record.asistencia_id : null,
             isSaved: !!record
@@ -342,8 +343,8 @@ export default {
       return `${this.backendUrl}/uploads/atletas/${filename}`
     },
     tableRowClassName({ row }) {
-      if (row.status === 'AUSENTE') return 'row-ausente'
-      if (row.status === 'JUSTIFICADO') return 'row-justificado'
+      if (row.status === 'ausente') return 'row-ausente'
+      if (row.status === 'justificativo') return 'row-justificado'
       return ''
     }
   }
