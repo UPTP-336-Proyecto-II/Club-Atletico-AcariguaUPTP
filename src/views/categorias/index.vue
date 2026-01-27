@@ -5,18 +5,7 @@
       <div class="header-content">
         <div>
           <h1><i class="el-icon-trophy" /> Gestión de Categorías</h1>
-          <p class="subtitle">Administración de niveles y equipos</p>
-        </div>
-        <div class="header-actions">
-          <el-button
-            v-if="canUserEdit"
-            type="primary"
-            icon="el-icon-plus"
-            class="red-btn"
-            @click="nuevaCategoria"
-          >
-            Nueva Categoría
-          </el-button>
+          <p class="subtitle">Categorías predefinidas de la academia</p>
         </div>
       </div>
     </div>
@@ -44,6 +33,14 @@
             />
           </el-select>
         </div>
+
+        <div class="control-item filter-box">
+          <label>Filtrar por Estado</label>
+          <el-select v-model="filtroEstatus" placeholder="Todos los estados" clearable>
+            <el-option label="Activas" value="Activa" />
+            <el-option label="Inactivas" value="Inactiva" />
+          </el-select>
+        </div>
       </div>
     </el-card>
 
@@ -62,6 +59,7 @@
         v-for="cat in categoriasFiltradas"
         :key="cat.categoria_id"
         class="category-card"
+        :class="{ 'inactive-card': cat.estatus === 'Inactiva' }"
         shadow="hover"
         :body-style="{ padding: '0px' }"
       >
@@ -71,20 +69,24 @@
           </div>
           <div class="category-title">
             <h3>{{ cat.nombre_categoria }}</h3>
-            <el-tag size="small" effect="dark" type="danger" class="age-tag">
-              {{ cat.edad_min }} - {{ cat.edad_max }} Años
-            </el-tag>
+            <div class="tags-row">
+              <el-tag size="small" effect="dark" type="danger" class="age-tag">
+                {{ cat.edad_min }} - {{ cat.edad_max }} Años
+              </el-tag>
+              <el-tag
+                size="small"
+                :type="cat.estatus === 'Activa' ? 'success' : 'info'"
+              >
+                {{ cat.estatus || 'Activa' }}
+              </el-tag>
+            </div>
           </div>
-          <div class="card-actions">
-            <el-dropdown trigger="click" @command="handleCommand($event, cat)">
-              <span class="el-dropdown-link">
-                <i class="el-icon-more transform-icon" />
-              </span>
-              <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="edit" icon="el-icon-edit" :disabled="!canUserEdit">Editar</el-dropdown-item>
-                <el-dropdown-item command="delete" icon="el-icon-delete" :disabled="!canUserEdit" style="color: #F56C6C">Eliminar</el-dropdown-item>
-              </el-dropdown-menu>
-            </el-dropdown>
+          <div v-if="canUserEdit" class="card-actions">
+            <el-button
+              type="text"
+              icon="el-icon-edit"
+              @click="editarCategoria(cat)"
+            />
           </div>
         </div>
 
@@ -101,36 +103,28 @@
 
           <div class="progress-section">
             <div class="progress-label">Ocupación</div>
-            <el-progress :percentage="50" :format="() => ''" :color="'#E51D22'" />
+            <el-progress :percentage="getOcupacion(cat)" :format="() => ''" :color="'#E51D22'" />
           </div>
         </div>
       </el-card>
     </div>
 
-    <!-- Modal Form -->
+    <!-- Modal Form (Solo editar entrenador y estatus) -->
     <el-dialog
-      :title="modoEdicion ? 'Editar Categoría' : 'Nueva Categoría'"
+      title="Editar Categoría"
       :visible.sync="mostrarModal"
-      width="500px"
+      width="450px"
       custom-class="category-dialog"
       :close-on-click-modal="false"
     >
-      <el-form ref="form" :model="formulario" label-position="top" :rules="rules">
-        <el-form-item label="Nombre de Categoría" prop="nombre_categoria">
-          <el-input v-model="formulario.nombre_categoria" placeholder="Ej: Sub-12" />
-        </el-form-item>
+      <div class="categoria-info">
+        <h3>{{ formulario.nombre_categoria }}</h3>
+        <el-tag type="danger" size="small">{{ formulario.edad_min }} - {{ formulario.edad_max }} años</el-tag>
+      </div>
 
-        <div class="form-row-2">
-          <el-form-item label="Edad Mínima" prop="edad_min">
-            <el-input-number v-model="formulario.edad_min" :min="4" :max="20" style="width: 100%" />
-          </el-form-item>
-          <el-form-item label="Edad Máxima" prop="edad_max">
-            <el-input-number v-model="formulario.edad_max" :min="4" :max="20" style="width: 100%" />
-          </el-form-item>
-        </div>
-
-        <el-form-item label="Entrenador Responsable" prop="entrenador_id">
-          <el-select v-model="formulario.entrenador_id" placeholder="Seleccionar" style="width: 100%" filterable>
+      <el-form ref="form" :model="formulario" label-position="top">
+        <el-form-item label="Entrenador Responsable">
+          <el-select v-model="formulario.entrenador_id" placeholder="Seleccionar entrenador" style="width: 100%" filterable clearable>
             <el-option
               v-for="ent in entrenadores"
               :key="ent.plantel_id"
@@ -139,11 +133,23 @@
             />
           </el-select>
         </el-form-item>
+
+        <el-form-item label="Estado de la Categoría">
+          <el-radio-group v-model="formulario.estatus">
+            <el-radio-button label="Activa">
+              <i class="el-icon-check" /> Activa
+            </el-radio-button>
+            <el-radio-button label="Inactiva">
+              <i class="el-icon-close" /> Inactiva
+            </el-radio-button>
+          </el-radio-group>
+        </el-form-item>
       </el-form>
+
       <span slot="footer" class="dialog-footer">
         <el-button @click="mostrarModal = false">Cancelar</el-button>
         <el-button type="primary" :loading="guardando" class="red-btn" @click="guardarCategoria">
-          {{ modoEdicion ? 'Actualizar' : 'Crear' }}
+          Guardar Cambios
         </el-button>
       </span>
     </el-dialog>
@@ -165,20 +171,17 @@ export default {
       entrenadores: [],
       searchQuery: '',
       filtroEntrenador: '',
+      filtroEstatus: '',
 
       // Modal state
       mostrarModal: false,
-      modoEdicion: false,
       formulario: {
         id: null,
         nombre_categoria: '',
-        edad_min: 5,
-        edad_max: 7,
-        entrenador_id: ''
-      },
-      rules: {
-        nombre_categoria: [{ required: true, message: 'Requerido', trigger: 'blur' }],
-        entrenador_id: [{ required: true, message: 'Requerido', trigger: 'change' }]
+        edad_min: 0,
+        edad_max: 0,
+        entrenador_id: null,
+        estatus: 'Activa'
       }
     }
   },
@@ -196,6 +199,10 @@ export default {
 
       if (this.filtroEntrenador) {
         result = result.filter(c => c.entrenador_id === this.filtroEntrenador)
+      }
+
+      if (this.filtroEstatus) {
+        result = result.filter(c => c.estatus === this.filtroEstatus)
       }
 
       return result
@@ -231,90 +238,42 @@ export default {
       const ent = this.entrenadores.find(e => e.plantel_id === id)
       return ent ? `${ent.nombre} ${ent.apellido}` : 'No Encontrado'
     },
-    nuevaCategoria() {
-      this.formulario = {
-        id: null,
-        nombre_categoria: '',
-        edad_min: 5,
-        edad_max: 7,
-        entrenador_id: ''
-      }
-      this.modoEdicion = false
-      this.mostrarModal = true
-      this.$nextTick(() => {
-        if (this.$refs.form) this.$refs.form.clearValidate()
-      })
+    getOcupacion(cat) {
+      // Calcular porcentaje de ocupación (máximo 25 atletas por categoría)
+      const maxAtletas = 25
+      const total = cat.total_atletas || 0
+      return Math.min(Math.round((total / maxAtletas) * 100), 100)
     },
-    handleCommand(command, categoria) {
-      if (command === 'edit') {
-        this.formulario = {
-          id: categoria.categoria_id,
-          nombre_categoria: categoria.nombre_categoria,
-          edad_min: categoria.edad_min,
-          edad_max: categoria.edad_max,
-          entrenador_id: categoria.entrenador_id
-        }
-        this.modoEdicion = true
-        this.mostrarModal = true
-      } else if (command === 'delete') {
-        this.confirmarEliminacion(categoria)
+    editarCategoria(categoria) {
+      this.formulario = {
+        id: categoria.categoria_id,
+        nombre_categoria: categoria.nombre_categoria,
+        edad_min: categoria.edad_min,
+        edad_max: categoria.edad_max,
+        entrenador_id: categoria.entrenador_id,
+        estatus: categoria.estatus || 'Activa'
       }
+      this.mostrarModal = true
     },
     async guardarCategoria() {
-      this.$refs.form.validate(async(valid) => {
-        if (valid) {
-          if (this.formulario.edad_min >= this.formulario.edad_max) {
-            this.$message.warning('La edad mínima debe ser menor que la máxima')
-            return
-          }
-
-          this.guardando = true
-          try {
-            if (this.modoEdicion) {
-              await request({
-                url: `/categoria/${this.formulario.id}`,
-                method: 'put',
-                data: this.formulario
-              })
-              this.$message.success('Categoría actualizada')
-            } else {
-              await request({
-                url: '/categoria',
-                method: 'post',
-                data: this.formulario
-              })
-              this.$message.success('Categoría creada')
-            }
-            this.mostrarModal = false
-            this.cargarDatos()
-          } catch (error) {
-            console.error(error)
-            this.$message.error('Error al guardar')
-          } finally {
-            this.guardando = false
-          }
-        }
-      })
-    },
-    async confirmarEliminacion(categoria) {
+      this.guardando = true
       try {
-        await this.$confirm(
-          `¿Eliminar categoría "${categoria.nombre_categoria}"?`,
-          'Confirmar',
-          { type: 'warning', confirmButtonText: 'Eliminar', cancelButtonText: 'Cancelar' }
-        )
-
         await request({
-          url: `/categoria/${categoria.categoria_id}`,
-          method: 'delete'
+          url: `/categoria/${this.formulario.id}`,
+          method: 'put',
+          data: {
+            entrenador_id: this.formulario.entrenador_id,
+            estatus: this.formulario.estatus
+          }
         })
-
-        this.$message.success('Eliminado correctamente')
+        this.$message.success('Categoría actualizada')
+        this.mostrarModal = false
         this.cargarDatos()
       } catch (error) {
-        if (error !== 'cancel') {
-          this.$message.error('Error al eliminar')
-        }
+        console.error(error)
+        this.$message.error('Error al guardar')
+      } finally {
+        this.guardando = false
       }
     }
   }
@@ -356,34 +315,6 @@ export default {
   opacity: 0.9;
 }
 
-/* Header Button - Modern Executive Style */
-.header-actions ::v-deep .el-button--primary,
-.header-actions .red-btn {
-  background: rgba(255, 255, 255, 0.15) !important;
-  border: 2px solid rgba(255, 255, 255, 0.3) !important;
-  color: #fff !important;
-  font-weight: 600;
-  font-size: 0.95rem;
-  padding: 12px 24px;
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-.header-actions ::v-deep .el-button--primary:hover,
-.header-actions .red-btn:hover {
-  background: rgba(255, 255, 255, 0.25) !important;
-  border-color: rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-
-.header-actions ::v-deep .el-button--primary:active,
-.header-actions .red-btn:active {
-  transform: translateY(0);
-}
-
 /* Controls */
 .control-card {
   margin-bottom: 25px;
@@ -400,7 +331,7 @@ export default {
 
 .control-item {
   flex: 1;
-  min-width: 250px;
+  min-width: 200px;
 }
 
 .control-item label {
@@ -444,11 +375,6 @@ export default {
   font-weight: 500;
 }
 
-.control-item ::v-deep .el-input__prefix {
-  left: 12px;
-  color: #64748b;
-}
-
 /* Grid */
 .categories-grid {
   display: grid;
@@ -469,6 +395,16 @@ export default {
   border-color: #E51D22;
   transform: translateY(-6px);
   box-shadow: 0 12px 24px rgba(229, 29, 34, 0.15);
+}
+
+.category-card.inactive-card {
+  opacity: 0.7;
+  border-color: #94a3b8;
+}
+
+.category-card.inactive-card:hover {
+  border-color: #64748b;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
 }
 
 .card-header {
@@ -495,25 +431,34 @@ export default {
   box-shadow: 0 4px 6px rgba(229, 29, 34, 0.2);
 }
 
+.inactive-card .category-icon {
+  background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%);
+  box-shadow: 0 4px 6px rgba(100, 116, 139, 0.2);
+}
+
 .category-title h3 {
   margin: 0 0 5px 0;
   font-size: 1.1rem;
   color: #1e293b;
 }
 
+.tags-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .card-actions {
   margin-left: auto;
 }
 
-.transform-icon {
+.card-actions .el-button {
   font-size: 1.2rem;
-  color: #94a3b8;
-  cursor: pointer;
-  padding: 5px;
+  color: #64748b;
 }
 
-.transform-icon:hover {
-  color: #1e293b;
+.card-actions .el-button:hover {
+  color: #E51D22;
 }
 
 .card-body {
@@ -551,6 +496,21 @@ export default {
   margin-bottom: 8px;
 }
 
+/* Modal Styles */
+.categoria-info {
+  text-align: center;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.categoria-info h3 {
+  margin: 0 0 10px 0;
+  font-size: 1.3rem;
+  color: #1e293b;
+}
+
 /* Utilities */
 .red-btn {
   background-color: #E51D22 !important;
@@ -560,12 +520,6 @@ export default {
 .red-btn:hover {
   background-color: #cf1a1e !important;
   border-color: #cf1a1e !important;
-}
-
-.form-row-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
 }
 
 .empty-state {
@@ -595,3 +549,4 @@ export default {
   }
 }
 </style>
+

@@ -2,11 +2,10 @@ const express = require('express');
 const router = express.Router();
 const categoriaController = require('../controllers/categoriaController');
 
-// Rutas para categorías
+// Rutas para categorías (solo lectura y actualización de entrenador/estatus)
 router.get('/', categoriaController.getCategorias);
 router.get('/:id', categoriaController.getCategoriaById);
-router.post('/', categoriaController.createCategoria);
 router.put('/:id', categoriaController.updateCategoria);
-router.delete('/:id', categoriaController.deleteCategoria);
 
 module.exports = router;
+
