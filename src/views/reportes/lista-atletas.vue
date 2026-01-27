@@ -55,7 +55,6 @@
 
         <div class="actions-section">
           <el-button type="info" size="small" icon="el-icon-refresh" :loading="loading" @click="fetchData">Actualizar</el-button>
-          <el-button type="success" size="small" icon="el-icon-document" @click="handleExport">Exportar Excel</el-button>
           <el-button type="danger" size="small" icon="el-icon-printer" @click="handlePrintList">Imprimir Lista</el-button>
         </div>
       </div>
@@ -92,7 +91,7 @@
 
         <el-table-column label="Posición" align="center" min-width="120">
           <template slot-scope="{row}">
-            <el-tag size="mini" type="info" effect="plain">{{ row.posicion_de_juego || 'N/A' }}</el-tag>
+            <el-tag size="mini" type="info" effect="plain">{{ row.posicion_de_juego_nombre || 'N/A' }}</el-tag>
           </template>
         </el-table-column>
 
@@ -150,7 +149,7 @@
               <h3 class="athlete-fullname">{{ selectedAthlete.nombre }} {{ selectedAthlete.apellido }}</h3>
               <div class="tags-container">
                 <span class="info-tag category">{{ selectedAthlete.categoria_nombre }}</span>
-                <span class="info-tag position">{{ selectedAthlete.posicion_de_juego }}</span>
+                <span class="info-tag position">{{ selectedAthlete.posicion_de_juego_nombre }}</span>
                 <span :class="['info-tag status', selectedAthlete.estatus ? selectedAthlete.estatus.toLowerCase() : '']">{{ selectedAthlete.estatus }}</span>
               </div>
               <div class="basic-details-grid">
@@ -285,13 +284,13 @@ export default {
   },
   computed: {
     positions() {
-      const pos = new Set(this.atletas.map(a => a.posicion_de_juego).filter(p => p))
+      const pos = new Set(this.atletas.map(a => a.posicion_de_juego_nombre).filter(p => p))
       return Array.from(pos)
     },
     filteredAthletes() {
       return this.atletas.filter(athlete => {
         if (this.filters.category !== 'all' && athlete.categoria_id !== this.filters.category) return false
-        if (this.filters.position !== 'all' && athlete.posicion_de_juego !== this.filters.position) return false
+        if (this.filters.position !== 'all' && athlete.posicion_de_juego_nombre !== this.filters.position) return false
         if (this.filters.status !== 'all' && athlete.estatus !== this.filters.status) return false
 
         const age = this.calculateAge(athlete.fecha_nacimiento)
@@ -398,7 +397,7 @@ export default {
     handleExport() {
       import('@/vendor/Export2Excel').then(excel => {
         const tHeader = ['Nombre', 'Apellido', 'Edad', 'Posición', 'Categoría', 'Teléfono', 'Estatus']
-        const filterVal = ['nombre', 'apellido', 'age', 'posicion_de_juego', 'categoria_nombre', 'telefono', 'estatus']
+        const filterVal = ['nombre', 'apellido', 'age', 'posicion_de_juego_nombre', 'categoria_nombre', 'telefono', 'estatus']
         const dataToExport = this.filteredAthletes.map(a => ({
           ...a,
           age: this.calculateAge(a.fecha_nacimiento)

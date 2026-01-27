@@ -86,7 +86,7 @@
             <h2>{{ atleta.nombre }} {{ atleta.apellido }}</h2>
             <div class="tags">
               <el-tag size="small" type="danger">{{ atleta.categoria_nombre }}</el-tag>
-              <el-tag size="small" type="info">{{ atleta.posicion_de_juego || 'Sin posición' }}</el-tag>
+              <el-tag size="small" type="info">{{ atleta.posicion_de_juego_nombre || 'Sin posición' }}</el-tag>
               <el-tag size="small" type="success">Pierna: {{ atleta.pierna_dominante || 'Derecha' }}</el-tag>
             </div>
           </div>
@@ -549,8 +549,9 @@ export default {
           const latestMed = mediciones && mediciones.length > 0 ? mediciones[0] : {}
 
           return {
+            cedula: atleta.cedula || `ID: ${atleta.atleta_id}`,
             nombre: `${atleta.nombre} ${atleta.apellido}`,
-            posicion: atleta.posicion_de_juego || 'N/A',
+            posicion: atleta.posicion_de_juego_nombre || 'N/A',
             peso: latestMed.peso || '-',
             altura: latestMed.altura || '-',
             imc: latestMed.indice_de_masa || '-',
@@ -562,21 +563,12 @@ export default {
           }
         }))
 
-        import('@/vendor/Export2Excel').then(excel => {
-          const tHeader = ['Nombre', 'Posición', 'Peso (kg)', 'Altura (cm)', 'IMC', 'Fuerza', 'Velocidad', 'Resistencia', 'Coordinación', 'Reacción']
-          const filterVal = ['nombre', 'posicion', 'peso', 'altura', 'imc', 'fuerza', 'velocidad', 'resistencia', 'coordinacion', 'reaccion']
-          const data = this.formatJson(filterVal, allData)
-          excel.export_json_to_excel({
-            header: tHeader,
-            data,
-            filename: `Reporte_Rendimiento_${categoria.nombre_categoria}_${new Date().toLocaleDateString()}`,
-            autoWidth: true,
-            bookType: 'xlsx'
-          })
-          this.$message.success('Reporte exportado exitosamente')
-        })
+        // Generar PDF en vez de Excel
+        const { PdfReportService } = await import('@/utils/pdfReportService')
+        PdfReportService.generateCategoryPerformanceReport(allData, categoria.nombre_categoria, categoria.entrenador_nombre)
+        this.$message.success('Generando PDF...')
       } catch (error) {
-        console.error('Error exportando categoría:', error)
+        console.error('Error generando reporte de categoría:', error)
         this.$message.error('Error al generar reporte de categoría')
       } finally {
         this.loading = false
