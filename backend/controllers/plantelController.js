@@ -15,8 +15,17 @@ const getPlantel = async (req, res) => {
         const params = [];
 
         if (rol) {
-            query += ' AND p.rol_id = ?';
-            params.push(rol);
+            // Verificar si es un número (rol_id) o un string (nombre del rol)
+            const rolId = parseInt(rol);
+            if (!isNaN(rolId)) {
+                // Es un ID numérico
+                query += ' AND p.rol_id = ?';
+                params.push(rolId);
+            } else {
+                // Es un nombre de rol (ENTRENADOR, ADMINISTRADOR, etc.)
+                query += ' AND UPPER(r.nombre_rol) = UPPER(?)';
+                params.push(rol);
+            }
         }
 
         // Ordenamiento
