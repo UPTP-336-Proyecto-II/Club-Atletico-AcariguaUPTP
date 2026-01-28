@@ -14,7 +14,7 @@ const getAtletas = async (req, res) => {
          LEFT JOIN categoria c ON a.categoria_id = c.categoria_id
          LEFT JOIN tutor t ON a.tutor_id = t.tutor_id
          LEFT JOIN direcciones d ON a.direccion_id = d.direccion_id
-         LEFT JOIN \`posicion de juego\` p ON a.posicion_de_juego = p.posicion_id
+         LEFT JOIN posicion_juego p ON a.posicion_de_juego = p.posicion_id
          WHERE 1=1`;
 
     const params = [];
@@ -75,7 +75,7 @@ const getAtletaById = async (req, res) => {
        LEFT JOIN categoria c ON a.categoria_id = c.categoria_id
        LEFT JOIN tutor t ON a.tutor_id = t.tutor_id
        LEFT JOIN direcciones d ON a.direccion_id = d.direccion_id
-       LEFT JOIN \`posicion de juego\` p ON a.posicion_de_juego = p.posicion_id
+       LEFT JOIN posicion_juego p ON a.posicion_de_juego = p.posicion_id
        WHERE a.atleta_id = ?`,
       [id]
     );
@@ -96,6 +96,7 @@ const createAtleta = async (req, res) => {
     const {
       nombre,
       apellido,
+      cedula,
       telefono,
       direccion, // Objeto { pais, estado, municipio, parroquia, descripcion_descriptiva }
       fecha_nacimiento,

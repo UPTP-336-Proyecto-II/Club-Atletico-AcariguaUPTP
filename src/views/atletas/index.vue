@@ -130,7 +130,7 @@
             <div class="athlete-actions">
               <el-button v-if="!isUserMedico" type="info" icon="el-icon-data-line" @click="goToProgress">Análisis</el-button>
               <el-button v-if="canUserEdit && !isUserMedico" type="danger" icon="el-icon-delete" @click="deleteAtleta">Eliminar</el-button>
-              <el-button v-if="canUserEdit || isUserMedico" type="primary" icon="el-icon-edit" @click="handleEdit">Editar</el-button>
+              <el-button v-if="canUserEdit" type="primary" icon="el-icon-edit" @click="handleEdit">Editar</el-button>
             </div>
           </div>
 
@@ -198,6 +198,11 @@
 
             <!-- Tab 2: Ficha Médica -->
             <el-tab-pane v-if="isTabVisible('ficha-medica')" label="Ficha Médica" name="medical">
+              <div class="tab-header-actions">
+                <el-button v-if="canUserEdit || isUserMedico" type="primary" size="small" icon="el-icon-edit" @click="openMedicalModal">
+                  {{ fichaMedica ? 'Editar Ficha Médica' : 'Agregar Ficha Médica' }}
+                </el-button>
+              </div>
               <div v-if="fichaMedica" class="form-grid">
                 <div class="form-item">
                   <label>Tipo Sanguíneo</label>
@@ -223,7 +228,7 @@
               <div v-else class="empty-tab">
                 <i class="el-icon-document" />
                 <p>No hay ficha médica registrada</p>
-                <p class="hint">Haz clic en "Editar" para crear la ficha médica</p>
+                <p v-if="canUserEdit || isUserMedico" class="hint">Haz clic en "Agregar Ficha Médica" para crear la ficha médica</p>
               </div>
             </el-tab-pane>
 
@@ -831,7 +836,7 @@ export default {
 
       // Listas para dirección
       paises: ['venezuela', 'colombia', 'peru', 'argentina', 'bolivia', 'chile', 'uruguay', 'paraguay', 'brazil', 'panama', 'ecuador', 'guatemala', 'el salvador', 'mexico', 'cuba', 'honduras', 'nicaragua', 'costa rica', 'belice'],
-      estadosVenezuela: ['amazonas', 'anzoategui', 'apure', 'aragua', 'barinas', 'bolivia', 'carabobo', 'cojedes', 'delta amacuro', 'distrito capital', 'falcon', 'guarico', 'lara', 'merida', 'miranda', 'monagas', 'nueva esparta', 'portuguesa', 'sucre', 'tachira', 'trujillo', 'vargas', 'yaracuy', 'zulia'],
+      estadosVenezuela: ['amazonas', 'anzoategui', 'apure', 'aragua', 'barinas', 'bolivar', 'carabobo', 'cojedes', 'delta amacuro', 'distrito capital', 'falcon', 'guarico', 'lara', 'merida', 'miranda', 'monagas', 'nueva esparta', 'portuguesa', 'sucre', 'tachira', 'trujillo', 'vargas', 'yaracuy', 'zulia'],
 
       // Formularios
       atletaForm: {
@@ -1775,6 +1780,13 @@ aside.sidebar {
   box-shadow: 0 0 0 3px rgba(229, 29, 34, 0.12);
 }
 
+/* Placeholder styling for select dropdowns in filter popover */
+.filter-item ::v-deep .el-select .el-input__inner::placeholder {
+  color: #1e293b !important;
+  font-weight: 500;
+  opacity: 1;
+}
+
 .filter-btn {
   font-size: 1.3rem;
   color: #64748b;
@@ -1971,6 +1983,14 @@ aside.sidebar {
   grid-template-columns: repeat(2, 1fr);
   gap: 25px;
   padding: 20px 0;
+}
+
+.tab-header-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .form-item label {
