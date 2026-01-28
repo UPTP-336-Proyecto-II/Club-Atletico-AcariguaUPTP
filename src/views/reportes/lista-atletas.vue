@@ -291,7 +291,7 @@ export default {
       return this.atletas.filter(athlete => {
         if (this.filters.category !== 'all' && athlete.categoria_id !== this.filters.category) return false
         if (this.filters.position !== 'all' && athlete.posicion_de_juego_nombre !== this.filters.position) return false
-        if (this.filters.status !== 'all' && athlete.estatus !== this.filters.status) return false
+        if (this.filters.status !== 'all' && athlete.estatus?.toUpperCase() !== this.filters.status?.toUpperCase()) return false
 
         const age = this.calculateAge(athlete.fecha_nacimiento)
         if (this.filters.age !== 'all') {

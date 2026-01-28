@@ -7,13 +7,13 @@ const getTests = async (req, res) => {
 
     let query = `
       SELECT t.*, 
-             d.fecha_pruebas as fecha_test,
+             e.fecha_evento as fecha_test,
              atl.nombre as atleta_nombre, 
              atl.apellido as atleta_apellido,
              c.nombre_categoria as categoria_nombre,
              TIMESTAMPDIFF(YEAR, atl.fecha_nacimiento, CURDATE()) as edad
       FROM resultado_pruebas t
-      LEFT JOIN dia_pruebas d ON t.pruebas_id = d.pruebas_id
+      LEFT JOIN evento_deportivo e ON t.evento_id = e.evento_id
       LEFT JOIN atletas atl ON t.atleta_id = atl.atleta_id
       LEFT JOIN categoria c ON atl.categoria_id = c.categoria_id
       WHERE 1=1
@@ -25,7 +25,7 @@ const getTests = async (req, res) => {
       params.push(atleta_id);
     }
 
-    query += ' ORDER BY d.fecha_pruebas DESC, t.test_id DESC, atl.nombre ASC';
+    query += ' ORDER BY e.fecha_evento DESC, t.test_id DESC, atl.nombre ASC';
 
     const [rows] = await pool.execute(query, params);
     res.json(rows);
@@ -41,12 +41,12 @@ const getTestsByAtleta = async (req, res) => {
     const { atleta_id } = req.params;
 
     const [rows] = await pool.execute(
-      `SELECT t.*, d.fecha_pruebas as fecha_test
+      `SELECT t.*, e.fecha_evento as fecha_test
        FROM resultado_pruebas t
-       LEFT JOIN dia_pruebas d ON t.pruebas_id = d.pruebas_id
+       LEFT JOIN evento_deportivo e ON t.evento_id = e.evento_id
        LEFT JOIN atletas atl ON t.atleta_id = atl.atleta_id
        WHERE t.atleta_id = ? AND atl.estatus IN ('ACTIVO', 'LESIONADO', 'Activo', 'Lesionado')
-       ORDER BY d.fecha_pruebas DESC, t.test_id DESC`,
+       ORDER BY e.fecha_evento DESC, t.test_id DESC`,
       [atleta_id]
     );
 
@@ -70,35 +70,30 @@ const createTest = async (req, res) => {
       test_de_reaccion
     } = req.body;
 
-    // Nota: El frontend debe enviar pruebas_id, o se debe crear un registro en dia_pruebas primero.
-    // Asumiremos que el frontend enviará pruebas_id si existe, o tendremos que manejar la creación de dia_pruebas.
-    // Dado que el frontend enviaba fecha_test, necesitaremos buscar o crear un dia_pruebas para esa fecha.
-
-    // 1. Buscar o crear dia_pruebas para la fecha
-    let pruebasId;
+    // 1. Buscar o crear evento_deportivo para la fecha
+    let eventoId;
     if (fecha_test) {
-      const [dias] = await pool.execute('SELECT pruebas_id FROM dia_pruebas WHERE fecha_pruebas = ?', [fecha_test]);
-      if (dias.length > 0) {
-        pruebasId = dias[0].pruebas_id;
+      const [eventos] = await pool.execute('SELECT evento_id FROM evento_deportivo WHERE fecha_evento = ? AND tipo_evento = ?', [fecha_test, 'Prueba']);
+      if (eventos.length > 0) {
+        eventoId = eventos[0].evento_id;
       } else {
-        // Se requiere entrenador_id, usaremos uno por defecto o null si la tabla lo permite (no lo permite, NOT NULL)
-        // Necesitamos un entrenador_id válido. Buscaré el primer entrenador disponible.
-        const [entrenadores] = await pool.execute('SELECT plantel_id FROM plantel WHERE rol_id = 3 LIMIT 1'); // Rol 3 = entrenador
-        const entrenadorId = entrenadores.length > 0 ? entrenadores[0].plantel_id : 1; // Fallback a 1 si no hay entrenadores
+        // Buscar el primer entrenador disponible
+        const [entrenadores] = await pool.execute('SELECT plantel_id FROM plantel WHERE rol_id = 3 LIMIT 1');
+        const entrenadorId = entrenadores.length > 0 ? entrenadores[0].plantel_id : 1;
 
-        const [newDia] = await pool.execute(
-          'INSERT INTO dia_pruebas (entrenador_id, fecha_pruebas, observaciones) VALUES (?, ?, ?)',
-          [entrenadorId, fecha_test, 'Test registrado individualmente']
+        const [newEvento] = await pool.execute(
+          'INSERT INTO evento_deportivo (entrenador_id, tipo_evento, fecha_evento) VALUES (?, ?, ?)',
+          [entrenadorId, 'Prueba', fecha_test]
         );
-        pruebasId = newDia.insertId;
+        eventoId = newEvento.insertId;
       }
     }
 
     const [result] = await pool.execute(
       `INSERT INTO resultado_pruebas 
-       (atleta_id, pruebas_id, test_de_fuerza, test_resistencia, test_velocidad, test_coordinacion, test_de_reaccion) 
+       (atleta_id, evento_id, test_de_fuerza, test_resistencia, test_velocidad, test_coordinacion, test_de_reaccion) 
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [atleta_id, pruebasId, test_de_fuerza, test_resistencia, test_velocidad, test_coordinacion, test_de_reaccion]
+      [atleta_id, eventoId, test_de_fuerza, test_resistencia, test_velocidad, test_coordinacion, test_de_reaccion]
     );
 
     res.status(201).json({
@@ -139,11 +134,11 @@ const getEvolucionTest = async (req, res) => {
     const { atleta_id } = req.params;
 
     const [rows] = await pool.execute(
-      `SELECT d.fecha_pruebas as fecha_test, t.test_de_fuerza, t.test_resistencia, t.test_velocidad, t.test_coordinacion, t.test_de_reaccion
+      `SELECT e.fecha_evento as fecha_test, t.test_de_fuerza, t.test_resistencia, t.test_velocidad, t.test_coordinacion, t.test_de_reaccion
        FROM resultado_pruebas t
-       LEFT JOIN dia_pruebas d ON t.pruebas_id = d.pruebas_id
+       LEFT JOIN evento_deportivo e ON t.evento_id = e.evento_id
        WHERE t.atleta_id = ?
-       ORDER BY d.fecha_pruebas ASC`,
+       ORDER BY e.fecha_evento ASC`,
       [atleta_id]
     );
 
@@ -160,11 +155,11 @@ const getUltimoTest = async (req, res) => {
     const { atleta_id } = req.params;
 
     const [rows] = await pool.execute(
-      `SELECT t.*, d.fecha_pruebas as fecha_test
+      `SELECT t.*, e.fecha_evento as fecha_test
        FROM resultado_pruebas t
-       LEFT JOIN dia_pruebas d ON t.pruebas_id = d.pruebas_id 
+       LEFT JOIN evento_deportivo e ON t.evento_id = e.evento_id 
        WHERE t.atleta_id = ?
-       ORDER BY d.fecha_pruebas DESC, t.test_id DESC
+       ORDER BY e.fecha_evento DESC, t.test_id DESC
        LIMIT 1`,
       [atleta_id]
     );

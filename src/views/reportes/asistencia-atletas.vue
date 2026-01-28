@@ -585,6 +585,17 @@ export default {
   opacity: 1;
 }
 
+/* Select placeholder styling */
+::v-deep .el-select .el-input .el-input__inner::placeholder {
+  color: #64748b !important;
+  font-weight: 600;
+  opacity: 1;
+}
+
+::v-deep .el-select .el-input.is-focus .el-input__inner::placeholder {
+  color: #64748b !important;
+}
+
 ::v-deep .el-range-separator {
   line-height: 36px;
   color: #64748b;

@@ -4,7 +4,7 @@ const pool = require('../config/database');
 const getPosiciones = async (req, res) => {
     try {
         const [rows] = await pool.execute(
-            'SELECT posicion_id, nombre_posicion FROM `posicion de juego` ORDER BY nombre_posicion ASC'
+            'SELECT posicion_id, nombre_posicion FROM posicion_juego ORDER BY nombre_posicion ASC'
         );
         res.json(rows);
     } catch (error) {

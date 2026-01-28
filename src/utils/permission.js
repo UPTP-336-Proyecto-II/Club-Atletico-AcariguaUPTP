@@ -37,8 +37,8 @@ export function hasRole(roles) {
  */
 export function canEdit() {
   const userRoles = store.getters?.roles || []
-  // Entrenador solo puede ver, no editar
-  return !userRoles.includes('entrenador')
+  // Entrenador y médico solo pueden ver, no editar
+  return !userRoles.includes('entrenador') && !userRoles.includes('medico')
 }
 
 /**
@@ -66,9 +66,9 @@ export function isAdmin() {
 export function getVisibleAtletasTabs() {
   const userRoles = store.getters?.roles || []
 
-  // Si es médico, solo puede ver ficha médica
+  // Si es médico, solo puede ver ficha médica y tutor
   if (userRoles.includes('medico')) {
-    return ['ficha-medica']
+    return ['ficha-medica', 'tutor']
   }
 
   // Cualquier otro rol puede ver todas las pestañas
