@@ -282,10 +282,10 @@
             <el-select v-model="usuarioForm.pregunta_1" placeholder="Selecciona una pregunta" style="width: 100%">
               <el-option
                 v-for="pregunta in preguntasDisponibles"
-                :key="pregunta"
-                :label="pregunta"
-                :value="pregunta"
-                :disabled="pregunta === usuarioForm.pregunta_2"
+                :key="pregunta.id"
+                :label="pregunta.pregunta"
+                :value="pregunta.id"
+                :disabled="pregunta.id === usuarioForm.pregunta_2"
               />
             </el-select>
           </el-form-item>
@@ -297,10 +297,10 @@
             <el-select v-model="usuarioForm.pregunta_2" placeholder="Selecciona una pregunta" style="width: 100%">
               <el-option
                 v-for="pregunta in preguntasDisponibles"
-                :key="pregunta"
-                :label="pregunta"
-                :value="pregunta"
-                :disabled="pregunta === usuarioForm.pregunta_1"
+                :key="pregunta.id"
+                :label="pregunta.pregunta"
+                :value="pregunta.id"
+                :disabled="pregunta.id === usuarioForm.pregunta_1"
               />
             </el-select>
           </el-form-item>
@@ -605,11 +605,10 @@ export default {
             if (this.usuarioForm.pregunta_1 && this.usuarioForm.respuesta_1 &&
                 this.usuarioForm.pregunta_2 && this.usuarioForm.respuesta_2) {
               await guardarPreguntas({
-                usuario_id: this.currentUsuarioId,
-                pregunta_1: this.usuarioForm.pregunta_1,
-                respuesta_1: this.usuarioForm.respuesta_1,
-                pregunta_2: this.usuarioForm.pregunta_2,
-                respuesta_2: this.usuarioForm.respuesta_2
+                preguntas: [
+                  { pregunta_id: this.usuarioForm.pregunta_1, respuesta: this.usuarioForm.respuesta_1 },
+                  { pregunta_id: this.usuarioForm.pregunta_2, respuesta: this.usuarioForm.respuesta_2 }
+                ]
               })
             }
 
@@ -627,11 +626,10 @@ export default {
             const nuevoUsuarioId = createResponse.usuario_id
             if (nuevoUsuarioId) {
               await guardarPreguntas({
-                usuario_id: nuevoUsuarioId,
-                pregunta_1: this.usuarioForm.pregunta_1,
-                respuesta_1: this.usuarioForm.respuesta_1,
-                pregunta_2: this.usuarioForm.pregunta_2,
-                respuesta_2: this.usuarioForm.respuesta_2
+                preguntas: [
+                  { pregunta_id: this.usuarioForm.pregunta_1, respuesta: this.usuarioForm.respuesta_1 },
+                  { pregunta_id: this.usuarioForm.pregunta_2, respuesta: this.usuarioForm.respuesta_2 }
+                ]
               })
             }
 

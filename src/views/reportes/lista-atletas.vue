@@ -54,6 +54,15 @@
 
           <div class="filter-item">
             <span class="filter-label"><i class="el-icon-postcard" /> Cédula:</span>
+            <el-select v-model="filters.cedulaFilter" placeholder="Todos" size="small" class="filter-select">
+              <el-option label="Todos los Atletas" value="todos" />
+              <el-option label="Con Cédula" value="con_cedula" />
+              <el-option label="Sin Cédula" value="sin_cedula" />
+            </el-select>
+          </div>
+
+          <div v-if="filters.cedulaFilter === 'con_cedula'" class="filter-item">
+            <span class="filter-label"><i class="el-icon-search" /> Buscar:</span>
             <el-input
               v-model="filters.cedula"
               placeholder="Ej: 123456789"
@@ -63,11 +72,6 @@
               class="filter-input"
               @input="v => filters.cedula = v.replace(/\D/g, '')"
             />
-          </div>
-
-          <div class="filter-item filter-switch">
-            <span class="filter-label"><i class="el-icon-warning-outline" /> Sin Cédula:</span>
-            <el-switch v-model="filters.sinCedula" active-text="Sí" inactive-text="No" />
           </div>
         </div>
 
@@ -289,8 +293,8 @@ export default {
         position: 'all',
         status: 'all',
         age: 'all',
-        cedula: '',
-        sinCedula: false
+        cedulaFilter: 'todos',
+        cedula: ''
       },
       // Modal Data
       showModal: false,
@@ -321,15 +325,12 @@ export default {
           if (this.filters.age === 'over20' && age <= 20) return false
         }
 
-        // Filtro por cédula (búsqueda)
-        if (this.filters.cedula && athlete.cedula) {
-          if (!String(athlete.cedula).includes(this.filters.cedula)) return false
-        } else if (this.filters.cedula && !athlete.cedula) {
-          return false
-        }
-
-        // Filtro sin cédula
-        if (this.filters.sinCedula) {
+        // Filtro por cédula
+        if (this.filters.cedulaFilter === 'con_cedula') {
+          if (!athlete.cedula || String(athlete.cedula).trim() === '') return false
+          // Si hay búsqueda por número de cédula
+          if (this.filters.cedula && !String(athlete.cedula).includes(this.filters.cedula)) return false
+        } else if (this.filters.cedulaFilter === 'sin_cedula') {
           if (athlete.cedula && String(athlete.cedula).trim() !== '') return false
         }
 

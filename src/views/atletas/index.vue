@@ -36,22 +36,6 @@
               <div class="filter-popover">
                 <h4>Filtros Avanzados</h4>
                 <div class="filter-item">
-                  <label>Buscar por Cédula</label>
-                  <el-input
-                    v-model="searchCedula"
-                    placeholder="Ej: 123456789"
-                    size="small"
-                    clearable
-                    maxlength="9"
-                    style="width: 100%"
-                    @input="v => searchCedula = v.replace(/\D/g, '')"
-                  />
-                </div>
-                <div class="filter-item">
-                  <label>Sin Cédula</label>
-                  <el-switch v-model="filterSinCedula" active-text="Sí" inactive-text="No" />
-                </div>
-                <div class="filter-item">
                   <label>Ordenar por</label>
                   <el-select v-model="filterOrder" placeholder="Seleccionar" size="small" style="width: 100%">
                     <el-option label="Más Recientes" value="recent" />
@@ -81,6 +65,25 @@
                     <el-option label="Suspendido" value="SUSPENDIDO" />
                     <el-option label="Ver Todos" value="TODOS" />
                   </el-select>
+                </div>
+                <div class="filter-item">
+                  <label>Buscar por Cédula</label>
+                  <el-select v-model="filterCedula" placeholder="Todos" size="small" style="width: 100%">
+                    <el-option label="Todos los Atletas" value="todos" />
+                    <el-option label="Con Cédula" value="con_cedula" />
+                    <el-option label="Sin Cédula" value="sin_cedula" />
+                  </el-select>
+                </div>
+                <div v-if="filterCedula === 'con_cedula'" class="filter-item">
+                  <label>Número de Cédula</label>
+                  <el-input
+                    v-model="searchCedula"
+                    placeholder="Ej: 123456789"
+                    size="small"
+                    clearable
+                    maxlength="9"
+                    @input="v => searchCedula = v.replace(/\D/g, '')"
+                  />
                 </div>
               </div>
               <el-button slot="reference" type="text" icon="el-icon-s-operation" class="filter-btn" />
@@ -846,6 +849,7 @@ export default {
       // Filtros y búsqueda
       searchQuery: '',
       searchCedula: '',
+      filterCedula: 'todos', // 'todos', 'con_cedula', 'sin_cedula'
       filterSinCedula: false,
       filterCategoria: '',
       filterEstatus: '', // "" significa por defecto (Activos/Lesionados)
@@ -998,6 +1002,13 @@ export default {
     filterSinCedula() {
       this.loadAtletas()
     },
+    filterCedula(newVal) {
+      // Resetear el campo de búsqueda por cédula cuando cambia el tipo de filtro
+      if (newVal !== 'con_cedula') {
+        this.searchCedula = ''
+      }
+      this.loadAtletas()
+    },
     filterCategoria() {
       this.loadAtletas()
     },
@@ -1037,8 +1048,15 @@ export default {
       try {
         const params = {}
         if (this.searchQuery) params.search = this.searchQuery
-        if (this.searchCedula) params.cedula = this.searchCedula
-        if (this.filterSinCedula) params.sin_cedula = 'true'
+
+        // Lógica de filtro por cédula
+        if (this.filterCedula === 'con_cedula') {
+          if (this.searchCedula) params.cedula = this.searchCedula
+          params.con_cedula = 'true'
+        } else if (this.filterCedula === 'sin_cedula') {
+          params.sin_cedula = 'true'
+        }
+        // Si filterCedula === 'todos', no se añaden filtros de cédula
 
         if (this.filterCategoria) params.categoria_id = this.filterCategoria
         if (this.filterEstatus) params.estatus = this.filterEstatus
