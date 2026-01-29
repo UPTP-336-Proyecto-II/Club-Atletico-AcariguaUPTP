@@ -3,7 +3,7 @@ const pool = require('../config/database');
 // Obtener todo el plantel
 const getPlantel = async (req, res) => {
     try {
-        const { rol, sort } = req.query;
+        const { rol, sort, cedula, sin_cedula } = req.query;
 
         let query = `
             SELECT p.*, r.nombre_rol,
@@ -13,6 +13,15 @@ const getPlantel = async (req, res) => {
             LEFT JOIN direcciones d ON p.direccion_id = d.direccion_id
             WHERE 1=1`;
         const params = [];
+
+        if (cedula) {
+            query += ' AND p.cedula LIKE ?';
+            params.push(`%${cedula}%`);
+        }
+
+        if (sin_cedula === 'true') {
+            query += ' AND (p.cedula IS NULL OR p.cedula = \'\')';
+        }
 
         if (rol) {
             // Verificar si es un número (rol_id) o un string (nombre del rol)

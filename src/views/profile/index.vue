@@ -64,7 +64,7 @@
 
                     <!-- Sección Contraseña -->
                     <div class="form-item full-width" style="margin-top: 20px;">
-                      <div class="section-title">Seguridad</div>
+                      <div class="section-title">Cambio de Contraseña</div>
                       <el-alert
                         title="Para guardar cualquier cambio, debes ingresar tu contraseña actual."
                         type="info"
@@ -105,6 +105,11 @@
 
                 </el-form>
               </el-tab-pane>
+
+              <!-- Tab de Seguridad (Preguntas) -->
+              <el-tab-pane label="Preguntas de Seguridad" name="security">
+                <security-questions />
+              </el-tab-pane>
             </el-tabs>
           </el-card>
         </el-col>
@@ -116,9 +121,11 @@
 <script>
 import { mapGetters } from 'vuex'
 import request from '@/utils/request'
+import SecurityQuestions from './components/SecurityQuestions'
 
 export default {
   name: 'Profile',
+  components: { SecurityQuestions },
   data() {
     const validateConfirm = (rule, value, callback) => {
       if (this.form.newPassword && value !== this.form.newPassword) {

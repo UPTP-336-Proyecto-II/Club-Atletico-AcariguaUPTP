@@ -141,6 +141,10 @@ export default {
         nombre_rol: [
           { required: true, message: 'El nombre del rol es requerido', trigger: 'blur' },
           { min: 3, message: 'El nombre debe tener al menos 3 caracteres', trigger: 'blur' }
+        ],
+        descripcion: [
+          { required: true, message: 'La descripción del rol es requerida', trigger: 'blur' },
+          { min: 10, message: 'La descripción debe tener al menos 10 caracteres', trigger: 'blur' }
         ]
       }
     }

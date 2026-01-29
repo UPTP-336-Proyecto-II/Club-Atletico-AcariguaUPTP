@@ -83,6 +83,14 @@
                 v-model="recoveryForm.respuesta_2"
                 placeholder="Tu respuesta"
                 size="large"
+              />
+            </div>
+            <div v-if="recoveryForm.pregunta_3" class="question-block">
+              <label>{{ recoveryForm.pregunta_3 }}</label>
+              <el-input
+                v-model="recoveryForm.respuesta_3"
+                placeholder="Tu respuesta"
+                size="large"
                 @keyup.enter.native="verifyAnswers"
               />
             </div>
@@ -219,10 +227,15 @@ export default {
       recoveryForm: {
         email: '',
         usuario_id: null,
+        pregunta_id_1: null,
+        pregunta_id_2: null,
+        pregunta_id_3: null,
         pregunta_1: '',
         pregunta_2: '',
+        pregunta_3: '',
         respuesta_1: '',
         respuesta_2: '',
+        respuesta_3: '',
         nueva_password: '',
         confirmar_password: ''
       },
@@ -275,9 +288,19 @@ export default {
       this.recoveryError = ''
       try {
         const response = await obtenerPreguntasPorEmail(this.recoveryForm.email)
-        this.recoveryForm.usuario_id = response.data.usuario_id
-        this.recoveryForm.pregunta_1 = response.data.pregunta_1
-        this.recoveryForm.pregunta_2 = response.data.pregunta_2
+        // El backend devuelve { usuario_id, preguntas: [{ id, pregunta }, ...] }
+        this.recoveryForm.usuario_id = response.usuario_id
+        if (response.preguntas && response.preguntas.length >= 2) {
+          this.recoveryForm.pregunta_id_1 = response.preguntas[0].id
+          this.recoveryForm.pregunta_1 = response.preguntas[0].pregunta
+          this.recoveryForm.pregunta_id_2 = response.preguntas[1].id
+          this.recoveryForm.pregunta_2 = response.preguntas[1].pregunta
+          // Si hay una tercera pregunta
+          if (response.preguntas[2]) {
+            this.recoveryForm.pregunta_id_3 = response.preguntas[2].id
+            this.recoveryForm.pregunta_3 = response.preguntas[2].pregunta
+          }
+        }
         this.recoveryStep = 2
       } catch (error) {
         this.recoveryError = error.response?.data?.error || 'No se encontró el usuario o no tiene preguntas de seguridad'
@@ -286,17 +309,29 @@ export default {
       }
     },
     async verifyAnswers() {
+      // Validar que todas las preguntas tengan respuesta
       if (!this.recoveryForm.respuesta_1 || !this.recoveryForm.respuesta_2) {
-        this.recoveryError = 'Debes responder ambas preguntas'
+        this.recoveryError = 'Debes responder todas las preguntas'
+        return
+      }
+      if (this.recoveryForm.pregunta_3 && !this.recoveryForm.respuesta_3) {
+        this.recoveryError = 'Debes responder todas las preguntas'
         return
       }
       this.loading = true
       this.recoveryError = ''
       try {
+        // Construir objeto de respuestas { pregunta_id: respuesta }
+        const respuestas = {}
+        respuestas[this.recoveryForm.pregunta_id_1] = this.recoveryForm.respuesta_1
+        respuestas[this.recoveryForm.pregunta_id_2] = this.recoveryForm.respuesta_2
+        if (this.recoveryForm.pregunta_id_3 && this.recoveryForm.respuesta_3) {
+          respuestas[this.recoveryForm.pregunta_id_3] = this.recoveryForm.respuesta_3
+        }
+
         await verificarSoloRespuestas({
           usuario_id: this.recoveryForm.usuario_id,
-          respuesta_1: this.recoveryForm.respuesta_1,
-          respuesta_2: this.recoveryForm.respuesta_2
+          respuestas: respuestas
         })
         this.recoveryStep = 3
       } catch (error) {
@@ -317,11 +352,18 @@ export default {
       this.loading = true
       this.recoveryError = ''
       try {
+        // Construir objeto de respuestas { pregunta_id: respuesta }
+        const respuestas = {}
+        respuestas[this.recoveryForm.pregunta_id_1] = this.recoveryForm.respuesta_1
+        respuestas[this.recoveryForm.pregunta_id_2] = this.recoveryForm.respuesta_2
+        if (this.recoveryForm.pregunta_id_3 && this.recoveryForm.respuesta_3) {
+          respuestas[this.recoveryForm.pregunta_id_3] = this.recoveryForm.respuesta_3
+        }
+
         await verificarYCambiarPassword({
           usuario_id: this.recoveryForm.usuario_id,
-          respuesta_1: this.recoveryForm.respuesta_1,
-          respuesta_2: this.recoveryForm.respuesta_2,
-          nueva_password: this.recoveryForm.nueva_password
+          respuestas: respuestas,
+          newPassword: this.recoveryForm.nueva_password
         })
         this.recoveryStep = 4
       } catch (error) {

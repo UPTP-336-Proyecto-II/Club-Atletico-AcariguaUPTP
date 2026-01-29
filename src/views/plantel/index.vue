@@ -28,6 +28,22 @@
               <div class="filter-popover">
                 <h4>Filtros Avanzados</h4>
                 <div class="filter-item">
+                  <label>Buscar por Cédula</label>
+                  <el-input
+                    v-model="searchCedula"
+                    placeholder="Ej: 123456789"
+                    size="small"
+                    clearable
+                    maxlength="9"
+                    style="width: 100%"
+                    @input="v => searchCedula = v.replace(/\D/g, '')"
+                  />
+                </div>
+                <div class="filter-item">
+                  <label>Sin Cédula</label>
+                  <el-switch v-model="filterSinCedula" active-text="Sí" inactive-text="No" @change="fetchPlantel" />
+                </div>
+                <div class="filter-item">
                   <label>Rol</label>
                   <el-select
                     v-model="filterRol"
@@ -203,7 +219,7 @@
               <el-input
                 v-model="formData.cedula"
                 placeholder="Ingrese cédula"
-                maxlength="10"
+                maxlength="9"
                 @input="v => formData.cedula = v.replace(/[^0-9]/g, '')"
               />
             </el-form-item>
@@ -264,8 +280,8 @@
             <el-form-item label="Teléfono" prop="telefono">
               <el-input
                 v-model="formData.telefono"
-                placeholder="+58 412-1234567"
-                maxlength="13"
+                placeholder="04121234567"
+                maxlength="11"
                 @input="filterOnlyNumbers"
               >
                 <i slot="prefix" class="el-icon-phone" />
@@ -307,9 +323,12 @@ export default {
       loading: false,
       submitting: false,
       plantelList: [],
+      searchCedula: '',
+      filterSinCedula: false,
       filterRol: '',
       filterSort: 'az',
       searchQuery: '',
+      searchCedulaTimeout: null,
       dialogVisible: false,
       isEdit: false,
       currentMemberId: null,
@@ -366,6 +385,14 @@ export default {
       return filtered
     }
   },
+  watch: {
+    searchCedula() {
+      if (this.searchCedulaTimeout) clearTimeout(this.searchCedulaTimeout)
+      this.searchCedulaTimeout = setTimeout(() => {
+        this.fetchPlantel()
+      }, 500)
+    }
+  },
   created() {
     this.loadRoles()
     this.fetchPlantel()
@@ -390,6 +417,12 @@ export default {
       this.loading = true
       try {
         const params = {}
+        if (this.searchCedula) {
+          params.cedula = this.searchCedula
+        }
+        if (this.filterSinCedula) {
+          params.sin_cedula = 'true'
+        }
         if (this.filterRol) {
           params.rol = this.filterRol
         }

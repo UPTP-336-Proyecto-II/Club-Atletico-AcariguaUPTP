@@ -50,6 +50,14 @@ const createRol = async (req, res) => {
       return res.status(400).json({ error: 'El nombre del rol es requerido' });
     }
 
+    if (!descripcion || descripcion.trim().length === 0) {
+      return res.status(400).json({ error: 'La descripción del rol es requerida' });
+    }
+
+    if (descripcion.trim().length < 10) {
+      return res.status(400).json({ error: 'La descripción debe tener al menos 10 caracteres' });
+    }
+
     // Verificar si ya existe (nombre + descripcion)
     const [existing] = await pool.execute(
       'SELECT rol_id FROM rol_usuarios WHERE nombre_rol = ? AND descripcion = ?',
@@ -90,6 +98,19 @@ const updateRol = async (req, res) => {
 
     if (existing.length === 0) {
       return res.status(404).json({ error: 'Rol no encontrado' });
+    }
+
+    // Validar campos requeridos
+    if (!nombre_rol) {
+      return res.status(400).json({ error: 'El nombre del rol es requerido' });
+    }
+
+    if (!descripcion || descripcion.trim().length === 0) {
+      return res.status(400).json({ error: 'La descripción del rol es requerida' });
+    }
+
+    if (descripcion.trim().length < 10) {
+      return res.status(400).json({ error: 'La descripción debe tener al menos 10 caracteres' });
     }
 
     // Verificar duplicado (nombre + descripcion, excluyendo el actual)
