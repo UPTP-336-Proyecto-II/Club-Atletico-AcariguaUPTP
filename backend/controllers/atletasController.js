@@ -2,7 +2,7 @@ const pool = require('../config/database');
 
 const getAtletas = async (req, res) => {
   try {
-    const { search, categoria_id, estatus, order } = req.query;
+    const { search, cedula, sin_cedula, categoria_id, estatus, order } = req.query;
 
     let query = `SELECT a.*, 
                 TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad,
@@ -22,6 +22,15 @@ const getAtletas = async (req, res) => {
     if (search) {
       query += ' AND (a.nombre LIKE ? OR a.apellido LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
+    }
+
+    if (cedula) {
+      query += ' AND a.cedula LIKE ?';
+      params.push(`%${cedula}%`);
+    }
+
+    if (sin_cedula === 'true') {
+      query += ' AND (a.cedula IS NULL OR a.cedula = \'\')';
     }
 
     if (categoria_id) {

@@ -5,7 +5,7 @@ export function getPreguntasDisponibles() {
   return publicService({
     url: '/preguntas-seguridad/disponibles',
     method: 'get'
-  })
+  }).then(response => response.data)
 }
 
 // Guardar preguntas de seguridad (requiere autenticación)
@@ -23,7 +23,7 @@ export function obtenerPreguntasPorEmail(email) {
     url: '/preguntas-seguridad/por-email',
     method: 'get',
     params: { email }
-  })
+  }).then(response => response.data)
 }
 
 // Verificar solo las respuestas (sin cambiar contraseña)
@@ -32,7 +32,7 @@ export function verificarSoloRespuestas(data) {
     url: '/preguntas-seguridad/verificar-respuestas',
     method: 'post',
     data
-  })
+  }).then(response => response.data)
 }
 
 // Verificar respuestas y cambiar contraseña (público, para recuperación)
@@ -41,7 +41,7 @@ export function verificarYCambiarPassword(data) {
     url: '/preguntas-seguridad/verificar-y-cambiar',
     method: 'post',
     data
-  })
+  }).then(response => response.data)
 }
 
 // Verificar si un usuario tiene preguntas configuradas

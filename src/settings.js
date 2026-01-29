@@ -1,5 +1,5 @@
 module.exports = {
-  title: 'Vue Element Admin',
+  title: 'Sistema CADA',
 
   /**
    * @type {boolean} true | false

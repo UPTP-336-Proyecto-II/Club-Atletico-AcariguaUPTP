@@ -36,6 +36,22 @@
               <div class="filter-popover">
                 <h4>Filtros Avanzados</h4>
                 <div class="filter-item">
+                  <label>Buscar por Cédula</label>
+                  <el-input
+                    v-model="searchCedula"
+                    placeholder="Ej: 123456789"
+                    size="small"
+                    clearable
+                    maxlength="9"
+                    style="width: 100%"
+                    @input="v => searchCedula = v.replace(/\D/g, '')"
+                  />
+                </div>
+                <div class="filter-item">
+                  <label>Sin Cédula</label>
+                  <el-switch v-model="filterSinCedula" active-text="Sí" inactive-text="No" />
+                </div>
+                <div class="filter-item">
                   <label>Ordenar por</label>
                   <el-select v-model="filterOrder" placeholder="Seleccionar" size="small" style="width: 100%">
                     <el-option label="Más Recientes" value="recent" />
@@ -130,7 +146,7 @@
             <div class="athlete-actions">
               <el-button v-if="!isUserMedico" type="info" icon="el-icon-data-line" @click="goToProgress">Análisis</el-button>
               <el-button v-if="canUserEdit && !isUserMedico" type="danger" icon="el-icon-delete" @click="deleteAtleta">Eliminar</el-button>
-              <el-button v-if="canUserEdit" type="primary" icon="el-icon-edit" @click="handleEdit">Editar</el-button>
+              <el-button v-if="canUserEdit || (isUserEntrenador && (activeTab === 'anthropometric' || activeTab === 'performance'))" type="primary" icon="el-icon-edit" @click="handleEdit">Editar</el-button>
             </div>
           </div>
 
@@ -408,8 +424,8 @@
             <el-form-item label="Cédula (Opcional)">
               <el-input
                 v-model="atletaForm.cedula"
-                placeholder="Ej: 12345678"
-                maxlength="10"
+                placeholder="Ej: 123456789"
+                maxlength="9"
                 @input="v => atletaForm.cedula = v.replace(/\D/g, '')"
               />
             </el-form-item>
@@ -793,7 +809,7 @@
 
 <script>
 import request from '@/utils/request'
-import { canEdit, isMedico, getVisibleAtletasTabs } from '@/utils/permission'
+import { canEdit, isMedico, isEntrenador, getVisibleAtletasTabs } from '@/utils/permission'
 import { mapGetters } from 'vuex'
 import { getPosiciones } from '@/api/posiciones'
 
@@ -829,10 +845,13 @@ export default {
 
       // Filtros y búsqueda
       searchQuery: '',
+      searchCedula: '',
+      filterSinCedula: false,
       filterCategoria: '',
       filterEstatus: '', // "" significa por defecto (Activos/Lesionados)
       filterOrder: 'recent',
       searchTimeout: null,
+      searchCedulaTimeout: null,
 
       // Listas para dirección
       paises: ['venezuela', 'colombia', 'peru', 'argentina', 'bolivia', 'chile', 'uruguay', 'paraguay', 'brazil', 'panama', 'ecuador', 'guatemala', 'el salvador', 'mexico', 'cuba', 'honduras', 'nicaragua', 'costa rica', 'belice'],
@@ -942,9 +961,13 @@ export default {
       return canEdit()
     },
 
-    // Verificar si el usuario es médico
     isUserMedico() {
       return isMedico()
+    },
+
+    // Verificar si el usuario es entrenador
+    isUserEntrenador() {
+      return isEntrenador()
     },
 
     // Obtener pestañas visibles según el rol
@@ -965,6 +988,15 @@ export default {
       this.searchTimeout = setTimeout(() => {
         this.loadAtletas()
       }, 500)
+    },
+    searchCedula() {
+      if (this.searchCedulaTimeout) clearTimeout(this.searchCedulaTimeout)
+      this.searchCedulaTimeout = setTimeout(() => {
+        this.loadAtletas()
+      }, 500)
+    },
+    filterSinCedula() {
+      this.loadAtletas()
     },
     filterCategoria() {
       this.loadAtletas()
@@ -1005,6 +1037,8 @@ export default {
       try {
         const params = {}
         if (this.searchQuery) params.search = this.searchQuery
+        if (this.searchCedula) params.cedula = this.searchCedula
+        if (this.filterSinCedula) params.sin_cedula = 'true'
 
         if (this.filterCategoria) params.categoria_id = this.filterCategoria
         if (this.filterEstatus) params.estatus = this.filterEstatus
@@ -1785,6 +1819,85 @@ aside.sidebar {
   color: #1e293b !important;
   font-weight: 500;
   opacity: 1;
+}
+
+/* Estilos para el input de cédula - igual que los selectores */
+.filter-item ::v-deep > .el-input .el-input__inner {
+  background: #fff !important;
+  border: 2px solid #64748b !important;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #1e293b;
+  transition: all 0.3s ease;
+}
+
+.filter-item ::v-deep > .el-input .el-input__inner:hover {
+  border-color: #E51D22 !important;
+}
+
+.filter-item ::v-deep > .el-input .el-input__inner:focus {
+  border-color: #E51D22 !important;
+  box-shadow: 0 0 0 3px rgba(229, 29, 34, 0.12);
+}
+
+.filter-item ::v-deep > .el-input .el-input__inner::placeholder {
+  color: #64748b !important;
+  font-weight: 500;
+  opacity: 1;
+}
+
+/* Estilos modernos para el switch */
+.filter-item ::v-deep .el-switch {
+  height: 28px;
+}
+
+.filter-item ::v-deep .el-switch__core {
+  width: 50px !important;
+  height: 26px !important;
+  border-radius: 13px;
+  border: 2px solid #cbd5e1;
+  background-color: #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.filter-item ::v-deep .el-switch__core::after {
+  width: 20px;
+  height: 20px;
+  top: 1px;
+  left: 1px;
+  border-radius: 50%;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.filter-item ::v-deep .el-switch.is-checked .el-switch__core {
+  background-color: #E51D22 !important;
+  border-color: #E51D22 !important;
+}
+
+.filter-item ::v-deep .el-switch.is-checked .el-switch__core::after {
+  left: 100%;
+  margin-left: -23px;
+}
+
+.filter-item ::v-deep .el-switch__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.filter-item ::v-deep .el-switch__label.is-active {
+  color: #1e293b;
+}
+
+.filter-item ::v-deep .el-switch__label--left {
+  margin-right: 8px;
+}
+
+.filter-item ::v-deep .el-switch__label--right {
+  margin-left: 8px;
 }
 
 .filter-btn {

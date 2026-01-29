@@ -74,3 +74,12 @@ export function getVisibleAtletasTabs() {
   // Cualquier otro rol puede ver todas las pestañas
   return ['datos-personales', 'ficha-medica', 'medidas-antropometricas', 'rendimiento', 'tutor']
 }
+
+/**
+ * Verificar si el usuario es entrenador
+ * @returns {Boolean}
+ */
+export function isEntrenador() {
+  const userRoles = store.getters?.roles || []
+  return userRoles.includes('entrenador')
+}

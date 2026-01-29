@@ -51,6 +51,24 @@
               <el-option label="> 20 años" value="over20" />
             </el-select>
           </div>
+
+          <div class="filter-item">
+            <span class="filter-label"><i class="el-icon-postcard" /> Cédula:</span>
+            <el-input
+              v-model="filters.cedula"
+              placeholder="Ej: 123456789"
+              size="small"
+              clearable
+              maxlength="9"
+              class="filter-input"
+              @input="v => filters.cedula = v.replace(/\D/g, '')"
+            />
+          </div>
+
+          <div class="filter-item filter-switch">
+            <span class="filter-label"><i class="el-icon-warning-outline" /> Sin Cédula:</span>
+            <el-switch v-model="filters.sinCedula" active-text="Sí" inactive-text="No" />
+          </div>
         </div>
 
         <div class="actions-section">
@@ -270,7 +288,9 @@ export default {
         category: 'all',
         position: 'all',
         status: 'all',
-        age: 'all'
+        age: 'all',
+        cedula: '',
+        sinCedula: false
       },
       // Modal Data
       showModal: false,
@@ -300,6 +320,19 @@ export default {
           if (this.filters.age === '18-20' && (age < 18 || age > 20)) return false
           if (this.filters.age === 'over20' && age <= 20) return false
         }
+
+        // Filtro por cédula (búsqueda)
+        if (this.filters.cedula && athlete.cedula) {
+          if (!String(athlete.cedula).includes(this.filters.cedula)) return false
+        } else if (this.filters.cedula && !athlete.cedula) {
+          return false
+        }
+
+        // Filtro sin cédula
+        if (this.filters.sinCedula) {
+          if (athlete.cedula && String(athlete.cedula).trim() !== '') return false
+        }
+
         return true
       })
     }
@@ -586,6 +619,88 @@ export default {
 .filter-item ::v-deep .el-input__inner::placeholder {
   color: #64748b !important;
   font-weight: 500;
+}
+
+/* Estilos para el input de cédula */
+.filter-input {
+  width: 140px;
+}
+
+.filter-input ::v-deep .el-input__inner {
+  background: #fff !important;
+  border: 2px solid #64748b !important;
+  border-radius: 12px;
+  padding: 10px 14px;
+  height: 44px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #1e293b;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.filter-input ::v-deep .el-input__inner:hover {
+  border-color: #E51D22 !important;
+}
+
+.filter-input ::v-deep .el-input__inner:focus {
+  border-color: #E51D22 !important;
+  box-shadow: 0 0 0 4px rgba(229, 29, 34, 0.12);
+}
+
+.filter-input ::v-deep .el-input__inner::placeholder {
+  color: #64748b !important;
+  font-weight: 500;
+}
+
+/* Estilos modernos para el switch */
+.filter-switch {
+  display: flex;
+  align-items: center;
+}
+
+.filter-switch ::v-deep .el-switch {
+  height: 28px;
+}
+
+.filter-switch ::v-deep .el-switch__core {
+  width: 50px !important;
+  height: 26px !important;
+  border-radius: 13px;
+  border: 2px solid #cbd5e1;
+  background-color: #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.filter-switch ::v-deep .el-switch__core::after {
+  width: 20px;
+  height: 20px;
+  top: 1px;
+  left: 1px;
+  border-radius: 50%;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.filter-switch ::v-deep .el-switch.is-checked .el-switch__core {
+  background-color: #E51D22 !important;
+  border-color: #E51D22 !important;
+}
+
+.filter-switch ::v-deep .el-switch.is-checked .el-switch__core::after {
+  left: 100%;
+  margin-left: -23px;
+}
+
+.filter-switch ::v-deep .el-switch__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.filter-switch ::v-deep .el-switch__label.is-active {
+  color: #1e293b;
 }
 
 .actions-section {
