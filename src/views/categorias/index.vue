@@ -15,11 +15,20 @@
       <div class="control-row">
         <div class="control-item search-box">
           <label>Buscar</label>
-          <el-input
-            v-model="searchQuery"
-            placeholder="Nombre de categoría..."
+          <el-select
+            v-model="filtroCategoria"
+            placeholder="Seleccionar categoría..."
             clearable
-          />
+            :filterable="false"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="cat in categorias"
+              :key="cat.categoria_id"
+              :label="cat.nombre_categoria"
+              :value="cat.categoria_id"
+            />
+          </el-select>
         </div>
 
         <div class="control-item filter-box">
@@ -170,6 +179,7 @@ export default {
       categorias: [],
       entrenadores: [],
       searchQuery: '',
+      filtroCategoria: '',
       filtroEntrenador: '',
       filtroEstatus: '',
 
@@ -191,6 +201,10 @@ export default {
     },
     categoriasFiltradas() {
       let result = this.categorias
+
+      if (this.filtroCategoria) {
+        result = result.filter(c => c.categoria_id === this.filtroCategoria)
+      }
 
       if (this.searchQuery) {
         const q = this.searchQuery.toLowerCase()
