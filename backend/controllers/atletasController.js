@@ -33,6 +33,11 @@ const getAtletas = async (req, res) => {
       query += ' AND (a.cedula IS NULL OR a.cedula = \'\')';
     }
 
+    // Filtro para mostrar solo atletas CON cédula registrada
+    if (req.query.con_cedula === 'true') {
+      query += ' AND a.cedula IS NOT NULL AND a.cedula != \'\'';
+    }
+
     if (categoria_id) {
       query += ' AND a.categoria_id = ?';
       params.push(categoria_id);

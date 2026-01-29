@@ -28,22 +28,6 @@
               <div class="filter-popover">
                 <h4>Filtros Avanzados</h4>
                 <div class="filter-item">
-                  <label>Buscar por Cédula</label>
-                  <el-input
-                    v-model="searchCedula"
-                    placeholder="Ej: 123456789"
-                    size="small"
-                    clearable
-                    maxlength="9"
-                    style="width: 100%"
-                    @input="v => searchCedula = v.replace(/\D/g, '')"
-                  />
-                </div>
-                <div class="filter-item">
-                  <label>Sin Cédula</label>
-                  <el-switch v-model="filterSinCedula" active-text="Sí" inactive-text="No" @change="fetchPlantel" />
-                </div>
-                <div class="filter-item">
                   <label>Rol</label>
                   <el-select
                     v-model="filterRol"

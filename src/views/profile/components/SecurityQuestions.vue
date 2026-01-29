@@ -207,22 +207,127 @@ export default {
 .security-questions-container {
   padding: 20px 0;
 }
+
 .header-section {
   margin-bottom: 25px;
 }
+
 .header-section h3 {
   margin: 0 0 5px 0;
   color: #303133;
+  font-size: 1.3rem;
+  font-weight: 700;
 }
+
+.header-section .text-muted {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+/* Question blocks with enhanced styling */
 .question-block {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  border: 1px solid #e4e7ed;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  border: 2px solid #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
 }
+
+.question-block:hover {
+  border-color: #E51D22;
+  box-shadow: 0 6px 20px rgba(229, 29, 34, 0.12);
+  transform: translateY(-2px);
+}
+
+/* Form item labels */
+.question-block ::v-deep .el-form-item__label {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.95rem;
+  padding-bottom: 8px;
+}
+
+/* Enhanced select inputs */
+.question-block ::v-deep .el-select .el-input__inner,
+.question-block ::v-deep .el-input__inner {
+  background: #fff !important;
+  border: 2px solid #64748b !important;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #1e293b;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  height: auto;
+  min-height: 44px;
+}
+
+.question-block ::v-deep .el-select .el-input__inner:hover,
+.question-block ::v-deep .el-input__inner:hover {
+  border-color: #E51D22 !important;
+  box-shadow: 0 4px 12px rgba(229, 29, 34, 0.1);
+}
+
+.question-block ::v-deep .el-select .el-input__inner:focus,
+.question-block ::v-deep .el-input__inner:focus,
+.question-block ::v-deep .el-input.is-focus .el-input__inner {
+  border-color: #E51D22 !important;
+  box-shadow: 0 0 0 3px rgba(229, 29, 34, 0.15);
+}
+
+/* Placeholder styling */
+.question-block ::v-deep .el-input__inner::placeholder {
+  color: #94a3b8 !important;
+  font-weight: 500;
+}
+
+/* Select dropdown arrow */
+.question-block ::v-deep .el-select .el-input .el-select__caret {
+  color: #64748b;
+  font-size: 16px;
+}
+
+/* Password input icon */
+.question-block ::v-deep .el-input__suffix {
+  color: #64748b;
+}
+
+/* Form actions button */
 .form-actions {
   margin-top: 30px;
   text-align: right;
+}
+
+.form-actions ::v-deep .el-button--primary {
+  background: linear-gradient(135deg, #E51D22, #c41a1d) !important;
+  border: none !important;
+  padding: 14px 32px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(229, 29, 34, 0.3);
+  transition: all 0.3s ease;
+}
+
+.form-actions ::v-deep .el-button--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(229, 29, 34, 0.4);
+}
+
+/* Loading state */
+.loading-container {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.loading-container i {
+  font-size: 1.5rem;
+  margin-right: 8px;
+  color: #E51D22;
 }
 </style>
