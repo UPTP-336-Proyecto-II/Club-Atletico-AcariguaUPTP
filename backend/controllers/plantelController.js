@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const addressService = require('../services/addressService');
 
 // Obtener todo el plantel
 const getPlantel = async (req, res) => {
@@ -7,10 +8,10 @@ const getPlantel = async (req, res) => {
 
         let query = `
             SELECT p.*, r.nombre_rol,
-                   d.pais, d.estado, d.municipio, d.parroquia, d.descripcion_descriptiva
+                   ${addressService.getSelectColumns().replace(/d\./g, 'd.')}
             FROM plantel p
             LEFT JOIN rol_usuarios r ON p.rol_id = r.rol_id
-            LEFT JOIN direcciones d ON p.direccion_id = d.direccion_id
+            ${addressService.getJoins().replace('entity.direccion_id', 'p.direccion_id')}
             WHERE 1=1`;
         const params = [];
 
@@ -24,14 +25,11 @@ const getPlantel = async (req, res) => {
         }
 
         if (rol) {
-            // Verificar si es un número (rol_id) o un string (nombre del rol)
             const rolId = parseInt(rol);
             if (!isNaN(rolId)) {
-                // Es un ID numérico
                 query += ' AND p.rol_id = ?';
                 params.push(rolId);
             } else {
-                // Es un nombre de rol (ENTRENADOR, ADMINISTRADOR, etc.)
                 query += ' AND UPPER(r.nombre_rol) = UPPER(?)';
                 params.push(rol);
             }
@@ -71,9 +69,10 @@ const getPlantelById = async (req, res) => {
         const { id } = req.params;
 
         const [rows] = await pool.execute(
-            `SELECT p.*, d.pais, d.estado, d.municipio, d.parroquia, d.descripcion_descriptiva
+            `SELECT p.*,
+                    ${addressService.getSelectColumns().replace(/d\./g, 'd.')}
              FROM plantel p
-             LEFT JOIN direcciones d ON p.direccion_id = d.direccion_id
+             ${addressService.getJoins().replace('entity.direccion_id', 'p.direccion_id')}
              WHERE p.plantel_id = ?`,
             [id]
         );
@@ -112,14 +111,8 @@ const createMiembroPlantel = async (req, res) => {
         const { nombre, apellido, telefono, rol, cedula, fecha_nac, direccion } = req.body;
 
         let direccion_id = null;
-
-        // Si hay datos de dirección, crear registro en tabla direcciones
-        if (direccion && (direccion.pais || direccion.estado || direccion.municipio || direccion.parroquia || direccion.descripcion_descriptiva)) {
-            const [dirResult] = await pool.execute(
-                `INSERT INTO direcciones (pais, estado, municipio, parroquia, descripcion_descriptiva) VALUES (?, ?, ?, ?, ?)`,
-                [direccion.pais || 'Venezuela', direccion.estado || '', direccion.municipio || '', direccion.parroquia || '', direccion.descripcion_descriptiva || '']
-            );
-            direccion_id = dirResult.insertId;
+        if (direccion) {
+            direccion_id = await addressService.findOrCreateAddress(direccion);
         }
 
         const [result] = await pool.execute(
@@ -145,40 +138,20 @@ const updateMiembroPlantel = async (req, res) => {
         const { id } = req.params;
         const { nombre, apellido, telefono, rol, cedula, fecha_nac, direccion } = req.body;
 
-        // 1. Obtener el direccion_id actual del miembro
-        const [miembroRows] = await pool.execute('SELECT direccion_id FROM plantel WHERE plantel_id = ?', [id]);
-        if (miembroRows.length === 0) {
-            return res.status(404).json({ error: 'Miembro del plantel no encontrado' });
-        }
-
-        let currentDireccionId = miembroRows[0].direccion_id;
-
-        // 2. Manejar la dirección (Crear si no existe, actualizar si existe)
+        let finalDireccionId = undefined;
         if (direccion) {
-            if (currentDireccionId) {
-                // Actualizar existente
-                await pool.execute(
-                    `UPDATE direcciones SET pais = ?, estado = ?, municipio = ?, parroquia = ?, descripcion_descriptiva = ? WHERE direccion_id = ?`,
-                    [direccion.pais || 'Venezuela', direccion.estado || '', direccion.municipio || '', direccion.parroquia || '', direccion.descripcion_descriptiva || '', currentDireccionId]
-                );
-            } else {
-                // Crear nueva si no tenía
-                if (direccion.pais || direccion.estado || direccion.municipio || direccion.parroquia || direccion.descripcion_descriptiva) {
-                    const [dirResult] = await pool.execute(
-                        `INSERT INTO direcciones (pais, estado, municipio, parroquia, descripcion_descriptiva) VALUES (?, ?, ?, ?, ?)`,
-                        [direccion.pais || 'Venezuela', direccion.estado || '', direccion.municipio || '', direccion.parroquia || '', direccion.descripcion_descriptiva || '']
-                    );
-                    currentDireccionId = dirResult.insertId;
-                }
-            }
+            finalDireccionId = await addressService.findOrCreateAddress(direccion);
+        } else {
+            const [existing] = await pool.execute('SELECT direccion_id FROM plantel WHERE plantel_id = ?', [id]);
+            if (existing.length > 0) finalDireccionId = existing[0].direccion_id;
         }
 
-        // 3. Actualizar miembro del plantel
+        // Actualizar miembro
         const [result] = await pool.execute(
             `UPDATE plantel 
        SET nombre = ?, apellido = ?, telefono = ?, rol_id = ?, cedula = ?, fecha_nac = ?, direccion_id = ?
        WHERE plantel_id = ?`,
-            [nombre, apellido, telefono, rol, cedula || null, fecha_nac || null, currentDireccionId, id]
+            [nombre, apellido, telefono, rol, cedula || null, fecha_nac || null, finalDireccionId, id]
         );
 
         if (result.affectedRows === 0) {
@@ -197,7 +170,6 @@ const deleteMiembroPlantel = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Verificar si el miembro está asignado a alguna categoría
         const [categorias] = await pool.execute(
             'SELECT COUNT(*) as total FROM categoria WHERE entrenador_id = ?',
             [id]

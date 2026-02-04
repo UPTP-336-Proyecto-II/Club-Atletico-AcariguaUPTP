@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const addressService = require('../services/addressService');
 
 const getAtletas = async (req, res) => {
   try {
@@ -7,14 +8,15 @@ const getAtletas = async (req, res) => {
     let query = `SELECT a.*, 
                 TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad,
                 c.nombre_categoria as categoria_nombre,
-                t.nombre_completo as tutor_nombre,
-                d.pais, d.estado, d.municipio, d.parroquia, d.descripcion_descriptiva,
+                t.nombres as tutor_nombres, t.apellidos as tutor_apellidos,
+                CONCAT(t.nombres, ' ', t.apellidos) as tutor_nombre,
+                ${addressService.getSelectColumns().replace(/d\./g, 'd.')},
                 p.nombre_posicion as posicion_de_juego_nombre
          FROM atletas a 
          LEFT JOIN categoria c ON a.categoria_id = c.categoria_id
          LEFT JOIN tutor t ON a.tutor_id = t.tutor_id
-         LEFT JOIN direcciones d ON a.direccion_id = d.direccion_id
          LEFT JOIN posicion_juego p ON a.posicion_de_juego = p.posicion_id
+         ${addressService.getJoins().replace('entity.direccion_id', 'a.direccion_id')}
          WHERE 1=1`;
 
     const params = [];
@@ -81,15 +83,16 @@ const getAtletaById = async (req, res) => {
       `SELECT a.*, 
               TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad,
               c.nombre_categoria as categoria_nombre,
-              t.nombre_completo as tutor_nombre,
+              t.nombres as tutor_nombres, t.apellidos as tutor_apellidos,
+              CONCAT(t.nombres, ' ', t.apellidos) as tutor_nombre,
               t.telefono as tutor_telefono,
-              d.pais, d.estado, d.municipio, d.parroquia, d.descripcion_descriptiva,
+              ${addressService.getSelectColumns().replace(/d\./g, 'd.')},
               p.nombre_posicion as posicion_de_juego_nombre
        FROM atletas a 
        LEFT JOIN categoria c ON a.categoria_id = c.categoria_id
        LEFT JOIN tutor t ON a.tutor_id = t.tutor_id
-       LEFT JOIN direcciones d ON a.direccion_id = d.direccion_id
        LEFT JOIN posicion_juego p ON a.posicion_de_juego = p.posicion_id
+       ${addressService.getJoins().replace('entity.direccion_id', 'a.direccion_id')}
        WHERE a.atleta_id = ?`,
       [id]
     );
@@ -125,11 +128,7 @@ const createAtleta = async (req, res) => {
     let direccion_id = null;
 
     if (direccion && (direccion.pais || direccion.estado || direccion.municipio || direccion.parroquia || direccion.descripcion_descriptiva)) {
-      const [dirResult] = await pool.execute(
-        `INSERT INTO direcciones (pais, estado, municipio, parroquia, descripcion_descriptiva) VALUES (?, ?, ?, ?, ?)`,
-        [direccion.pais || 'Venezuela', direccion.estado || '', direccion.municipio || '', direccion.parroquia || '', direccion.descripcion_descriptiva || '']
-      );
-      direccion_id = dirResult.insertId;
+      direccion_id = await addressService.findOrCreateAddress(direccion);
     }
 
     const [result] = await pool.execute(
@@ -168,41 +167,58 @@ const updateAtleta = async (req, res) => {
       cedula
     } = req.body;
 
-    // 1. Obtener el direccion_id actual del atleta
-    const [atletaRows] = await pool.execute('SELECT direccion_id FROM atletas WHERE atleta_id = ?', [id]);
-    if (atletaRows.length === 0) {
-      return res.status(404).json({ error: 'Atleta no encontrado' });
-    }
+    // 1. Obtener el direccion_id actual del atleta (opcional, si quisieramos actualizar en lugar de crear nuevo, pero AddressService maneja IDs complejos)
+    // Simplificación: Resolvemos la nueva dirección (o existente) y actualizamos la FK.
 
-    let currentDireccionId = atletaRows[0].direccion_id;
-
-    // 2. Manejar la dirección (Crear si no existe, actualizar si existe)
+    let currentDireccionId = null;
     if (direccion) {
-      if (currentDireccionId) {
-        // Actualizar existente
-        await pool.execute(
-          `UPDATE direcciones SET pais = ?, estado = ?, municipio = ?, parroquia = ?, descripcion_descriptiva = ? WHERE direccion_id = ?`,
-          [direccion.pais || 'Venezuela', direccion.estado || '', direccion.municipio || '', direccion.parroquia || '', direccion.descripcion_descriptiva || '', currentDireccionId]
-        );
-      } else {
-        // Crear nueva si no tenía
-        if (direccion.pais || direccion.estado || direccion.municipio || direccion.parroquia || direccion.descripcion_descriptiva) {
-          const [dirResult] = await pool.execute(
-            `INSERT INTO direcciones (pais, estado, municipio, parroquia, descripcion_descriptiva) VALUES (?, ?, ?, ?, ?)`,
-            [direccion.pais || 'Venezuela', direccion.estado || '', direccion.municipio || '', direccion.parroquia || '', direccion.descripcion_descriptiva || '']
-          );
-          currentDireccionId = dirResult.insertId;
-        }
-      }
+      currentDireccionId = await addressService.findOrCreateAddress(direccion);
+      // Note: This creates new entries if changed. Or reuses if same.
+      // Effectively "updating" the athlete's address link.
+      // If query was empty/null, currentDireccionId might be null or new ID.
+    } else {
+      // Keep existing? Or set null?
+      // Typically if not provided in update, we might want to keep existing.
+      // But if provided as null, we set null.
+      // Assuming partial update logic usually implies checking if field is present.
+      // Here we assume if 'direccion' key is sent, we process it.
+      // If the user wants to KEEP existing without sending data, they shouldn't send 'direccion' key?
+      // Let's assume frontend sends full object.
+
+      // If direccion is undefined, we might need to fetch existing.
+      // But let's act as if we just want to update with whatever we have.
+      // Ideally we should check if direccion is provided.
     }
 
-    // 3. Actualizar atleta con el (posiblemente nuevo) direccion_id
+    // Check if we need to fetch existing if direccion is missing?
+    // The previous code fetched existing ID:
+    // const [atletaRows] = await pool.execute('SELECT direccion_id FROM atletas WHERE atleta_id = ?', [id]);
+    // currentDireccionId = atletaRows[0].direccion_id;
+
+    // If direccion object IS provided, we calculate new ID. 
+    // If NOT provided, we should probably keep old ID. (But `const { direccion }` creates variable).
+    // If we pass `currentDireccionId` to UPDATE, and it is null/undefined...
+
+    // Better logic:
+    let finalDireccionId = undefined; // Undefined means "do not update column"
+
+    if (direccion) {
+      finalDireccionId = await addressService.findOrCreateAddress(direccion);
+    } else {
+      // If we want to preserve existing, we just don't include it in UPDATE SET?
+      // My SQL below updates ALL fields. So I must provide a value.
+      // So I must fetch existing if not provided.
+      const [existing] = await pool.execute('SELECT direccion_id FROM atletas WHERE atleta_id = ?', [id]);
+      if (existing.length > 0) finalDireccionId = existing[0].direccion_id;
+    }
+
+    // 3. Actualizar atleta
     await pool.execute(
       `UPDATE atletas 
        SET nombre = ?, apellido = ?, cedula = ?, telefono = ?, direccion_id = ?, fecha_nacimiento = ?, 
            posicion_de_juego = ?, pierna_dominante = ?, categoria_id = ?, tutor_id = ?, estatus = ?, foto = ?
        WHERE atleta_id = ?`,
-      [nombre, apellido, cedula || null, telefono, currentDireccionId, fecha_nacimiento, posicion_de_juego, pierna_dominante, categoria_id, tutor_id, estatus, foto, id]
+      [nombre, apellido, cedula || null, telefono, finalDireccionId, fecha_nacimiento, posicion_de_juego, pierna_dominante, categoria_id, tutor_id, estatus, foto, id]
     );
 
     res.json({ message: 'Atleta actualizado exitosamente' });
