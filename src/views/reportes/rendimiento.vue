@@ -838,6 +838,364 @@ export default {
   color: #1a3a5f;
   font-size: 1.1rem;
 }
+
+/* ============================================
+   RESPONSIVE STYLES
+   ============================================ */
+
+/* Tablets y laptops pequeños */
+@media (max-width: 1200px) {
+  .control-content {
+    gap: 15px;
+  }
+
+  .compact-search {
+    width: 240px;
+  }
+
+  .compact-select {
+    width: 160px;
+  }
+
+  .quick-stats {
+    gap: 20px;
+  }
+
+  /* Cambiar grid de columnas */
+  ::v-deep .el-col-16 {
+    width: 100% !important;
+    margin-bottom: 20px;
+  }
+
+  ::v-deep .el-col-8 {
+    width: 100% !important;
+  }
+}
+
+/* Tablets */
+@media (max-width: 992px) {
+  .progress-container {
+    padding: 15px;
+  }
+
+  .page-header {
+    padding: 18px;
+  }
+
+  .control-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+
+  .search-section,
+  .filter-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .compact-search,
+  .compact-select {
+    width: 100%;
+  }
+
+  .actions-section {
+    width: 100%;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .actions-section .el-button {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .summary-content {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .quick-stats {
+    width: 100%;
+    justify-content: space-around;
+    margin-left: 0;
+    margin-top: 10px;
+  }
+
+  /* Trend cards en 2 columnas */
+  ::v-deep .stat-cards .el-col-6 {
+    width: 50% !important;
+    margin-bottom: 15px;
+  }
+
+  /* Charts apilados */
+  ::v-deep .el-col-16,
+  ::v-deep .el-col-8 {
+    width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+
+/* Móviles */
+@media (max-width: 768px) {
+  .progress-container {
+    padding: 10px;
+  }
+
+  .page-header {
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+  }
+
+  .header-content h1 {
+    font-size: 1.3rem;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+  }
+
+  .control-panel {
+    margin-bottom: 20px;
+    border-radius: 10px;
+  }
+
+  .control-panel ::v-deep .el-card__body {
+    padding: 12px;
+  }
+
+  .control-label {
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-right: 0;
+    margin-bottom: 5px;
+  }
+
+  .control-label i {
+    display: inline-block;
+  }
+
+  .actions-section .el-button {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .athlete-summary-card {
+    margin-bottom: 15px;
+  }
+
+  .athlete-summary-card ::v-deep .el-card__body {
+    padding: 12px;
+  }
+
+  .summary-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .athlete-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 1.8rem;
+  }
+
+  .athlete-details h2 {
+    font-size: 1.2rem;
+  }
+
+  .tags {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .tags .el-tag {
+    font-size: 11px;
+  }
+
+  .quick-stats {
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+  }
+
+  .stat-mini {
+    min-width: 80px;
+    text-align: center;
+  }
+
+  .stat-mini .label {
+    font-size: 0.7rem;
+  }
+
+  .stat-mini .value {
+    font-size: 1.1rem;
+  }
+
+  /* Trend cards en 2 columnas */
+  ::v-deep .stat-cards .el-col-6 {
+    width: 50% !important;
+    padding: 5px !important;
+  }
+
+  .trend-card {
+    border-radius: 8px;
+  }
+
+  .trend-value {
+    font-size: 1.4rem;
+  }
+
+  .trend-label {
+    font-size: 0.75rem;
+  }
+
+  /* Charts más pequeños */
+  .chart-card {
+    border-radius: 10px;
+  }
+
+  .chart-card ::v-deep .el-card__header {
+    padding: 12px 15px;
+  }
+
+  .chart-card ::v-deep .el-card__header span {
+    font-size: 0.9rem;
+  }
+
+  #performance-chart,
+  #radar-chart,
+  #anthropometric-chart {
+    height: 280px !important;
+  }
+
+  .empty-card {
+    padding: 40px 15px;
+  }
+
+  .empty-state i {
+    font-size: 3rem;
+  }
+
+  .empty-state h3 {
+    font-size: 1rem;
+  }
+
+  .empty-state p {
+    font-size: 0.85rem;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .progress-container {
+    padding: 8px;
+  }
+
+  .page-header {
+    padding: 12px;
+  }
+
+  .header-content h1 {
+    font-size: 1.1rem;
+  }
+
+  .subtitle {
+    font-size: 0.75rem;
+  }
+
+  .control-panel ::v-deep .el-card__body {
+    padding: 10px;
+  }
+
+  .search-section ::v-deep .el-input__inner,
+  .filter-section ::v-deep .el-input__inner {
+    height: 42px;
+    font-size: 0.9rem;
+  }
+
+  .athlete-avatar {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+  }
+
+  .athlete-details h2 {
+    font-size: 1rem;
+  }
+
+  .quick-stats {
+    gap: 10px;
+  }
+
+  .stat-mini {
+    min-width: auto;
+  }
+
+  .stat-mini .value {
+    font-size: 1rem;
+  }
+
+  /* Trend cards apiladas */
+  ::v-deep .stat-cards .el-col-6 {
+    width: 100% !important;
+    margin-bottom: 10px;
+  }
+
+  .trend-value {
+    font-size: 1.2rem;
+  }
+
+  /* Charts aún más pequeños */
+  #performance-chart,
+  #radar-chart,
+  #anthropometric-chart {
+    height: 220px !important;
+  }
+}
+
+/* Móviles muy pequeños */
+@media (max-width: 320px) {
+  .progress-container {
+    padding: 5px;
+  }
+
+  .page-header {
+    padding: 10px;
+  }
+
+  .header-content h1 {
+    font-size: 0.95rem;
+  }
+
+  .athlete-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .athlete-details h2 {
+    font-size: 0.9rem;
+  }
+
+  .tags .el-tag {
+    font-size: 10px;
+    padding: 0 5px;
+  }
+
+  #performance-chart,
+  #radar-chart,
+  #anthropometric-chart {
+    height: 180px !important;
+  }
+}
 </style>
 
 <!-- Estilos globales para impresión -->

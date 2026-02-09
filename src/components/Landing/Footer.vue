@@ -396,12 +396,16 @@ export default {
 
 @media (max-width: 768px) {
   .footer {
-    padding: 3rem 0 1.5rem;
+    padding: 2.5rem 0 1.5rem;
+  }
+
+  .footer-content {
+    padding: 0 1.5rem;
   }
 
   .footer-grid {
     grid-template-columns: 1fr;
-    gap: 2.5rem;
+    gap: 2rem;
     text-align: center;
   }
 
@@ -409,27 +413,82 @@ export default {
     justify-content: center;
   }
 
-  .contact-link {
+  .contact-item {
     justify-content: center;
+    flex-wrap: wrap;
+    text-align: center;
   }
 
-  .social-grid {
-    justify-content: center;
+  .static-text {
+    text-align: center;
   }
 
   .footer-bottom {
     flex-direction: column;
     text-align: center;
+    gap: 1rem;
+  }
+
+  .copyright-section {
+    order: 2;
+  }
+
+  .ministerio-info {
+    order: 1;
+  }
+
+  /* Modal responsive */
+  .license-modal {
+    width: 95% !important;
+  }
+
+  .license-content {
+    max-height: 55vh;
+    padding-right: 5px;
   }
 }
 
 @media (max-width: 480px) {
+  .footer {
+    padding: 2rem 0 1rem;
+  }
+
+  .footer-content {
+    padding: 0 1rem;
+  }
+
   .club-name {
     font-size: 1.1rem;
   }
 
+  .club-subname {
+    font-size: 0.85rem;
+  }
+
   .column-title {
-    font-size: 1rem;
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .contact-item {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .static-text {
+    font-size: 0.85rem;
+  }
+
+  .logo-icon {
+    height: 45px;
+  }
+
+  .brand-info {
+    font-size: 0.85rem;
+  }
+
+  .credits {
+    font-size: 0.75rem;
   }
 }
 </style>

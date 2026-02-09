@@ -132,7 +132,8 @@ export default {
 
 .section-subtitle {
   font-size: 1.2rem;
-  color: var(--color-text-light);
+  color: #000000;
+  font-weight: 400;
   max-width: 600px;
   margin: 0 auto;
 }
@@ -207,13 +208,79 @@ export default {
 /* Estilos de contacto eliminados */
 
 /* Responsive */
+@media (max-width: 992px) {
+  .about-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .content-section {
-    padding: 3rem 1rem;
+    padding: 2.5rem 1rem;
+    margin: 0 auto 2rem;
+  }
+
+  .section-header {
+    margin-bottom: 2.5rem;
   }
 
   .section-header h2 {
-    font-size: 2rem;
+    font-size: 1.75rem;
+  }
+
+  .section-subtitle {
+    font-size: 1rem;
+  }
+
+  .about-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .about-card {
+    padding: 1.75rem 1.5rem;
+  }
+
+  .card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .about-card h3 {
+    font-size: 1.15rem;
+  }
+
+  .about-card p {
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .stats-section {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    padding: 2rem 0;
+  }
+
+  .stat-number {
+    font-size: 1.75rem;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-section {
+    padding: 2rem 0.75rem;
+  }
+
+  .section-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .section-subtitle {
+    font-size: 0.9rem;
   }
 
   .about-grid {
@@ -221,28 +288,38 @@ export default {
   }
 
   .about-card {
-    padding: 2rem 1.5rem;
+    padding: 1.5rem 1.25rem;
   }
 
   .stats-section {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .stat-item {
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
   }
 
   .stat-number {
-    font-size: 2rem;
+    font-size: 1.5rem;
   }
 
-  /* Reglas de contacto responsivas eliminadas */
+  .stat-label {
+    font-size: 0.8rem;
+  }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 320px) {
   .section-header h2 {
-    font-size: 1.8rem;
+    font-size: 1.35rem;
   }
 
-  .about-grid {
-    grid-template-columns: 1fr;
+  .about-card h3 {
+    font-size: 1.05rem;
   }
 }
 </style>

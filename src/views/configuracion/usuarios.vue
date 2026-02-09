@@ -1087,6 +1087,80 @@ aside.sidebar {
 }
 
 @media (max-width: 768px) {
+  /* Lista de usuarios más grande y cómoda */
+  .sidebar ::v-deep .el-card {
+    min-height: 70vh;
+  }
+
+  .user-list {
+    max-height: calc(100vh - 200px);
+    min-height: 50vh;
+    padding: 5px 0;
+  }
+
+  .user-item {
+    padding: 18px 16px;
+    margin: 10px 8px;
+    gap: 16px;
+    border-radius: 14px;
+  }
+
+  .user-avatar {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    min-height: 56px;
+    border-radius: 14px;
+    font-size: 26px;
+  }
+
+  .user-info h3 {
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+    white-space: normal;
+    overflow: visible;
+    line-height: 1.3;
+  }
+
+  .user-info p {
+    font-size: 0.9rem;
+    margin: 5px 0;
+  }
+
+  .user-info .el-tag {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    padding: 4px 10px;
+  }
+
+  .linked-member {
+    font-size: 0.85rem !important;
+    color: #0891b2 !important;
+  }
+
+  /* Sidebar más amplio */
+  .sidebar-header {
+    font-size: 1.1rem;
+    padding: 12px 0;
+  }
+
+  .filter-btn {
+    font-size: 1.4rem !important;
+  }
+
+  /* Search input más grande */
+  .search-container ::v-deep .el-input__inner {
+    height: 48px;
+    font-size: 1rem;
+    padding: 12px 16px;
+    border-radius: 12px;
+  }
+
+  .search-container ::v-deep .el-input__prefix {
+    left: 12px;
+    font-size: 1.1rem;
+  }
+
   .user-details-header {
     flex-direction: column;
     text-align: center;
