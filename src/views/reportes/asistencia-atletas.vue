@@ -75,10 +75,11 @@
       </div>
 
       <div v-else>
+        <!-- TABLA DESKTOP (oculta en móvil) -->
         <el-table
           :data="filteredAthletesStats"
           style="width: 100%"
-          class="custom-table"
+          class="custom-table desktop-table"
           :header-cell-style="{
             background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
             color: '#1e293b',
@@ -166,6 +167,72 @@
             </template>
           </el-table-column>
         </el-table>
+
+        <!-- VISTA TARJETAS MÓVIL (oculta en desktop) -->
+        <div class="mobile-cards-view">
+          <div
+            v-for="atleta in filteredAthletesStats"
+            :key="atleta.atleta_id"
+            class="athlete-card"
+          >
+            <!-- Header de la tarjeta -->
+            <div class="card-header-section">
+              <div class="athlete-photo-wrapper">
+                <img v-if="atleta.foto" :src="getFotoUrl(atleta.foto)" class="avatar-img" @error="handleImgError">
+                <div v-else class="avatar-placeholder"><i class="el-icon-user" /></div>
+              </div>
+              <div class="athlete-info">
+                <span class="name">{{ atleta.nombre }} {{ atleta.apellido }}</span>
+                <el-tag size="small" effect="plain" type="info">{{ atleta.categoria_nombre }}</el-tag>
+              </div>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="card-stats-section">
+              <div class="stats-row">
+                <div class="stat-item present">
+                  <i class="el-icon-check" />
+                  <span class="stat-value">{{ atleta.stats.presente }}</span>
+                  <span class="stat-label">Asist.</span>
+                </div>
+                <div class="stat-item absent">
+                  <i class="el-icon-close" />
+                  <span class="stat-value">{{ atleta.stats.ausente }}</span>
+                  <span class="stat-label">Faltas</span>
+                </div>
+                <div class="stat-item justified">
+                  <i class="el-icon-warning-outline" />
+                  <span class="stat-value">{{ atleta.stats.justificado }}</span>
+                  <span class="stat-label">Just.</span>
+                </div>
+                <div class="stat-item total">
+                  <span class="stat-value">{{ atleta.stats.total }}</span>
+                  <span class="stat-label">Total</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="card-progress-section">
+              <span class="progress-label">% Asistencia:</span>
+              <el-progress
+                :percentage="atleta.stats.percentage"
+                :color="getProgressColor(atleta.stats.percentage)"
+                :stroke-width="12"
+              />
+            </div>
+
+            <!-- Acciones -->
+            <div class="card-actions-section no-print">
+              <el-button size="small" type="primary" icon="el-icon-view" @click="viewDetail(atleta)">
+                Ver Detalle
+              </el-button>
+              <el-button size="small" type="danger" icon="el-icon-printer" @click="printIndividual(atleta)">
+                Imprimir
+              </el-button>
+            </div>
+          </div>
+        </div>
 
         <div v-if="filteredAthletesStats.length === 0" class="empty-state">
           <p>No se encontraron datos coincidente con los filtros.</p>
@@ -755,5 +822,528 @@ export default {
   text-align: center;
   padding: 40px;
   color: #909399;
+}
+
+/* ============================================
+   MOBILE CARDS VIEW STYLES
+   ============================================ */
+
+/* Por defecto: tarjetas ocultas, tabla visible */
+.mobile-cards-view {
+  display: none;
+}
+
+.desktop-table {
+  display: block;
+}
+
+.athlete-card {
+  background: white;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #E51D22;
+}
+
+.card-header-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.card-header-section .athlete-photo-wrapper {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+}
+
+.card-header-section .athlete-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.card-header-section .name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1e293b;
+}
+
+.card-stats-section {
+  margin-bottom: 12px;
+}
+
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 4px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.stat-item i {
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.stat-item .stat-value {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.stat-item .stat-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.stat-item.present {
+  background: #f0f9eb;
+  color: #67C23A;
+}
+
+.stat-item.absent {
+  background: #fef0f0;
+  color: #F56C6C;
+}
+
+.stat-item.justified {
+  background: #fdf6ec;
+  color: #E6A23C;
+}
+
+.stat-item.total {
+  background: #f4f4f5;
+  color: #606266;
+}
+
+.card-progress-section {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+.card-progress-section ::v-deep .el-progress {
+  flex: 1;
+}
+
+.card-actions-section {
+  display: flex;
+  gap: 10px;
+}
+
+.card-actions-section .el-button {
+  flex: 1;
+}
+
+/* ============================================
+   RESPONSIVE STYLES
+   ============================================ */
+
+/* Tablets y laptops pequeños */
+@media (max-width: 1200px) {
+  .filter-section {
+    gap: 15px;
+  }
+
+  .filter-item {
+    min-width: 180px;
+  }
+
+  /* Reducir anchuras de columnas */
+  ::v-deep .el-table-column {
+    min-width: auto !important;
+  }
+}
+
+/* Tablets */
+@media (max-width: 992px) {
+  .report-container {
+    padding: 15px;
+  }
+
+  .page-header {
+    padding: 18px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+  }
+
+  .header-content h1 {
+    font-size: 1.4rem;
+    justify-content: center;
+  }
+
+  .subtitle {
+    margin-left: 0;
+    text-align: center;
+  }
+
+  .filter-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-item {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .table-container {
+    padding: 15px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Stats más compactos */
+  .stats-mini-grid {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .stat-box {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+
+  /* Modal responsive */
+  ::v-deep .detail-modal {
+    width: 95% !important;
+    max-width: 95vw !important;
+  }
+
+  .modal-summary {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+}
+
+/* Móviles */
+@media (max-width: 768px) {
+  /* SWITCH: Mostrar tarjetas, ocultar tabla en móvil */
+  .desktop-table {
+    display: none !important;
+  }
+
+  .mobile-cards-view {
+    display: block !important;
+  }
+
+  .report-container {
+    padding: 10px;
+  }
+
+  .page-header {
+    padding: 15px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+  }
+
+  .header-content h1 {
+    font-size: 1.2rem;
+    flex-wrap: wrap;
+  }
+
+  .header-content h1 i {
+    margin-bottom: 5px;
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+  }
+
+  .header-action-btn {
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .control-panel {
+    border-radius: 10px;
+  }
+
+  .control-panel ::v-deep .el-card__body {
+    padding: 12px;
+  }
+
+  .filter-label {
+    font-size: 0.75rem;
+  }
+
+  .date-range-item ::v-deep .el-date-editor {
+    width: 100% !important;
+  }
+
+  .date-range-item ::v-deep .el-range-input {
+    font-size: 0.8rem;
+  }
+
+  /* CONTENEDOR DE TABLA CON SCROLL HORIZONTAL VISIBLE */
+  .table-container {
+    padding: 10px;
+    border-radius: 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  /* Forzar tabla a mostrar todas las columnas con scroll */
+  ::v-deep .el-table {
+    width: 100%;
+    overflow: visible;
+  }
+
+  ::v-deep .el-table__header-wrapper,
+  ::v-deep .el-table__body-wrapper {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Ancho mínimo de la tabla para forzar scroll */
+  ::v-deep .el-table__header,
+  ::v-deep .el-table__body {
+    min-width: 800px;
+  }
+
+  /* Celdas más compactas */
+  ::v-deep .el-table__body tr td {
+    padding: 10px 8px !important;
+  }
+
+  /* Atleta cell más compacto */
+  .athlete-cell {
+    gap: 10px;
+    min-width: 160px;
+  }
+
+  .athlete-photo-wrapper {
+    width: 38px;
+    height: 38px;
+  }
+
+  .name {
+    font-size: 0.85rem;
+  }
+
+  .sub-text {
+    font-size: 0.7rem;
+  }
+
+  /* Stats en columna */
+  .stats-mini-grid {
+    flex-direction: column;
+    gap: 4px;
+    min-width: 100px;
+  }
+
+  .stat-box {
+    padding: 3px 6px;
+    font-size: 0.7rem;
+    justify-content: center;
+  }
+
+  /* Progress bar más pequeño */
+  .progress-col ::v-deep .el-progress {
+    min-width: 80px;
+  }
+
+  .progress-col ::v-deep .el-progress-bar__outer {
+    height: 12px !important;
+  }
+
+  /* Acciones */
+  ::v-deep .el-button--small.is-circle {
+    width: 32px;
+    height: 32px;
+    padding: 6px;
+  }
+
+  .table-footer {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+
+  /* Modal responsive */
+  .modal-summary {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .summary-item {
+    padding: 10px;
+  }
+
+  .summary-item .value {
+    font-size: 1.2rem;
+  }
+
+  .modal-header-custom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .modal-title {
+    font-size: 1rem;
+  }
+
+  .modal-subtitle {
+    font-size: 0.9rem;
+  }
+
+  ::v-deep .detail-modal .el-dialog__body {
+    padding: 15px;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .report-container {
+    padding: 8px;
+  }
+
+  .page-header {
+    padding: 12px;
+  }
+
+  .header-content h1 {
+    font-size: 1rem;
+  }
+
+  .subtitle {
+    font-size: 0.7rem;
+  }
+
+  .control-panel ::v-deep .el-card__body {
+    padding: 10px;
+  }
+
+  .table-container {
+    padding: 8px;
+  }
+
+  .athlete-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    min-width: 120px;
+  }
+
+  .athlete-photo-wrapper {
+    width: 32px;
+    height: 32px;
+  }
+
+  .avatar-placeholder {
+    font-size: 14px;
+  }
+
+  .name {
+    font-size: 0.75rem;
+  }
+
+  .sub-text {
+    display: none;
+  }
+
+  .category-tag {
+    font-size: 10px;
+    padding: 0 6px;
+  }
+
+  .stats-mini-grid {
+    min-width: 80px;
+  }
+
+  .stat-box {
+    font-size: 0.65rem;
+    padding: 2px 5px;
+  }
+
+  .stat-box i {
+    font-size: 10px;
+    margin-right: 2px;
+  }
+
+  .progress-col ::v-deep .el-progress {
+    min-width: 60px;
+  }
+
+  /* Ocultar columna acciones en móvil muy pequeño */
+  ::v-deep .el-table .no-print {
+    display: none;
+  }
+
+  .empty-state, .loading-state {
+    padding: 30px 15px;
+  }
+}
+
+/* Móviles muy pequeños */
+@media (max-width: 320px) {
+  .report-container {
+    padding: 5px;
+  }
+
+  .page-header {
+    padding: 10px;
+  }
+
+  .header-content h1 {
+    font-size: 0.9rem;
+  }
+
+  .table-container {
+    padding: 5px;
+  }
+
+  .athlete-photo-wrapper {
+    display: none;
+  }
+
+  .athlete-cell {
+    min-width: 100px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .report-container {
+    padding: 0;
+    background: white;
+  }
+
+  .table-container {
+    box-shadow: none;
+    border: none;
+  }
 }
 </style>

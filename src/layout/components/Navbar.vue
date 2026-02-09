@@ -1,5 +1,8 @@
 <template>
   <div class="navbar">
+    <!-- Hamburger para móvil -->
+    <hamburger id="hamburger-container" :is-active="sidebar.opened" class="hamburger-container" @toggleClick="toggleSideBar" />
+
     <breadcrumb id="breadcrumb-container" class="breadcrumb-container" />
 
     <div class="right-menu">
@@ -27,13 +30,16 @@
 <script>
 import { mapGetters } from 'vuex'
 import Breadcrumb from '@/components/Breadcrumb'
+import Hamburger from '@/components/Hamburger'
 
 export default {
   components: {
-    Breadcrumb
+    Breadcrumb,
+    Hamburger
   },
   computed: {
     ...mapGetters([
+      'sidebar',
       'avatar',
       'device'
     ]),
@@ -42,6 +48,9 @@ export default {
     }
   },
   methods: {
+    toggleSideBar() {
+      this.$store.dispatch('app/toggleSideBar')
+    },
     toggleTagsView() {
       this.$store.dispatch('settings/changeSetting', {
         key: 'tagsView',
@@ -64,10 +73,28 @@ export default {
   background: #E51D22;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+
+  .hamburger-container {
+    line-height: 46px;
+    height: 100%;
+    float: left;
+    cursor: pointer;
+    transition: background .3s;
+    -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.1);
+    }
+  }
 
   .breadcrumb-container {
     float: left;
-    margin-left: 20px;
+    margin-left: 10px;
   }
 
   .right-menu {
@@ -142,6 +169,60 @@ export default {
 
     &[divided] {
       border-top-color: rgba(229, 29, 34, 0.1);
+    }
+  }
+}
+
+/* Responsive Navbar */
+@media (max-width: 768px) {
+  .navbar {
+    height: 55px;
+    padding: 0 10px;
+
+    .breadcrumb-container {
+      display: none;
+    }
+
+    .right-menu {
+      line-height: 55px;
+      padding-right: 10px;
+
+      .avatar-container {
+        margin-right: 5px;
+
+        .avatar-wrapper {
+          margin-top: 8px;
+
+          .user-avatar {
+            width: 34px;
+            height: 34px;
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    height: 50px;
+
+    .right-menu {
+      line-height: 50px;
+      padding-right: 5px;
+
+      .avatar-container .avatar-wrapper {
+        margin-top: 7px;
+
+        .user-avatar {
+          width: 32px;
+          height: 32px;
+        }
+
+        .el-icon-caret-bottom {
+          display: none;
+        }
+      }
     }
   }
 }

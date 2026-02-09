@@ -140,10 +140,6 @@ export default {
   height: 100%;
 }
 
-.simple-carousel {
-  /* Elimina cualquier espacio para controles */
-}
-
 .carousel-slide {
   width: 100%;
   height: 100%;
@@ -259,10 +255,11 @@ export default {
 .primary-action {
   background: var(--color-background);
   color: var(--color-primary);
-  border: none;
+  border: 2px solid transparent;
   padding: 15px 30px;
   font-weight: 600;
   transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 .primary-action:hover {
@@ -277,6 +274,7 @@ export default {
   padding: 15px 30px;
   font-weight: 600;
   transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 .secondary-action:hover {
@@ -287,27 +285,137 @@ export default {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .banner {
+    margin-top: 65px;
+  }
+
+  .banner-content {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .banner-title {
+    font-size: 2.4rem;
+    line-height: 1.15;
+  }
+
+  .title-line {
+    display: block;
+  }
+
+  .banner-description {
+    font-size: 1.05rem;
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+    padding: 0 0.5rem;
+  }
+
+  .badge {
+    padding: 0.5rem 1.25rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .badge-text {
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+  }
+
+  .banner-actions {
+    gap: 1rem;
+  }
+
+  .primary-action,
+  .secondary-action {
+    padding: 14px 28px;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+}
+
+@media (max-width: 480px) {
+  .banner {
+    margin-top: 55px;
+  }
+
   .banner-content {
     padding: 1rem;
   }
 
   .banner-title {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .title-line.highlight {
     font-size: 2.2rem;
   }
 
   .banner-description {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+    line-height: 1.5;
   }
-}
 
-@media (max-width: 480px) {
-  .banner-title {
-    font-size: 1.8rem;
+  .badge {
+    padding: 0.5rem 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .badge-text {
+    font-size: 0.75rem;
   }
 
   .banner-actions {
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
+    width: 100%;
+    padding: 0 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .primary-action,
+  .secondary-action {
+    width: 100%;
+    justify-content: center;
+    padding: 16px 24px;
+    font-size: 1rem;
+    border-radius: 10px;
+    box-sizing: border-box;
+    border: 2px solid transparent;
+  }
+
+  .primary-action {
+    box-shadow: 0 4px 15px rgba(229, 29, 34, 0.4);
+    border-color: transparent;
+  }
+
+  .secondary-action {
+    background: var(--color-primary);
+    border: none;
+    outline: 2px solid var(--color-background);
+    outline-offset: -2px;
+    color: var(--color-background);
+  }
+}
+
+@media (max-width: 360px) {
+  .banner-title {
+    font-size: 1.75rem;
+  }
+
+  .title-line.highlight {
+    font-size: 1.9rem;
+  }
+
+  .banner-description {
+    font-size: 0.9rem;
+  }
+
+  .badge {
+    padding: 0.4rem 0.9rem;
+  }
+
+  .badge-text {
+    font-size: 0.7rem;
   }
 }
 </style>

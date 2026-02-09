@@ -84,10 +84,12 @@
 
     <!-- Main Table -->
     <div class="table-container">
+      <!-- TABLA DESKTOP (oculta en móvil) -->
       <el-table
         v-loading="loading"
         :data="filteredAthletes"
         style="width: 100%"
+        class="desktop-table"
         :header-cell-style="{background: '#f5f7fa', color: '#324157', fontWeight: 'bold'}"
         border
         stripe
@@ -136,6 +138,61 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- VISTA TARJETAS MÓVIL (oculta en desktop) -->
+      <div v-loading="loading" class="mobile-cards-view">
+        <div
+          v-for="atleta in filteredAthletes"
+          :key="atleta.atleta_id"
+          class="athlete-card"
+        >
+          <!-- Header de la tarjeta -->
+          <div class="card-header-section">
+            <div class="card-photo-wrapper">
+              <img v-if="atleta.foto" :src="getFotoUrl(atleta.foto)" class="card-avatar" @error="handleImgError">
+              <div v-else class="card-avatar-placeholder"><i class="el-icon-user" /></div>
+            </div>
+            <div class="card-athlete-info">
+              <span class="card-name">{{ atleta.nombre }} {{ atleta.apellido }}</span>
+              <span class="card-phone">{{ atleta.telefono || 'Sin teléfono' }}</span>
+            </div>
+          </div>
+
+          <!-- Info del atleta -->
+          <div class="card-info-section">
+            <div class="info-row">
+              <div class="info-item">
+                <span class="info-label">Edad</span>
+                <span class="info-value">{{ calculateAge(atleta.fecha_nacimiento) }} años</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Categoría</span>
+                <span class="info-value">{{ atleta.categoria_nombre || '-' }}</span>
+              </div>
+            </div>
+            <div class="info-row">
+              <div class="info-item">
+                <span class="info-label">Posición</span>
+                <el-tag size="mini" type="info" effect="plain">{{ atleta.posicion_de_juego_nombre || 'N/A' }}</el-tag>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Estatus</span>
+                <el-tag size="small" :type="getStatusType(atleta.estatus)">{{ atleta.estatus }}</el-tag>
+              </div>
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div class="card-actions-section no-print">
+            <el-button size="small" type="primary" icon="el-icon-view" @click="openDetailModal(atleta)">
+              Ver Detalles
+            </el-button>
+            <el-button size="small" type="danger" icon="el-icon-printer" @click="handlePrintAthlete(atleta)">
+              Imprimir
+            </el-button>
+          </div>
+        </div>
+      </div>
 
       <div class="table-footer">
         <span>Total: <strong>{{ filteredAthletes.length }}</strong> atletas</span>
@@ -1100,6 +1157,461 @@ export default {
 
 .copyright {
   font-size: 0.8rem;
+}
+
+/* ============================================
+   MOBILE CARDS VIEW STYLES
+   ============================================ */
+
+/* Por defecto: tarjetas ocultas, tabla visible */
+.mobile-cards-view {
+  display: none;
+}
+
+.desktop-table {
+  display: block;
+}
+
+.athlete-card {
+  background: white;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #E51D22;
+}
+
+.card-header-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.card-photo-wrapper {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+}
+
+.card-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 2px solid #E51D22;
+}
+
+.card-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #E51D22, #c41a1d);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 20px;
+}
+
+.card-athlete-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.card-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1e293b;
+}
+
+.card-phone {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.card-info-section {
+  margin-bottom: 12px;
+}
+
+.card-info-section .info-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.card-info-section .info-row:last-child {
+  margin-bottom: 0;
+}
+
+.card-info-section .info-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-info-section .info-label {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.card-info-section .info-value {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.9rem;
+}
+
+.card-actions-section {
+  display: flex;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.card-actions-section .el-button {
+  flex: 1;
+}
+
+/* ============================================
+   RESPONSIVE STYLES
+   ============================================ */
+
+/* Tablets y laptops pequeños */
+@media (max-width: 1200px) {
+  .filter-section {
+    gap: 12px;
+  }
+
+  .filter-select {
+    width: 140px;
+  }
+}
+
+/* Tablets */
+@media (max-width: 992px) {
+  .report-container {
+    padding: 15px;
+  }
+
+  .page-header {
+    padding: 18px;
+  }
+
+  .control-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+
+  .filter-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-item {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .filter-select,
+  .filter-input {
+    flex: 1;
+    width: auto;
+    max-width: none;
+  }
+
+  .actions-section {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .table-container {
+    padding: 15px;
+    overflow-x: auto;
+  }
+
+  .info-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dual-columns {
+    flex-direction: column;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .basic-details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Móviles */
+@media (max-width: 768px) {
+  /* SWITCH: Mostrar tarjetas, ocultar tabla en móvil */
+  .desktop-table {
+    display: none !important;
+  }
+
+  .mobile-cards-view {
+    display: block !important;
+  }
+
+  .report-container {
+    padding: 10px;
+  }
+
+  .page-header {
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+  }
+
+  .header-content h1 {
+    font-size: 1.3rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .subtitle {
+    margin-left: 0;
+    text-align: center;
+    font-size: 0.85rem;
+  }
+
+  .control-panel {
+    border-radius: 10px;
+  }
+
+  .control-panel ::v-deep .el-card__body {
+    padding: 12px;
+  }
+
+  .filter-label {
+    font-size: 0.75rem;
+    min-width: 80px;
+  }
+
+  .filter-item ::v-deep .el-input__inner {
+    height: 40px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+
+  .actions-section {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .actions-section .el-button {
+    flex: 1;
+  }
+
+  .table-container {
+    padding: 10px;
+    border-radius: 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-container ::v-deep .el-table__header-wrapper th {
+    padding: 10px 8px !important;
+    font-size: 0.75rem;
+  }
+
+  .table-container ::v-deep .el-table__body tr td {
+    padding: 10px 8px !important;
+    font-size: 0.85rem;
+  }
+
+  .cell-avatar,
+  .cell-avatar-placeholder {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+  }
+
+  .athlete-cell {
+    gap: 10px;
+  }
+
+  .name {
+    font-size: 0.85rem;
+  }
+
+  .sub-text {
+    font-size: 0.75rem;
+  }
+
+  .table-footer {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+
+  /* Modal responsive */
+  ::v-deep .athlete-detail-modal {
+    width: 95% !important;
+    max-width: 95vw !important;
+  }
+
+  .profile-photo-container {
+    width: 100px;
+    height: 100px;
+  }
+
+  .athlete-fullname {
+    font-size: 1.3rem;
+  }
+
+  .tags-container {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .info-grid-3 {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .sheet-section {
+    border-radius: 8px;
+  }
+
+  .sheet-content {
+    padding: 10px;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .modal-header-custom {
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+  }
+
+  .modal-title h2 {
+    font-size: 1.2rem;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .report-container {
+    padding: 8px;
+  }
+
+  .page-header {
+    padding: 12px;
+  }
+
+  .header-content h1 {
+    font-size: 1.1rem;
+  }
+
+  .subtitle {
+    font-size: 0.75rem;
+  }
+
+  .filter-label {
+    font-size: 0.7rem;
+    display: none;
+  }
+
+  .filter-label i {
+    display: inline-block;
+    font-size: 1rem;
+  }
+
+  .filter-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+  }
+
+  .actions-section .el-button {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+  }
+
+  .table-container {
+    padding: 8px;
+  }
+
+  .athlete-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .cell-avatar,
+  .cell-avatar-placeholder {
+    width: 32px;
+    height: 32px;
+  }
+
+  .profile-photo-container {
+    width: 80px;
+    height: 80px;
+  }
+
+  .athlete-fullname {
+    font-size: 1.1rem;
+  }
+
+  .info-tag {
+    padding: 3px 8px;
+    font-size: 0.75rem;
+  }
+
+  .info-item label {
+    font-size: 0.7rem;
+  }
+
+  .info-item span {
+    font-size: 0.85rem;
+  }
+
+  .metric-box {
+    padding: 6px;
+  }
+
+  .metric-box strong {
+    font-size: 0.65rem;
+  }
+
+  .metric-box span {
+    font-size: 0.9rem;
+  }
+}
+
+/* Móviles muy pequeños */
+@media (max-width: 320px) {
+  .report-container {
+    padding: 5px;
+  }
+
+  .page-header {
+    padding: 10px;
+  }
+
+  .header-content h1 {
+    font-size: 1rem;
+  }
+
+  .control-panel ::v-deep .el-card__body {
+    padding: 8px;
+  }
 }
 
 </style>

@@ -548,18 +548,245 @@ export default {
   opacity: 0.5;
 }
 
-@media (max-width: 768px) {
-  .page-header {
+/* ============================================
+   RESPONSIVE STYLES
+   ============================================ */
+
+/* Tablets y laptops pequeños */
+@media (max-width: 1200px) {
+  .categories-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+}
+
+/* Tablets */
+@media (max-width: 992px) {
+  .app-container {
     padding: 15px;
   }
 
+  .page-header {
+    padding: 18px;
+  }
+
   .control-row {
-    flex-direction: column;
     gap: 15px;
   }
 
   .control-item {
+    min-width: 180px;
+  }
+
+  .categories-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+}
+
+/* Móviles */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 10px;
+  }
+
+  .page-header {
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+  }
+
+  .header-content h1 {
+    font-size: 1.2rem;
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+  }
+
+  .control-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .control-item {
     width: 100%;
+    min-width: auto;
+  }
+
+  .control-item label {
+    font-size: 0.75rem;
+    margin-bottom: 6px;
+  }
+
+  .control-item ::v-deep .el-input__inner,
+  .control-item ::v-deep .el-select .el-input__inner {
+    height: 42px;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
+  .categories-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .category-card {
+    border-radius: 12px;
+  }
+
+  .card-header {
+    padding: 15px;
+    gap: 12px;
+  }
+
+  .category-icon {
+    width: 45px;
+    height: 45px;
+    font-size: 1rem;
+  }
+
+  .category-title h3 {
+    font-size: 1rem;
+  }
+
+  .card-body {
+    padding: 15px;
+  }
+
+  .info-row {
+    font-size: 0.85rem;
+  }
+
+  /* Modal responsive */
+  ::v-deep .category-dialog {
+    width: 95% !important;
+    max-width: 95vw !important;
+    margin: 5vh auto !important;
+  }
+
+  .categoria-info {
+    padding: 15px;
+  }
+
+  .categoria-info h3 {
+    font-size: 1.1rem;
+  }
+
+  .empty-state {
+    padding: 40px 20px;
+  }
+
+  .empty-state i {
+    font-size: 2.5rem;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .app-container {
+    padding: 8px;
+  }
+
+  .page-header {
+    padding: 12px;
+  }
+
+  .header-content h1 {
+    font-size: 1.05rem;
+  }
+
+  .subtitle {
+    font-size: 0.75rem;
+  }
+
+  .control-card ::v-deep .el-card__body {
+    padding: 10px;
+  }
+
+  .card-header {
+    padding: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .category-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 0.9rem;
+  }
+
+  .category-title {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .category-title h3 {
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tags-row {
+    gap: 4px;
+  }
+
+  .tags-row .el-tag {
+    font-size: 10px;
+    padding: 0 6px;
+    height: 20px;
+    line-height: 18px;
+  }
+
+  .card-body {
+    padding: 12px;
+  }
+
+  .info-row {
+    font-size: 0.8rem;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 10px;
+  }
+
+  .info-row .label {
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  .info-row .value {
+    color: #1e293b;
+  }
+}
+
+/* Móviles muy pequeños */
+@media (max-width: 320px) {
+  .app-container {
+    padding: 5px;
+  }
+
+  .page-header {
+    padding: 10px;
+  }
+
+  .header-content h1 {
+    font-size: 0.95rem;
+  }
+
+  .category-icon {
+    width: 35px;
+    height: 35px;
+    font-size: 0.8rem;
+  }
+
+  .category-title h3 {
+    font-size: 0.85rem;
   }
 }
 </style>
