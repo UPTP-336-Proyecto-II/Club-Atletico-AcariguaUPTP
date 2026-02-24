@@ -113,9 +113,11 @@
           </span>
         </div>
 
+        <!-- TABLA DESKTOP (oculta en móvil) -->
         <el-table
           :data="filteredAtletas"
           style="width: 100%"
+          class="desktop-table"
           border
           row-key="atleta_id"
           :row-class-name="tableRowClassName"
@@ -172,6 +174,61 @@
             </template>
           </el-table-column>
         </el-table>
+
+        <!-- VISTA TARJETAS MÓVIL (oculta en desktop) -->
+        <div class="mobile-cards-view">
+          <div
+            v-for="atleta in filteredAtletas"
+            :key="atleta.atleta_id"
+            class="attendance-card"
+            :class="{ 'saved': atleta.isSaved, 'presente': atleta.status === 'presente', 'ausente': atleta.status === 'ausente', 'justificativo': atleta.status === 'justificativo' }"
+          >
+            <!-- Header: Atleta info + Estado -->
+            <div class="card-header-section">
+              <div class="athlete-photo">
+                <div v-if="atleta.foto" class="avatar-img-wrapper">
+                  <img :src="getFotoUrl(atleta.foto)" class="avatar-img">
+                </div>
+                <i v-else class="el-icon-user" />
+              </div>
+              <div class="athlete-info">
+                <span class="name">{{ atleta.nombre }} {{ atleta.apellido }}</span>
+                <span v-if="atleta.cedula" class="cedula">#{{ atleta.cedula }}</span>
+              </div>
+              <el-tag v-if="atleta.isSaved" type="success" size="mini" effect="dark" class="status-tag">
+                <i class="el-icon-check" /> Guardado
+              </el-tag>
+              <el-tag v-else type="info" size="mini" effect="plain" class="status-tag">Pendiente</el-tag>
+            </div>
+
+            <!-- Asistencia Radio Buttons -->
+            <div class="card-attendance-section">
+              <span class="section-label">Asistencia:</span>
+              <el-radio-group v-model="atleta.status" size="small" class="status-group-mobile" @change="atleta.isSaved = false">
+                <el-radio-button label="presente">
+                  <i class="el-icon-check" /> Presente
+                </el-radio-button>
+                <el-radio-button label="ausente">
+                  <i class="el-icon-close" /> Ausente
+                </el-radio-button>
+                <el-radio-button label="justificativo">
+                  <i class="el-icon-warning-outline" /> Justif.
+                </el-radio-button>
+              </el-radio-group>
+            </div>
+
+            <!-- Observaciones -->
+            <div class="card-observations-section">
+              <span class="section-label">Observaciones:</span>
+              <el-input
+                v-model="atleta.observaciones"
+                size="small"
+                placeholder="Nota opcional..."
+                @input="atleta.isSaved = false"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </el-card>
   </div>
@@ -643,10 +700,25 @@ export default {
   opacity: 0.5;
 }
 
-@media (max-width: 768px) {
-  .page-header {
+/* Responsive - Tablets */
+@media (max-width: 992px) {
+  .asistencia-container {
     padding: 15px;
-    margin-bottom: 15px;
+  }
+
+  .page-header {
+    padding: 18px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: center;
   }
 
   .control-row {
@@ -657,6 +729,279 @@ export default {
   .control-item {
     width: 100%;
     min-width: 0;
+  }
+
+  .bulk-actions {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+}
+
+/* Responsive - Móviles */
+@media (max-width: 768px) {
+  .asistencia-container {
+    padding: 10px;
+  }
+
+  .page-header {
+    padding: 15px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+  }
+
+  .header-content h1 {
+    font-size: 1.2rem;
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+  }
+
+  .control-card {
+    border-radius: 10px;
+  }
+
+  .control-card ::v-deep .el-card__body {
+    padding: 12px;
+  }
+
+  .control-item label {
+    font-size: 0.75rem;
+    margin-bottom: 5px;
+  }
+
+  .control-item ::v-deep .el-input__inner,
+  .control-item ::v-deep .el-select .el-input__inner {
+    height: 44px;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
+  .control-item.actions ::v-deep .el-button--primary {
+    width: 100%;
+    height: 44px;
+    padding: 10px 16px;
+  }
+
+  /* Tabla scrollable en móvil */
+  .main-card ::v-deep .el-table {
+    overflow-x: auto;
+  }
+
+  .main-card ::v-deep .el-table__body-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Radio buttons más compactos */
+  .status-group ::v-deep .el-radio-button__inner {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .status-group ::v-deep .el-radio-button__inner i {
+    margin-right: 2px;
+  }
+
+  .athlete-cell {
+    min-width: 180px;
+  }
+
+  .athlete-photo {
+    width: 35px;
+    height: 35px;
+  }
+
+  .athlete-info .name {
+    font-size: 0.85rem;
+  }
+
+  .empty-state {
+    padding: 40px 20px;
+  }
+
+  .empty-state i {
+    font-size: 3rem;
+  }
+}
+
+/* Responsive - Móviles pequeños */
+@media (max-width: 480px) {
+  .asistencia-container {
+    padding: 8px;
+  }
+
+  .page-header {
+    padding: 12px;
+  }
+
+  .header-content h1 {
+    font-size: 1rem;
+  }
+
+  .header-date-picker ::v-deep .el-input__inner {
+    padding: 10px 12px 10px 35px;
+    font-size: 0.85rem;
+  }
+
+  .summary-text {
+    font-size: 0.8rem;
+  }
+
+  .bulk-actions ::v-deep .el-button {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+  }
+
+  .status-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+  }
+
+  .status-group ::v-deep .el-radio-button {
+    width: 100%;
+  }
+
+  .status-group ::v-deep .el-radio-button__inner {
+    width: 100%;
+    border-radius: 6px !important;
+    border: 1px solid #dcdfe6 !important;
+  }
+}
+
+/* ============================================
+   MOBILE CARDS VIEW STYLES
+   ============================================ */
+
+/* Por defecto: tarjetas ocultas, tabla visible */
+.mobile-cards-view {
+  display: none;
+}
+
+.desktop-table {
+  display: block;
+}
+
+.attendance-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #94a3b8;
+  transition: all 0.3s ease;
+}
+
+.attendance-card.saved {
+  border-left-color: #22c55e;
+  background: linear-gradient(135deg, #f0fdf4, #fff);
+}
+
+.attendance-card.presente {
+  border-left-color: #22c55e;
+}
+
+.attendance-card.ausente {
+  border-left-color: #ef4444;
+}
+
+.attendance-card.justificativo {
+  border-left-color: #f59e0b;
+}
+
+.attendance-card .card-header-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.attendance-card .athlete-photo {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.attendance-card .athlete-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.attendance-card .athlete-info .name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1e293b;
+  display: block;
+}
+
+.attendance-card .athlete-info .cedula {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.attendance-card .status-tag {
+  flex-shrink: 0;
+}
+
+.card-attendance-section {
+  margin-bottom: 12px;
+}
+
+.card-attendance-section .section-label,
+.card-observations-section .section-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.status-group-mobile {
+  display: flex;
+  width: 100%;
+  gap: 6px;
+}
+
+.status-group-mobile ::v-deep .el-radio-button {
+  flex: 1;
+}
+
+.status-group-mobile ::v-deep .el-radio-button__inner {
+  width: 100%;
+  padding: 10px 8px;
+  font-size: 0.85rem;
+  border-radius: 8px !important;
+  border: 1px solid #e2e8f0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.status-group-mobile ::v-deep .el-radio-button__orig-radio:checked + .el-radio-button__inner {
+  box-shadow: none;
+}
+
+.card-observations-section ::v-deep .el-input__inner {
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+/* RESPONSIVE: Switch tarjetas/tabla */
+@media (max-width: 768px) {
+  .desktop-table {
+    display: none !important;
+  }
+
+  .mobile-cards-view {
+    display: block !important;
   }
 }
 </style>

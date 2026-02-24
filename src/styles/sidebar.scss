@@ -200,6 +200,7 @@
     .sidebar-container {
       transition: transform .28s;
       width: $sideBarWidth !important;
+      max-width: 85vw; // Máximo 85% del ancho de pantalla
     }
 
     &.hideSidebar {
@@ -208,6 +209,26 @@
         transition-duration: 0.3s;
         transform: translate3d(-$sideBarWidth, 0, 0);
       }
+    }
+
+    // Ajustes para items del menú en móvil
+    .submenu-title-noDropdown,
+    .el-submenu__title {
+      height: 44px;
+      line-height: 44px;
+      font-size: 15px;
+    }
+
+    .el-menu-item {
+      height: 44px;
+      line-height: 44px;
+      font-size: 15px;
+      padding: 0 16px !important;
+    }
+
+    .svg-icon {
+      font-size: 20px;
+      margin-right: 14px;
     }
   }
 

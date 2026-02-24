@@ -910,4 +910,290 @@ export default {
 ::v-deep .el-tabs__item:hover {
   color: #E51D22;
 }
+
+/* ============================================
+   RESPONSIVE STYLES
+   ============================================ */
+
+/* Tablets y laptops pequeños */
+@media (max-width: 1200px) {
+  .main-content {
+    grid-template-columns: 280px 1fr;
+    gap: 12px;
+  }
+}
+
+/* Tablets */
+@media (max-width: 992px) {
+  .plantel-container {
+    padding: 15px;
+  }
+
+  .main-content {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .sidebar .el-card {
+    height: auto;
+    max-height: 350px;
+  }
+
+  .member-list {
+    max-height: 200px;
+  }
+
+  .page-header {
+    padding: 18px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+  }
+
+  .member-details-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+  }
+
+  .member-details-photo {
+    margin: 0 auto;
+  }
+
+  .member-details-info {
+    text-align: center;
+  }
+
+  .member-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+/* Móviles */
+@media (max-width: 768px) {
+  .plantel-container {
+    padding: 10px;
+  }
+
+  .page-header {
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+  }
+
+  .page-header h1 {
+    font-size: 1.3rem;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+  }
+
+  .header-content ::v-deep > .el-button--primary {
+    width: 100%;
+    padding: 12px 20px;
+  }
+
+  .sidebar .el-card {
+    max-height: 300px;
+  }
+
+  .sidebar ::v-deep .el-card__header {
+    padding: 12px 15px;
+  }
+
+  .search-container {
+    padding: 10px;
+  }
+
+  .member-list {
+    max-height: 180px;
+    padding: 5px 0;
+  }
+
+  .member-item {
+    padding: 12px;
+    margin: 6px 8px;
+    gap: 10px;
+  }
+
+  .member-photo {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    font-size: 18px;
+  }
+
+  .member-info h3 {
+    font-size: 0.85rem;
+  }
+
+  .member-info p {
+    font-size: 0.75rem;
+  }
+
+  .content-area ::v-deep .el-card__body {
+    padding: 15px;
+  }
+
+  .member-details-photo {
+    width: 80px;
+    height: 80px;
+    font-size: 32px;
+  }
+
+  .member-details-info h2 {
+    font-size: 1.2rem;
+  }
+
+  .member-actions {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .member-actions .el-button {
+    flex: 1;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    padding: 5px;
+  }
+
+  /* Modal responsive */
+  ::v-deep .el-dialog {
+    width: 95% !important;
+    max-width: 95vw !important;
+    margin: 5vh auto !important;
+  }
+
+  ::v-deep .el-dialog__body {
+    padding: 15px;
+  }
+
+  ::v-deep .el-row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  ::v-deep .el-col {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  ::v-deep .el-col-12 {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .empty-state {
+    padding: 40px 15px;
+  }
+
+  .empty-state i {
+    font-size: 3rem;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .plantel-container {
+    padding: 8px;
+  }
+
+  .page-header {
+    padding: 12px;
+  }
+
+  .page-header h1 {
+    font-size: 1.1rem;
+  }
+
+  .subtitle {
+    font-size: 0.75rem;
+  }
+
+  .sidebar .el-card {
+    max-height: 250px;
+  }
+
+  .member-list {
+    max-height: 150px;
+  }
+
+  .member-item {
+    padding: 10px;
+    margin: 5px 6px;
+  }
+
+  .member-photo {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 16px;
+  }
+
+  .member-info h3 {
+    font-size: 0.8rem;
+  }
+
+  .member-details-photo {
+    width: 70px;
+    height: 70px;
+    font-size: 28px;
+  }
+
+  .member-details-info h2 {
+    font-size: 1.1rem;
+  }
+
+  .form-item label {
+    font-size: 0.75rem;
+  }
+
+  .form-item p {
+    font-size: 0.9rem;
+  }
+
+  ::v-deep .el-tabs__item {
+    font-size: 12px;
+    padding: 0 12px;
+  }
+}
+
+/* Móviles muy pequeños */
+@media (max-width: 320px) {
+  .plantel-container {
+    padding: 5px;
+  }
+
+  .page-header {
+    padding: 10px;
+  }
+
+  .page-header h1 {
+    font-size: 0.95rem;
+  }
+
+  .member-photo {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 14px;
+  }
+
+  .member-details-photo {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+  }
+}
 </style>

@@ -1,15 +1,17 @@
 const pool = require('../config/database');
+const addressService = require('../services/addressService');
 
 // Obtener todos los tutores
 const getTutores = async (req, res) => {
     try {
         const [rows] = await pool.execute(
             `SELECT t.*,
+              CONCAT(t.nombres, ' ', t.apellidos) as nombre_completo,
               COUNT(a.atleta_id) as total_atletas
        FROM tutor t
        LEFT JOIN atletas a ON t.tutor_id = a.tutor_id
        GROUP BY t.tutor_id
-       ORDER BY t.nombre_completo ASC`
+       ORDER BY t.nombres ASC, t.apellidos ASC`
         );
         res.json(rows);
     } catch (error) {
@@ -24,9 +26,11 @@ const getTutorById = async (req, res) => {
         const { id } = req.params;
 
         const [rows] = await pool.execute(
-            `SELECT t.*, d.pais, d.estado, d.municipio, d.parroquia, d.descripcion_descriptiva 
+            `SELECT t.*, 
+                    CONCAT(t.nombres, ' ', t.apellidos) as nombre_completo,
+                    ${addressService.getSelectColumns().replace(/d\./g, 'd.')} 
              FROM tutor t
-             LEFT JOIN direcciones d ON t.direccion_id = d.direccion_id
+             ${addressService.getJoins().replace('entity.direccion_id', 't.direccion_id')}
              WHERE t.tutor_id = ?`,
             [id]
         );
@@ -56,23 +60,26 @@ const getTutorById = async (req, res) => {
 // Crear tutor
 const createTutor = async (req, res) => {
     try {
-        const { nombre_completo, cedula, telefono, correo, direccion, tipo_relacion } = req.body;
+        const { nombres, apellidos, nombre_completo, cedula, telefono, correo, direccion, tipo_relacion } = req.body;
+
+        // Support both old 'nombre_completo' and new 'nombres'/'apellidos' from frontend just in case
+        let finalNombres = nombres;
+        let finalApellidos = apellidos;
+        if (!finalNombres && nombre_completo) {
+            const parts = nombre_completo.trim().split(' ');
+            finalNombres = parts[0];
+            finalApellidos = parts.slice(1).join(' ');
+        }
 
         let direccion_id = null;
-
-        // Si hay datos de dirección estructurados, crear registro en tabla direcciones
-        if (direccion && typeof direccion === 'object' && (direccion.pais || direccion.estado || direccion.municipio || direccion.parroquia || direccion.descripcion_descriptiva)) {
-            const [dirResult] = await pool.execute(
-                `INSERT INTO direcciones (pais, estado, municipio, parroquia, descripcion_descriptiva) VALUES (?, ?, ?, ?, ?)`,
-                [direccion.pais || 'Venezuela', direccion.estado || '', direccion.municipio || '', direccion.parroquia || '', direccion.descripcion_descriptiva || '']
-            );
-            direccion_id = dirResult.insertId;
+        if (direccion) {
+            direccion_id = await addressService.findOrCreateAddress(direccion);
         }
 
         const [result] = await pool.execute(
-            `INSERT INTO tutor (nombre_completo, cedula, telefono, correo, direccion_id, tipo_relacion) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-            [nombre_completo, cedula, telefono, correo, direccion_id, tipo_relacion]
+            `INSERT INTO tutor (nombres, apellidos, cedula, telefono, correo, direccion_id, tipo_relacion) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [finalNombres, finalApellidos || '', cedula, telefono, correo, direccion_id, tipo_relacion]
         );
 
         res.status(201).json({
@@ -90,42 +97,30 @@ const createTutor = async (req, res) => {
 const updateTutor = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre_completo, telefono, correo, direccion, tipo_relacion } = req.body;
+        const { nombres, apellidos, nombre_completo, telefono, correo, direccion, tipo_relacion } = req.body;
 
-        // 1. Obtener el direccion_id actual del tutor
-        const [tutorRows] = await pool.execute('SELECT direccion_id FROM tutor WHERE tutor_id = ?', [id]);
-        if (tutorRows.length === 0) {
-            return res.status(404).json({ error: 'Tutor no encontrado' });
+        let finalNombres = nombres;
+        let finalApellidos = apellidos;
+        if (!finalNombres && nombre_completo) {
+            const parts = nombre_completo.trim().split(' ');
+            finalNombres = parts[0];
+            finalApellidos = parts.slice(1).join(' ');
         }
 
-        let currentDireccionId = tutorRows[0].direccion_id;
-
-        // 2. Manejar la dirección (Crear si no existe, actualizar si existe)
-        if (direccion && typeof direccion === 'object') {
-            if (currentDireccionId) {
-                // Actualizar existente
-                await pool.execute(
-                    `UPDATE direcciones SET pais = ?, estado = ?, municipio = ?, parroquia = ?, descripcion_descriptiva = ? WHERE direccion_id = ?`,
-                    [direccion.pais || 'Venezuela', direccion.estado || '', direccion.municipio || '', direccion.parroquia || '', direccion.descripcion_descriptiva || '', currentDireccionId]
-                );
-            } else {
-                // Crear nueva si no tenía
-                if (direccion.pais || direccion.estado || direccion.municipio || direccion.parroquia || direccion.descripcion_descriptiva) {
-                    const [dirResult] = await pool.execute(
-                        `INSERT INTO direcciones (pais, estado, municipio, parroquia, descripcion_descriptiva) VALUES (?, ?, ?, ?, ?)`,
-                        [direccion.pais || 'Venezuela', direccion.estado || '', direccion.municipio || '', direccion.parroquia || '', direccion.descripcion_descriptiva || '']
-                    );
-                    currentDireccionId = dirResult.insertId;
-                }
-            }
+        let finalDireccionId = undefined;
+        if (direccion) {
+            finalDireccionId = await addressService.findOrCreateAddress(direccion);
+        } else {
+            const [existing] = await pool.execute('SELECT direccion_id FROM tutor WHERE tutor_id = ?', [id]);
+            if (existing.length > 0) finalDireccionId = existing[0].direccion_id;
         }
 
-        // 3. Actualizar tutor
+        // Actualizar tutor
         const [result] = await pool.execute(
             `UPDATE tutor 
-       SET nombre_completo = ?, telefono = ?, correo = ?, direccion_id = ?, tipo_relacion = ?
+       SET nombres = ?, apellidos = ?, telefono = ?, correo = ?, direccion_id = ?, tipo_relacion = ?
        WHERE tutor_id = ?`,
-            [nombre_completo, telefono, correo, currentDireccionId, tipo_relacion, id]
+            [finalNombres, finalApellidos || '', telefono, correo, finalDireccionId, tipo_relacion, id]
         );
 
         if (result.affectedRows === 0) {

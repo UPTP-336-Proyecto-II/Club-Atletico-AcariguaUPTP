@@ -40,11 +40,11 @@ const getUsuarios = async (req, res) => {
     const { estatus, rol, sort, search } = req.query;
 
     let query = `
-      SELECT u.usuario_id, u.email, u.rol, u.estatus, u.ultimo_acceso, u.created_at, u.plantel_id,
+      SELECT u.usuario_id, u.email, u.rol_id, u.estatus, u.ultimo_acceso, u.created_at, u.plantel_id,
              r.nombre_rol, r.descripcion as rol_descripcion,
              p.nombre as plantel_nombre, p.apellido as plantel_apellido
       FROM usuarios u
-      LEFT JOIN rol_usuarios r ON u.rol = r.rol_id
+      LEFT JOIN rol_usuarios r ON u.rol_id = r.rol_id
       LEFT JOIN plantel p ON u.plantel_id = p.plantel_id
     `;
 
@@ -57,7 +57,7 @@ const getUsuarios = async (req, res) => {
     }
 
     if (rol) {
-      conditions.push('u.rol = ?');
+      conditions.push('u.rol_id = ?');
       params.push(rol);
     }
 
@@ -108,11 +108,11 @@ const getUsuarioById = async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await pool.execute(
-      `SELECT u.usuario_id, u.email, u.rol, u.estatus, u.ultimo_acceso, u.created_at, u.plantel_id,
+      `SELECT u.usuario_id, u.email, u.rol_id, u.estatus, u.ultimo_acceso, u.created_at, u.plantel_id,
               r.nombre_rol, r.descripcion as rol_descripcion,
               p.nombre as plantel_nombre, p.apellido as plantel_apellido
        FROM usuarios u
-       LEFT JOIN rol_usuarios r ON u.rol = r.rol_id
+       LEFT JOIN rol_usuarios r ON u.rol_id = r.rol_id
        LEFT JOIN plantel p ON u.plantel_id = p.plantel_id
        WHERE u.usuario_id = ?`,
       [id]
@@ -159,7 +159,7 @@ const login = async (req, res) => {
       {
         userId: user.usuario_id,
         email: user.email,
-        rol: user.rol
+        rol: user.rol_id
       },
       JWT_SECRET,
       { expiresIn: '24h' }
@@ -189,9 +189,9 @@ const getInfo = async (req, res) => {
     const userId = req.userId;
 
     const [users] = await pool.execute(
-      `SELECT u.usuario_id, u.email, u.rol, r.nombre_rol
+      `SELECT u.usuario_id, u.email, u.rol_id, r.nombre_rol
        FROM usuarios u
-       LEFT JOIN rol_usuarios r ON u.rol = r.rol_id
+       LEFT JOIN rol_usuarios r ON u.rol_id = r.rol_id
        WHERE u.usuario_id = ? AND u.estatus = ?`,
       [userId, 'ACTIVO']
     );
@@ -206,7 +206,7 @@ const getInfo = async (req, res) => {
       data: {
         roles: [user.nombre_rol], // Retornar el nombre del rol exacto de la BD: 'super_user', 'administrador', 'entrenador', 'medico'
         roleName: user.nombre_rol,
-        roleId: user.rol,
+        roleId: user.rol_id,
         name: user.email, // Usamos email como nombre ya que no hay nombre/apellido
         avatar: 'https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif',
         introduction: `${user.nombre_rol} del Club Atlético Deportivo Acarigua`
@@ -306,7 +306,7 @@ const createUsuario = async (req, res) => {
     }
 
     const [result] = await pool.execute(
-      'INSERT INTO usuarios (email, password, rol, estatus) VALUES (?, ?, ?, ?)',
+      'INSERT INTO usuarios (email, password, rol_id, estatus) VALUES (?, ?, ?, ?)',
       [email, password || '123456', rol || 2, 'ACTIVO']
     );
 
@@ -372,7 +372,7 @@ const updateUsuario = async (req, res) => {
       params.push(password);
     }
     if (rol) {
-      updates.push('rol = ?');
+      updates.push('rol_id = ?');
       params.push(rol);
     }
     if (estatus) {

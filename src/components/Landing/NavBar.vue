@@ -247,6 +247,10 @@ export default {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .navbar {
+    padding: 0.75rem 0;
+  }
+
   .navbar-container {
     padding: 0 1rem;
   }
@@ -260,25 +264,73 @@ export default {
   }
 
   .mobile-menu {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.05);
+    transition: background 0.2s ease;
+  }
+
+  .mobile-menu:active {
+    background: rgba(0, 0, 0, 0.1);
   }
 
   .mobile-nav {
     display: flex;
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .mobile-nav-link {
+    padding: 0.75rem 0;
+    font-size: 1rem;
+  }
+
+  .mobile-login-btn {
+    width: 100%;
+    min-height: 48px;
   }
 
   .logo-text {
     display: none;
   }
+
+  .logo-icon {
+    height: 45px;
+  }
 }
 
 @media (max-width: 480px) {
   .navbar-container {
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 0.75rem;
   }
 
   .logo-icon {
-    height: 40px;
+    height: 38px;
+  }
+
+  .mobile-menu {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 320px) {
+  .logo-icon {
+    height: 32px;
   }
 }
 </style>

@@ -15,10 +15,12 @@
 
     <!-- Content -->
     <el-card shadow="hover" class="roles-card">
+      <!-- TABLA DESKTOP (oculta en móvil) -->
       <el-table
         v-loading="loading"
         :data="roles"
         style="width: 100%"
+        class="desktop-table"
         stripe
         border
       >
@@ -74,6 +76,68 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- VISTA TARJETAS MÓVIL (oculta en desktop) -->
+      <div v-loading="loading" class="mobile-cards-view">
+        <div
+          v-for="rol in roles"
+          :key="rol.rol_id"
+          class="role-card"
+        >
+          <!-- Header de la tarjeta -->
+          <div class="card-header-section">
+            <div class="role-icon-wrapper">
+              <i class="el-icon-s-custom" />
+            </div>
+            <div class="role-main-info">
+              <span class="role-name">{{ rol.nombre_rol }}</span>
+              <span class="role-id">ID: {{ rol.rol_id }}</span>
+            </div>
+          </div>
+
+          <!-- Descripción -->
+          <div class="card-description">
+            <span class="desc-label">Descripción:</span>
+            <p class="desc-text">{{ rol.descripcion || 'Sin descripción' }}</p>
+          </div>
+
+          <!-- Info del rol -->
+          <div class="card-info-section">
+            <div class="info-row">
+              <div class="info-item">
+                <span class="info-label">Usuarios</span>
+                <el-tag :type="rol.usuarios_count > 0 ? 'primary' : 'info'" size="small">
+                  {{ rol.usuarios_count }} Total
+                </el-tag>
+                <div v-if="rol.usuarios_count > 0" class="usuarios-breakdown-mobile">
+                  <span class="stat-activo"><i class="el-icon-check" /> {{ rol.usuarios_activos || 0 }}</span>
+                  <span class="stat-inactivo"><i class="el-icon-close" /> {{ rol.usuarios_inactivos || 0 }}</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Fecha Creación</span>
+                <span class="info-value">{{ formatDate(rol.fecha_creacion) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div class="card-actions-section">
+            <el-button size="small" type="primary" icon="el-icon-edit" @click="handleEdit(rol)">
+              Editar
+            </el-button>
+            <el-button
+              size="small"
+              type="danger"
+              icon="el-icon-delete"
+              :disabled="rol.usuarios_count > 0"
+              @click="handleDelete(rol)"
+            >
+              Eliminar
+            </el-button>
+          </div>
+        </div>
+      </div>
 
       <!-- Info Card -->
       <div class="info-section">
@@ -447,5 +511,218 @@ export default {
   display: flex;
   align-items: center;
   gap: 2px;
+}
+
+/* ============================================
+   MOBILE CARDS VIEW STYLES
+   ============================================ */
+
+/* Por defecto: tarjetas ocultas, tabla visible */
+.mobile-cards-view {
+  display: none;
+}
+
+.desktop-table {
+  display: block;
+}
+
+.role-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #E51D22;
+}
+
+.card-header-section {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.role-icon-wrapper {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #E51D22, #c41a1d);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.role-main-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.role-main-info .role-name {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #1e293b;
+}
+
+.role-main-info .role-id {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.card-description {
+  margin-bottom: 12px;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.card-description .desc-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.card-description .desc-text {
+  margin: 6px 0 0 0;
+  font-size: 0.9rem;
+  color: #1e293b;
+  line-height: 1.4;
+}
+
+.card-info-section {
+  margin-bottom: 12px;
+}
+
+.card-info-section .info-row {
+  display: flex;
+  gap: 15px;
+}
+
+.card-info-section .info-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.card-info-section .info-label {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.card-info-section .info-value {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.9rem;
+}
+
+.usuarios-breakdown-mobile {
+  display: flex;
+  gap: 10px;
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+.card-actions-section {
+  display: flex;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.card-actions-section .el-button {
+  flex: 1;
+}
+
+/* ============================================
+   RESPONSIVE STYLES
+   ============================================ */
+
+@media (max-width: 768px) {
+  /* SWITCH: Mostrar tarjetas, ocultar tabla en móvil */
+  .desktop-table {
+    display: none !important;
+  }
+
+  .mobile-cards-view {
+    display: block !important;
+  }
+
+  .roles-container {
+    padding: 10px;
+  }
+
+  .page-header {
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+  }
+
+  .header-content h1 {
+    font-size: 1.3rem;
+    justify-content: center;
+  }
+
+  .subtitle {
+    margin-left: 0;
+    text-align: center;
+  }
+
+  .header-content ::v-deep > .el-button--primary {
+    width: 100%;
+  }
+
+  .roles-card {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .info-section {
+    margin-top: 15px;
+  }
+
+  .info-section ::v-deep .el-alert__content {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .role-card {
+    padding: 12px;
+  }
+
+  .role-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+
+  .role-main-info .role-name {
+    font-size: 1rem;
+  }
+
+  .card-info-section .info-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card-actions-section {
+    flex-direction: column;
+  }
 }
 </style>

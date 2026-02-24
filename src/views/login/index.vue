@@ -688,6 +688,97 @@ export default {
   .login-center-wrapper {
     padding: 1rem;
   }
+
+  .login-card {
+    padding: 1.75rem 1.25rem;
+  }
+
+  .logo-image {
+    width: 50px;
+    height: 50px;
+  }
+
+  .logo-text h1 {
+    font-size: 1.15rem;
+  }
+
+  .logo-text p {
+    font-size: 0.85rem;
+  }
+
+  .welcome-section h2 {
+    font-size: 1.25rem;
+  }
+
+  /* Modal de contacto responsive */
+  ::v-deep .contact-modal {
+    width: 95% !important;
+    max-width: 400px;
+  }
+
+  .contact-item {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .info {
+    align-items: center;
+  }
+
+  .info .value {
+    font-size: 0.85rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-center-wrapper {
+    padding: 0.75rem;
+  }
+
+  .login-card {
+    padding: 1.5rem 1rem;
+    border-radius: 12px;
+  }
+
+  .logo-section {
+    gap: 0.5rem;
+  }
+
+  .logo-image {
+    width: 45px;
+    height: 45px;
+  }
+
+  .back-button.mobile-back-button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .back-button.mobile-back-button span {
+    display: none;
+  }
+
+  /* Modal fullscreen en móvil pequeño */
+  ::v-deep .contact-modal {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+}
+
+@media (max-width: 320px) {
+  .login-header {
+    margin-bottom: 1rem;
+  }
+
+  .logo-section {
+    margin-bottom: 0.75rem;
+  }
+
+  .logo-image {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 /* Recovery Modal Styles */

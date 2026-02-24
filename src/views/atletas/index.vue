@@ -2237,17 +2237,31 @@ aside.sidebar {
   border-radius: 4px;
 }
 
+/* Responsive - Tablets y Laptops pequeños */
 @media (max-width: 1200px) {
   .main-content {
     grid-template-columns: 1fr;
   }
 
+  .sidebar {
+    display: none;
+  }
+
+  .content-area {
+    min-height: auto;
+  }
+
+  .athlete-details-header {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
   .form-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .form-item.full-width {
-    grid-column: 1;
+    grid-column: 1 / span 2;
   }
 
   .performance-grid {
@@ -2255,19 +2269,179 @@ aside.sidebar {
   }
 }
 
+/* Responsive - Tablets */
+@media (max-width: 992px) {
+  .atletas-container {
+    padding: 15px;
+  }
+
+  .page-header {
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+
+  .header-content h1 {
+    font-size: 1.5rem;
+  }
+
+  .athlete-details-photo {
+    width: 80px;
+    height: 80px;
+    font-size: 2.5rem;
+  }
+
+  .athlete-details-info h2 {
+    font-size: 1.3rem;
+  }
+
+  .athlete-actions {
+    flex-wrap: wrap;
+  }
+}
+
+/* Responsive - Móviles */
 @media (max-width: 768px) {
+  .atletas-container {
+    padding: 10px;
+  }
+
+  .page-header {
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .header-content h1 {
+    font-size: 1.3rem;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+  }
+
   .athlete-details-header {
     flex-direction: column;
     text-align: center;
+    gap: 12px;
+  }
+
+  .athlete-details-photo {
+    width: 70px;
+    height: 70px;
+    font-size: 2rem;
+  }
+
+  .athlete-details-info {
+    text-align: center;
+  }
+
+  .athlete-details-info h2 {
+    font-size: 1.2rem;
+  }
+
+  .athlete-details-info p {
+    font-size: 0.85rem;
   }
 
   .athlete-actions {
     flex-direction: column;
     width: 100%;
+    gap: 8px;
+  }
+
+  .athlete-actions .el-button {
+    width: 100%;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .form-item.full-width {
+    grid-column: 1;
   }
 
   .performance-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .performance-item {
+    padding: 15px;
+  }
+
+  .performance-item p {
+    font-size: 1.5rem;
+  }
+
+  .empty-state {
+    padding: 40px 15px;
+  }
+
+  .empty-tab {
+    padding: 50px 15px;
+  }
+
+  .tab-header-actions {
+    justify-content: center;
+  }
+
+  /* Tabs scrollable */
+  ::v-deep .el-tabs__nav-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  ::v-deep .el-tabs__content {
+    height: auto;
+    max-height: none;
+  }
+}
+
+/* Responsive - Móviles pequeños */
+@media (max-width: 480px) {
+  .atletas-container {
+    padding: 8px;
+  }
+
+  .page-header {
+    padding: 10px;
+  }
+
+  .header-content h1 {
+    font-size: 1.15rem;
+  }
+
+  .athlete-details-photo {
+    width: 60px;
+    height: 60px;
+    font-size: 1.75rem;
+  }
+
+  .athlete-details-info h2 {
+    font-size: 1.1rem;
+  }
+
+  .form-item label {
+    font-size: 0.85rem;
+  }
+
+  .form-item p {
+    font-size: 0.9rem;
+  }
+
+  .performance-item h4 {
+    font-size: 0.8rem;
+  }
+
+  .performance-item p {
+    font-size: 1.3rem;
   }
 }
 

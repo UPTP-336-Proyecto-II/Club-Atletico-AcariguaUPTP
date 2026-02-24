@@ -1,0 +1,227 @@
+// ================================
+// Responsive Design System - CADA
+// ================================
+
+// Breakpoints
+$breakpoint-xs: 320px;   // Móviles pequeños (iPhone SE)
+$breakpoint-sm: 480px;   // Móviles medianos (iPhone 12/13/14)
+$breakpoint-md: 768px;   // Tablets portrait
+$breakpoint-lg: 992px;   // Tablets landscape / laptops pequeños
+$breakpoint-xl: 1200px;  // Desktop
+
+// Mixins para Media Queries
+@mixin mobile-xs {
+  @media (max-width: #{$breakpoint-xs}) {
+    @content;
+  }
+}
+
+@mixin mobile {
+  @media (max-width: #{$breakpoint-sm}) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (max-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
+@mixin tablet-landscape {
+  @media (max-width: #{$breakpoint-lg}) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: #{$breakpoint-xl}) {
+    @content;
+  }
+}
+
+// Mixin para dispositivos táctiles
+@mixin touch-device {
+  @media (hover: none) and (pointer: coarse) {
+    @content;
+  }
+}
+
+// CSS Variables para Responsive
+:root {
+  // Espaciado responsive
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+  
+  // Touch targets (mínimo recomendado: 44px)
+  --touch-target-min: 44px;
+  --touch-target-comfortable: 48px;
+  
+  // Tipografía fluida
+  --font-size-base: clamp(14px, 2.5vw, 16px);
+  --font-size-lg: clamp(16px, 3vw, 20px);
+  --font-size-xl: clamp(20px, 4vw, 28px);
+  --font-size-2xl: clamp(24px, 5vw, 36px);
+  --font-size-3xl: clamp(28px, 6vw, 48px);
+  
+  // Contenedor responsive
+  --container-padding-mobile: 1rem;
+  --container-padding-tablet: 1.5rem;
+  --container-padding-desktop: 2rem;
+}
+
+// Actualizar en tablet
+@media (max-width: 768px) {
+  :root {
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+  }
+}
+
+// Actualizar en móvil
+@media (max-width: 480px) {
+  :root {
+    --spacing-md: 1rem;
+    --spacing-lg: 1.25rem;
+    --spacing-xl: 1.5rem;
+  }
+}
+
+// =====================================
+// Utilidades Responsive Globales
+// =====================================
+
+// Ocultar elementos en diferentes breakpoints
+.hide-mobile {
+  @include tablet {
+    display: none !important;
+  }
+}
+
+.hide-desktop {
+  @include desktop {
+    display: none !important;
+  }
+}
+
+.show-mobile-only {
+  display: none !important;
+  
+  @include tablet {
+    display: block !important;
+  }
+}
+
+// Contenedor responsive
+.responsive-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--container-padding-desktop);
+  
+  @include tablet {
+    padding: 0 var(--container-padding-tablet);
+  }
+  
+  @include mobile {
+    padding: 0 var(--container-padding-mobile);
+  }
+}
+
+// Touch-friendly spacing
+.touch-spacing {
+  @include touch-device {
+    padding: calc(var(--spacing-sm) * 1.5);
+  }
+}
+
+// Botones touch-friendly
+.touch-button {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  padding: 12px 20px;
+  
+  @include touch-device {
+    min-height: var(--touch-target-comfortable);
+    padding: 14px 24px;
+  }
+}
+
+// Grid responsive automático
+.responsive-grid {
+  display: grid;
+  gap: var(--spacing-md);
+  
+  &--2-cols {
+    grid-template-columns: repeat(2, 1fr);
+    
+    @include tablet {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  &--3-cols {
+    grid-template-columns: repeat(3, 1fr);
+    
+    @include tablet-landscape {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    @include mobile {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  &--4-cols {
+    grid-template-columns: repeat(4, 1fr);
+    
+    @include tablet-landscape {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    @include mobile {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+// Stack en móvil (flex column)
+.stack-mobile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  
+  @include tablet {
+    flex-direction: column;
+  }
+}
+
+// Texto responsive
+.text-responsive {
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+}
+
+.heading-responsive {
+  font-size: var(--font-size-2xl);
+  line-height: 1.2;
+}
+
+// Full width en móvil
+.full-width-mobile {
+  @include tablet {
+    width: 100% !important;
+  }
+}
+
+// Centrar en móvil
+.center-mobile {
+  @include tablet {
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+  }
+}
