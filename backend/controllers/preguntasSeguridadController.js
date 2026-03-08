@@ -19,7 +19,7 @@ const getPreguntasDisponibles = async (req, res) => {
 // Guardar respuestas de seguridad de un usuario
 const guardarPreguntas = async (req, res) => {
     try {
-        const userId = req.userId; // Viene del token
+        const userId = req.userId; // Ahora es el email
         const { preguntas } = req.body; // Array de { pregunta_id, respuesta }
 
         if (!preguntas || !Array.isArray(preguntas) || preguntas.length === 0) {
@@ -27,19 +27,13 @@ const guardarPreguntas = async (req, res) => {
         }
 
         // Primero borramos las existentes para permitir actualización completa
-        await pool.execute('DELETE FROM usuario_preguntas WHERE usuario_id = ?', [userId]);
+        await pool.execute('DELETE FROM respuesta_seguridad WHERE email_id = ?', [userId]);
 
         // Insertamos las nuevas
         for (const p of preguntas) {
-            // Se recomienda hashear las respuestas de seguridad, pero por consistencia con el login actual (texto plano),
-            // lo guardaré en texto plano O hasheado si fuera un sistema nuevo. 
-            // Para "Recuperar contraseña" necesitamos comparar.
-            // Asumiré texto plano por simplicidad y consistencia con loginController que vi antes.
-            // OJO: loginController linea 153: if (password !== user.password) -> texto plano.
-
             await pool.execute(
-                'INSERT INTO usuario_preguntas (usuario_id, pregunta_id, respuesta) VALUES (?, ?, ?)',
-                [userId, p.pregunta_id, p.respuesta.toLowerCase().trim()] // Guardar normalizado
+                'INSERT INTO respuesta_seguridad (email_id, pregunta_id, respuesta) VALUES (?, ?, ?)',
+                [userId, p.pregunta_id, p.respuesta.toLowerCase().trim()]
             );
         }
 
@@ -54,9 +48,9 @@ const guardarPreguntas = async (req, res) => {
 // Verificar si un usuario ya tiene preguntas configuradas
 const tienePreguntas = async (req, res) => {
     try {
-        const { usuario_id } = req.params;
+        const { usuario_id } = req.params; // Ahora recibimos email
         const [rows] = await pool.execute(
-            'SELECT COUNT(*) as count FROM usuario_preguntas WHERE usuario_id = ?',
+            'SELECT COUNT(*) as count FROM respuesta_seguridad WHERE email_id = ?',
             [usuario_id]
         );
 
@@ -77,26 +71,25 @@ const obtenerPreguntasPorEmail = async (req, res) => {
             return res.status(400).json({ error: 'Email requerido' });
         }
 
-        const [users] = await pool.execute('SELECT usuario_id FROM usuarios WHERE email = ?', [email]);
+        // Verificar que el usuario existe (email es PK)
+        const [users] = await pool.execute('SELECT email FROM usuarios WHERE email = ?', [email]);
 
         if (users.length === 0) {
             return res.status(404).json({ error: 'Usuario no encontrado' });
         }
 
-        const userId = users[0].usuario_id;
-
         const [preguntas] = await pool.execute(`
-            SELECT p.id, p.pregunta 
+            SELECT p.preguntas_id, p.preguntas 
             FROM preguntas_seguridad p
-            JOIN usuario_preguntas up ON p.id = up.pregunta_id
-            WHERE up.usuario_id = ?
-        `, [userId]);
+            JOIN respuesta_seguridad rs ON p.preguntas_id = rs.pregunta_id
+            WHERE rs.email_id = ?
+        `, [email]);
 
         if (preguntas.length === 0) {
             return res.status(400).json({ error: 'El usuario no tiene preguntas de seguridad configuradas' });
         }
 
-        res.json({ usuario_id: userId, preguntas });
+        res.json({ email: email, preguntas });
 
     } catch (error) {
         console.error('Error obteniendo preguntas por email:', error);
@@ -107,14 +100,14 @@ const obtenerPreguntasPorEmail = async (req, res) => {
 // Verificar respuestas (paso intermedio)
 const verificarSoloRespuestas = async (req, res) => {
     try {
-        const { usuario_id, respuestas } = req.body; // respuestas: { pregunta_id: respuesta }
+        const { usuario_id, respuestas } = req.body; // usuario_id ahora es email
 
         console.log('Verificando respuestas para usuario:', usuario_id);
         console.log('Respuestas recibidas:', respuestas);
 
         // Obtener respuestas guardadas
         const [guardadas] = await pool.execute(
-            'SELECT pregunta_id, respuesta FROM usuario_preguntas WHERE usuario_id = ?',
+            'SELECT pregunta_id, respuesta FROM respuesta_seguridad WHERE email_id = ?',
             [usuario_id]
         );
 
@@ -158,7 +151,7 @@ const verificarRespuestasYCambiarPassword = async (req, res) => {
 
         // 1. Verificar respuestas
         const [guardadas] = await pool.execute(
-            'SELECT pregunta_id, respuesta FROM usuario_preguntas WHERE usuario_id = ?',
+            'SELECT pregunta_id, respuesta FROM respuesta_seguridad WHERE email_id = ?',
             [usuario_id]
         );
 
@@ -186,7 +179,7 @@ const verificarRespuestasYCambiarPassword = async (req, res) => {
         // 2. Cambiar contraseña
         // updateUsuario o directo update
         await pool.execute(
-            'UPDATE usuarios SET password = ? WHERE usuario_id = ?',
+            'UPDATE usuarios SET password = ? WHERE email = ?',
             [newPassword, usuario_id]
         );
 
@@ -201,19 +194,13 @@ const verificarRespuestasYCambiarPassword = async (req, res) => {
 // Obtener preguntas y respuestas del usuario (para mostrar en perfil si se desea editar)
 const obtenerPreguntasRespuestasUsuario = async (req, res) => {
     try {
-        const { usuario_id } = req.params;
-        // Solo permitir ver sus propias preguntas si es el mismo usuario o admin?
-        // El middleware verifyToken ya pasó, validamos que sea el mismo usuario o tenga permisos
-        if (req.userId != usuario_id) {
-            // Podríamos validar permisos aquí, por ahora simple
-            // return res.status(403).json({ error: 'No autorizado' });
-        }
+        const { usuario_id } = req.params; // Ahora es email
 
         const [rows] = await pool.execute(`
-            SELECT up.pregunta_id, up.respuesta, p.pregunta
-            FROM usuario_preguntas up
-            JOIN preguntas_seguridad p ON up.pregunta_id = p.id
-            WHERE up.usuario_id = ?
+            SELECT rs.pregunta_id, rs.respuesta, p.preguntas
+            FROM respuesta_seguridad rs
+            JOIN preguntas_seguridad p ON rs.pregunta_id = p.preguntas_id
+            WHERE rs.email_id = ?
         `, [usuario_id]);
 
         res.json(rows);

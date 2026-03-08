@@ -5,9 +5,9 @@ const getRoles = async (req, res) => {
   try {
     const [rows] = await pool.execute(
       `SELECT r.*, 
-        (SELECT COUNT(*) FROM usuarios u WHERE u.rol_id = r.rol_id) as usuarios_count,
-        (SELECT COUNT(*) FROM usuarios u WHERE u.rol_id = r.rol_id AND u.estatus = 'ACTIVO') as usuarios_activos,
-        (SELECT COUNT(*) FROM usuarios u WHERE u.rol_id = r.rol_id AND u.estatus = 'INACTIVO') as usuarios_inactivos
+        (SELECT COUNT(*) FROM usuarios u WHERE u.rol = r.rol_id) as usuarios_count,
+        (SELECT COUNT(*) FROM usuarios u WHERE u.rol = r.rol_id AND u.estatus = 'Activo') as usuarios_activos,
+        (SELECT COUNT(*) FROM usuarios u WHERE u.rol = r.rol_id AND u.estatus = 'Inactivo') as usuarios_inactivos
        FROM rol_usuarios r 
        ORDER BY r.rol_id ASC`
     );
@@ -24,7 +24,7 @@ const getRolById = async (req, res) => {
     const { id } = req.params;
     const [rows] = await pool.execute(
       `SELECT r.*, 
-        (SELECT COUNT(*) FROM usuarios u WHERE u.rol_id = r.rol_id) as usuarios_count
+        (SELECT COUNT(*) FROM usuarios u WHERE u.rol = r.rol_id) as usuarios_count
        FROM rol_usuarios r 
        WHERE r.rol_id = ?`,
       [id]
@@ -153,7 +153,7 @@ const deleteRol = async (req, res) => {
 
     // Verificar que no tenga usuarios asignados
     const [users] = await pool.execute(
-      'SELECT usuario_id FROM usuarios WHERE rol_id = ?',
+      'SELECT email FROM usuarios WHERE rol = ?',
       [id]
     );
 

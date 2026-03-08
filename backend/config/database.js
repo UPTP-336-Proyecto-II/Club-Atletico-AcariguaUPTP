@@ -4,7 +4,7 @@ const dbConfig = {
   host: 'localhost',
   user: 'root',
   password: '', // Si tienes password en XAMPP, ponlo aquí
-  database: 'club_atletico_db',
+  database: 'cada_db',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

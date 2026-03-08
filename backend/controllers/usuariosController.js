@@ -40,12 +40,10 @@ const getUsuarios = async (req, res) => {
     const { estatus, rol, sort, search } = req.query;
 
     let query = `
-      SELECT u.usuario_id, u.email, u.rol_id, u.estatus, u.ultimo_acceso, u.created_at, u.plantel_id,
-             r.nombre_rol, r.descripcion as rol_descripcion,
-             p.nombre as plantel_nombre, p.apellido as plantel_apellido
+      SELECT u.email, u.rol, u.estatus, u.ultimo_acceso, u.created_at, u.foto,
+             r.nombre_rol, r.descripcion as rol_descripcion
       FROM usuarios u
-      LEFT JOIN rol_usuarios r ON u.rol_id = r.rol_id
-      LEFT JOIN plantel p ON u.plantel_id = p.plantel_id
+      LEFT JOIN rol_usuarios r ON u.rol = r.rol_id
     `;
 
     const conditions = [];
@@ -57,19 +55,14 @@ const getUsuarios = async (req, res) => {
     }
 
     if (rol) {
-      conditions.push('u.rol_id = ?');
+      conditions.push('u.rol = ?');
       params.push(rol);
     }
 
     if (search) {
       const searchTerm = `%${search}%`;
-      conditions.push(`(
-        LOWER(u.email) LIKE LOWER(?) OR 
-        LOWER(p.nombre) LIKE LOWER(?) OR 
-        LOWER(p.apellido) LIKE LOWER(?) OR 
-        LOWER(CONCAT_WS(' ', p.nombre, p.apellido)) LIKE LOWER(?)
-      )`);
-      params.push(searchTerm, searchTerm, searchTerm, searchTerm);
+      conditions.push(`LOWER(u.email) LIKE LOWER(?)`);
+      params.push(searchTerm);
     }
 
     if (conditions.length > 0) {
@@ -108,13 +101,11 @@ const getUsuarioById = async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await pool.execute(
-      `SELECT u.usuario_id, u.email, u.rol_id, u.estatus, u.ultimo_acceso, u.created_at, u.plantel_id,
-              r.nombre_rol, r.descripcion as rol_descripcion,
-              p.nombre as plantel_nombre, p.apellido as plantel_apellido
+      `SELECT u.email, u.rol, u.estatus, u.ultimo_acceso, u.created_at, u.foto,
+              r.nombre_rol, r.descripcion as rol_descripcion
        FROM usuarios u
-       LEFT JOIN rol_usuarios r ON u.rol_id = r.rol_id
-       LEFT JOIN plantel p ON u.plantel_id = p.plantel_id
-       WHERE u.usuario_id = ?`,
+       LEFT JOIN rol_usuarios r ON u.rol = r.rol_id
+       WHERE u.email = ?`,
       [id]
     );
 
@@ -140,7 +131,7 @@ const login = async (req, res) => {
     // Buscar usuario en la base de datos
     const [users] = await pool.execute(
       'SELECT * FROM usuarios WHERE email = ? AND estatus = ?',
-      [email, 'ACTIVO']
+      [email, 'Activo']
     );
 
     if (users.length === 0) {
@@ -157,9 +148,9 @@ const login = async (req, res) => {
     // Generar token JWT
     const token = jwt.sign(
       {
-        userId: user.usuario_id,
+        userId: user.email,
         email: user.email,
-        rol: user.rol_id
+        rol: user.rol
       },
       JWT_SECRET,
       { expiresIn: '24h' }
@@ -167,8 +158,8 @@ const login = async (req, res) => {
 
     // Guardar token en la base de datos
     await pool.execute(
-      'UPDATE usuarios SET token = ?, ultimo_acceso = NOW() WHERE usuario_id = ?',
-      [token, user.usuario_id]
+      'UPDATE usuarios SET token = ?, ultimo_acceso = NOW() WHERE email = ?',
+      [token, user.email]
     );
 
     res.json({
@@ -186,14 +177,14 @@ const login = async (req, res) => {
 const getInfo = async (req, res) => {
   try {
     // El token ya fue verificado por el middleware
-    const userId = req.userId;
+    const userId = req.userId; // Ahora es el email
 
     const [users] = await pool.execute(
-      `SELECT u.usuario_id, u.email, u.rol_id, r.nombre_rol
+      `SELECT u.email, u.rol, r.nombre_rol
        FROM usuarios u
-       LEFT JOIN rol_usuarios r ON u.rol_id = r.rol_id
-       WHERE u.usuario_id = ? AND u.estatus = ?`,
-      [userId, 'ACTIVO']
+       LEFT JOIN rol_usuarios r ON u.rol = r.rol_id
+       WHERE u.email = ? AND u.estatus = ?`,
+      [userId, 'Activo']
     );
 
     if (users.length === 0) {
@@ -206,7 +197,7 @@ const getInfo = async (req, res) => {
       data: {
         roles: [user.nombre_rol], // Retornar el nombre del rol exacto de la BD: 'super_user', 'administrador', 'entrenador', 'medico'
         roleName: user.nombre_rol,
-        roleId: user.rol_id,
+        roleId: user.rol,
         name: user.email, // Usamos email como nombre ya que no hay nombre/apellido
         avatar: 'https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif',
         introduction: `${user.nombre_rol} del Club Atlético Deportivo Acarigua`
@@ -222,10 +213,10 @@ const getInfo = async (req, res) => {
 const logout = async (req, res) => {
   try {
     // Limpiar el token de la base de datos
-    const userId = req.userId;
+    const userId = req.userId; // Ahora es el email
 
     await pool.execute(
-      'UPDATE usuarios SET token = NULL WHERE usuario_id = ?',
+      'UPDATE usuarios SET token = NULL WHERE email = ?',
       [userId]
     );
 
@@ -286,7 +277,7 @@ const createUsuario = async (req, res) => {
 
     // Verificar si el email ya existe
     const [existing] = await pool.execute(
-      'SELECT usuario_id FROM usuarios WHERE LOWER(email) = ?',
+      'SELECT email FROM usuarios WHERE LOWER(email) = ?',
       [email]
     );
 
@@ -305,14 +296,14 @@ const createUsuario = async (req, res) => {
       }
     }
 
-    const [result] = await pool.execute(
-      'INSERT INTO usuarios (email, password, rol_id, estatus) VALUES (?, ?, ?, ?)',
-      [email, password || '123456', rol || 2, 'ACTIVO']
+    await pool.execute(
+      'INSERT INTO usuarios (email, password, rol, estatus) VALUES (?, ?, ?, ?)',
+      [email, password || '12345678', rol || 2, 'Activo']
     );
 
     res.status(201).json({
       message: 'Usuario creado exitosamente',
-      usuario_id: result.insertId
+      email: email
     });
 
   } catch (error) {
@@ -324,28 +315,17 @@ const createUsuario = async (req, res) => {
 // Actualizar usuario
 const updateUsuario = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { email, password, rol, estatus, plantel_id } = req.body;
+    const { id } = req.params; // id es el email
+    const { password, rol, estatus } = req.body;
 
     // Verificar que existe
     const [existing] = await pool.execute(
-      'SELECT usuario_id FROM usuarios WHERE usuario_id = ?',
+      'SELECT email FROM usuarios WHERE email = ?',
       [id]
     );
 
     if (existing.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    // Verificar email duplicado
-    if (email) {
-      const [duplicate] = await pool.execute(
-        'SELECT usuario_id FROM usuarios WHERE email = ? AND usuario_id != ?',
-        [email, id]
-      );
-      if (duplicate.length > 0) {
-        return res.status(400).json({ error: 'El email ya está en uso por otro usuario' });
-      }
     }
 
     // Verificar que el rol existe
@@ -363,25 +343,17 @@ const updateUsuario = async (req, res) => {
     const updates = [];
     const params = [];
 
-    if (email) {
-      updates.push('email = ?');
-      params.push(email);
-    }
     if (password) {
       updates.push('password = ?');
       params.push(password);
     }
     if (rol) {
-      updates.push('rol_id = ?');
+      updates.push('rol = ?');
       params.push(rol);
     }
     if (estatus) {
       updates.push('estatus = ?');
       params.push(estatus);
-    }
-    if (plantel_id !== undefined) { // Permitir null para desvincular
-      updates.push('plantel_id = ?');
-      params.push(plantel_id);
     }
 
     if (updates.length === 0) {
@@ -390,7 +362,7 @@ const updateUsuario = async (req, res) => {
 
     params.push(id);
     await pool.execute(
-      `UPDATE usuarios SET ${updates.join(', ')} WHERE usuario_id = ?`,
+      `UPDATE usuarios SET ${updates.join(', ')} WHERE email = ?`,
       params
     );
 
@@ -405,13 +377,13 @@ const updateUsuario = async (req, res) => {
 // Actualizar perfil del usuario logueado
 const updateProfile = async (req, res) => {
   try {
-    const userId = req.userId; // Obtenido del token
-    const { email, password, newPassword, confirmPassword, foto } = req.body;
+    const userId = req.userId; // Ahora es el email
+    const { password, newPassword, confirmPassword, foto } = req.body;
 
     // Obtener usuario actual para verificar contraseña
     const [users] = await pool.execute(
-      'SELECT * FROM usuarios WHERE usuario_id = ? AND estatus = ?',
-      [userId, 'ACTIVO']
+      'SELECT * FROM usuarios WHERE email = ? AND estatus = ?',
+      [userId, 'Activo']
     );
 
     if (users.length === 0) {
@@ -430,20 +402,6 @@ const updateProfile = async (req, res) => {
 
     const updates = [];
     const params = [];
-
-    // Cambiar Email
-    if (email && email !== user.email) {
-      // Verificar duplicado
-      const [duplicate] = await pool.execute(
-        'SELECT usuario_id FROM usuarios WHERE email = ? AND usuario_id != ?',
-        [email, userId]
-      );
-      if (duplicate.length > 0) {
-        return res.status(400).json({ error: 'El email ya está en uso' });
-      }
-      updates.push('email = ?');
-      params.push(email);
-    }
 
     // Cambiar Contraseña
     if (newPassword) {
@@ -466,7 +424,7 @@ const updateProfile = async (req, res) => {
 
     params.push(userId);
     await pool.execute(
-      `UPDATE usuarios SET ${updates.join(', ')} WHERE usuario_id = ?`,
+      `UPDATE usuarios SET ${updates.join(', ')} WHERE email = ?`,
       params
     );
 
@@ -502,11 +460,11 @@ const uploadAvatar = (req, res) => {
 // Eliminar usuario (HARD DELETE - Eliminar físicamente)
 const deleteUsuario = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params; // id es el email
 
     // Verificar que existe
     const [existing] = await pool.execute(
-      'SELECT usuario_id FROM usuarios WHERE usuario_id = ?',
+      'SELECT email FROM usuarios WHERE email = ?',
       [id]
     );
 
@@ -515,10 +473,8 @@ const deleteUsuario = async (req, res) => {
     }
 
     // Hard delete - Eliminar de la base de datos
-    // Nota: Las restricciones de clave foránea (ON DELETE CASCADE) deberían encargarse de eliminar datos relacionados si están configuradas así en la DB.
-    // Si no, habría que eliminar datos relacionados manualmente antes.
     await pool.execute(
-      'DELETE FROM usuarios WHERE usuario_id = ?',
+      'DELETE FROM usuarios WHERE email = ?',
       [id]
     );
 
