@@ -1,14 +1,20 @@
 const pool = require('../config/database');
 const addressService = require('../services/addressService');
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 =======
 const {
   isLegacySchema,
   isMigratedLegacySchema,
+=======
+const {
+  isLegacySchema,
+>>>>>>> main
   mapLegacyAthleteStatus,
   mapAthleteStatusToLegacy
 } = require('../services/schemaService');
 
+<<<<<<< HEAD
 function buildLegacyAtletaSelect(isMigrated = false) {
   let selectColumns;
   let joins;
@@ -36,6 +42,9 @@ function buildLegacyAtletaSelect(isMigrated = false) {
           LEFT JOIN estados e ON m.estadoi_id = e.estado_id`;
   }
 
+=======
+function buildLegacyAtletaSelect() {
+>>>>>>> main
   return `SELECT a.atleta_id,
                  a.nombre,
                  a.apellido,
@@ -64,45 +73,58 @@ function buildLegacyAtletaSelect(isMigrated = false) {
                  TRIM(SUBSTRING(COALESCE(r.nombre_completo, ''), LENGTH(SUBSTRING_INDEX(COALESCE(r.nombre_completo, ''), ' ', 1)) + 1)) as tutor_apellidos,
                  COALESCE(r.nombre_completo, '') as tutor_nombre,
                  r.telefono as tutor_telefono,
+<<<<<<< HEAD
                  p.nombre_posicion as posicion_de_juego_nombre,
                  ${selectColumns}
+=======
+                 'Venezuela' as pais,
+                 e.estado as estado,
+                 m.municipio as municipio,
+                 pa.parroquia as parroquia,
+                 d.localidad as descripcion_descriptiva,
+                 p.nombre_posicion as posicion_de_juego_nombre
+>>>>>>> main
           FROM atletas a
           LEFT JOIN categoria c ON a.categoria_id = c.categoria_id
           LEFT JOIN representante r ON a.representante_id = r.representante_id
           LEFT JOIN posicion_juego p ON a.posicion_de_juego = p.posicion_id
+<<<<<<< HEAD
           ${joins}`;
 }
 >>>>>>> Stashed changes
+=======
+          LEFT JOIN direcciones d ON a.direccion_id = d.direccion_id
+          LEFT JOIN parroquias pa ON d.parroquias_id = pa.parroquia_id
+          LEFT JOIN municipios m ON pa.municipio_id = m.municipio_id
+          LEFT JOIN estados e ON m.estadoi_id = e.estado_id`;
+}
+>>>>>>> main
 
 const getAtletas = async (req, res) => {
   try {
     const { search, cedula, sin_cedula, categoria_id, estatus, order } = req.query;
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 =======
     const legacySchema = await isLegacySchema();
     const migratedLegacySchema = await isMigratedLegacySchema();
 >>>>>>> Stashed changes
+=======
+    const legacySchema = await isLegacySchema();
+>>>>>>> main
 
-    let query = `SELECT a.*, 
-                TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad,
-                c.nombre_categoria as categoria_nombre,
-                t.nombres as tutor_nombres, t.apellidos as tutor_apellidos,
-                CONCAT(t.nombres, ' ', t.apellidos) as tutor_nombre,
-                ${addressService.getSelectColumns().replace(/d\./g, 'd.')},
-                p.nombre_posicion as posicion_de_juego_nombre
-         FROM atletas a 
-         LEFT JOIN categoria c ON a.categoria_id = c.categoria_id
-         LEFT JOIN tutor t ON a.tutor_id = t.tutor_id
-         LEFT JOIN posicion_juego p ON a.posicion_de_juego = p.posicion_id
-         ${addressService.getJoins().replace('entity.direccion_id', 'a.direccion_id')}
-         WHERE 1=1`;
-
+    let query;
     const params = [];
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 =======
     if (legacySchema) {
       query = `${buildLegacyAtletaSelect(migratedLegacySchema)} WHERE 1=1`;
+=======
+    if (legacySchema) {
+      query = `${buildLegacyAtletaSelect()} WHERE 1=1`;
+>>>>>>> main
     } else {
       query = `SELECT a.*,
                       TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad,
@@ -119,7 +141,10 @@ const getAtletas = async (req, res) => {
                WHERE 1=1`;
     }
 
+<<<<<<< HEAD
 >>>>>>> Stashed changes
+=======
+>>>>>>> main
     if (search) {
       query += ' AND (a.nombre LIKE ? OR a.apellido LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
@@ -134,7 +159,6 @@ const getAtletas = async (req, res) => {
       query += ' AND (a.cedula IS NULL OR a.cedula = \'\')';
     }
 
-    // Filtro para mostrar solo atletas CON cédula registrada
     if (req.query.con_cedula === 'true') {
       query += ' AND a.cedula IS NOT NULL AND a.cedula != \'\'';
     }
@@ -145,14 +169,19 @@ const getAtletas = async (req, res) => {
     }
 
     if (estatus && estatus !== 'TODOS') {
-      query += ' AND a.estatus = ?';
-      params.push(estatus);
+      if (legacySchema) {
+        query += ' AND a.estatus = ?';
+        params.push(mapAthleteStatusToLegacy(estatus));
+      } else {
+        query += ' AND a.estatus = ?';
+        params.push(estatus);
+      }
     } else if (!estatus) {
-      // Por defecto ocultamos inactivos si no se especifica filtro de estatus
-      query += " AND a.estatus IN ('ACTIVO', 'LESIONADO', 'Activo', 'Lesionado')";
+      query += legacySchema
+        ? ' AND a.estatus IN (1, 2)'
+        : " AND a.estatus IN ('ACTIVO', 'LESIONADO', 'Activo', 'Lesionado')";
     }
 
-    // Ordenamiento
     switch (order) {
       case 'oldest':
         query += ' ORDER BY a.created_at ASC';
@@ -163,11 +192,18 @@ const getAtletas = async (req, res) => {
       case 'name_desc':
         query += ' ORDER BY a.nombre DESC, a.apellido DESC';
         break;
-      default: // recent
+      default:
         query += ' ORDER BY a.created_at DESC';
     }
 
     const [rows] = await pool.execute(query, params);
+
+    if (legacySchema) {
+      rows.forEach(row => {
+        row.estatus = mapLegacyAthleteStatus(row.estatus);
+      });
+    }
+
     res.json(rows);
   } catch (error) {
     console.error('Error obteniendo atletas:', error);
@@ -178,6 +214,7 @@ const getAtletas = async (req, res) => {
 const getAtletaById = async (req, res) => {
   try {
     const { id } = req.params;
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     const [rows] = await pool.execute(
       `SELECT a.*, 
@@ -201,6 +238,13 @@ const getAtletaById = async (req, res) => {
     const [rows] = await pool.execute(
       legacySchema
         ? `${buildLegacyAtletaSelect(migratedLegacySchema)} WHERE a.atleta_id = ?`
+=======
+    const legacySchema = await isLegacySchema();
+
+    const [rows] = await pool.execute(
+      legacySchema
+        ? `${buildLegacyAtletaSelect()} WHERE a.atleta_id = ?`
+>>>>>>> main
         : `SELECT a.*,
                   TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad,
                   c.nombre_categoria as categoria_nombre,
@@ -215,12 +259,19 @@ const getAtletaById = async (req, res) => {
            LEFT JOIN posicion_juego p ON a.posicion_de_juego = p.posicion_id
            ${addressService.getJoins().replace('entity.direccion_id', 'a.direccion_id')}
            WHERE a.atleta_id = ?`,
+<<<<<<< HEAD
 >>>>>>> Stashed changes
+=======
+>>>>>>> main
       [id]
     );
 
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Atleta no encontrado' });
+    }
+
+    if (legacySchema) {
+      rows[0].estatus = mapLegacyAthleteStatus(rows[0].estatus);
     }
 
     res.json(rows[0]);
@@ -237,7 +288,7 @@ const createAtleta = async (req, res) => {
       apellido,
       cedula,
       telefono,
-      direccion, // Objeto { pais, estado, municipio, parroquia, descripcion_descriptiva }
+      direccion,
       fecha_nacimiento,
       sexo,
       posicion_de_juego,
@@ -257,8 +308,8 @@ const createAtleta = async (req, res) => {
 
 <<<<<<< Updated upstream
     const [result] = await pool.execute(
-      `INSERT INTO atletas 
-       (nombre, apellido, cedula, telefono, direccion_id, fecha_nacimiento, posicion_de_juego, pierna_dominante, categoria_id, tutor_id, estatus, foto) 
+      `INSERT INTO atletas
+       (nombre, apellido, cedula, telefono, direccion_id, fecha_nacimiento, posicion_de_juego, pierna_dominante, categoria_id, tutor_id, estatus, foto)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [nombre, apellido, cedula || null, telefono, direccion_id, fecha_nacimiento, posicion_de_juego, pierna_dominante || 'Derecha', categoria_id, tutor_id, estatus || 'ACTIVO', foto]
     );
@@ -267,6 +318,7 @@ const createAtleta = async (req, res) => {
       message: 'Atleta creado exitosamente',
       id: result.insertId
     });
+<<<<<<< HEAD
 
 =======
     if (legacySchema) {
@@ -312,6 +364,8 @@ const createAtleta = async (req, res) => {
       });
     }
 >>>>>>> Stashed changes
+=======
+>>>>>>> main
   } catch (error) {
     console.error('Error creando atleta:', error);
     res.status(500).json({ error: 'Error al crear atleta', details: error.message });
@@ -325,7 +379,7 @@ const updateAtleta = async (req, res) => {
       nombre,
       apellido,
       telefono,
-      direccion, // Objeto { pais, estado, municipio, parroquia, descripcion_descriptiva }
+      direccion,
       fecha_nacimiento,
       sexo,
       posicion_de_juego,
@@ -337,6 +391,7 @@ const updateAtleta = async (req, res) => {
       cedula
     } = req.body;
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     // 1. Obtener el direccion_id actual del atleta (opcional, si quisieramos actualizar en lugar de crear nuevo, pero AddressService maneja IDs complejos)
     // Simplificación: Resolvemos la nueva dirección (o existente) y actualizamos la FK.
@@ -374,6 +429,9 @@ const updateAtleta = async (req, res) => {
     let finalDireccionId = undefined; // Undefined means "do not update column"
 =======
     const legacySchema = await isLegacySchema();
+=======
+    let finalDireccionId = undefined;
+>>>>>>> main
 
     let finalDireccionId = undefined;
 >>>>>>> Stashed changes
@@ -381,18 +439,18 @@ const updateAtleta = async (req, res) => {
     if (direccion && (direccion.pais || direccion.estado || direccion.municipio || direccion.parroquia || direccion.descripcion_descriptiva)) {
       finalDireccionId = await addressService.findOrCreateAddress(direccion);
     } else {
-      // If we want to preserve existing, we just don't include it in UPDATE SET?
-      // My SQL below updates ALL fields. So I must provide a value.
-      // So I must fetch existing if not provided.
       const [existing] = await pool.execute('SELECT direccion_id FROM atletas WHERE atleta_id = ?', [id]);
       if (existing.length > 0) finalDireccionId = existing[0].direccion_id;
     }
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     // 3. Actualizar atleta
+=======
+>>>>>>> main
     await pool.execute(
-      `UPDATE atletas 
-       SET nombre = ?, apellido = ?, cedula = ?, telefono = ?, direccion_id = ?, fecha_nacimiento = ?, 
+      `UPDATE atletas
+       SET nombre = ?, apellido = ?, cedula = ?, telefono = ?, direccion_id = ?, fecha_nacimiento = ?,
            posicion_de_juego = ?, pierna_dominante = ?, categoria_id = ?, tutor_id = ?, estatus = ?, foto = ?
        WHERE atleta_id = ?`,
       [nombre, apellido, cedula || null, telefono, finalDireccionId, fecha_nacimiento, posicion_de_juego, pierna_dominante, categoria_id, tutor_id, estatus, foto, id]
@@ -439,44 +497,40 @@ const updateAtleta = async (req, res) => {
 const deleteAtleta = async (req, res) => {
   try {
     const { id } = req.params;
-
+    const legacySchema = await isLegacySchema();
     const [result] = await pool.execute(
       'UPDATE atletas SET estatus = ? WHERE atleta_id = ?',
-      ['INACTIVO', id]
+      [legacySchema ? 3 : 'INACTIVO', id]
     );
-
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Atleta no encontrado' });
     }
-
     res.json({ message: 'Atleta eliminado exitosamente' });
   } catch (error) {
     console.error('Error eliminando atleta:', error);
     res.status(500).json({ error: 'Error al eliminar atleta' });
   }
 };
-
 const updateAtletaTutor = async (req, res) => {
   try {
     const { id } = req.params;
     const { tutor_id } = req.body;
-
+    const legacySchema = await isLegacySchema();
     const [result] = await pool.execute(
-      'UPDATE atletas SET tutor_id = ? WHERE atleta_id = ?',
+      legacySchema
+        ? 'UPDATE atletas SET representante_id = ? WHERE atleta_id = ?'
+        : 'UPDATE atletas SET tutor_id = ? WHERE atleta_id = ?',
       [tutor_id, id]
     );
-
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Atleta no encontrado' });
     }
-
     res.json({ message: 'Tutor asignado exitosamente' });
   } catch (error) {
     console.error('Error asignando tutor:', error);
     res.status(500).json({ error: 'Error al asignar tutor' });
   }
 };
-
 module.exports = {
   getAtletas,
   getAtletaById,
@@ -487,7 +541,7 @@ module.exports = {
   uploadFoto: async (req, res) => {
     try {
       if (!req.file) {
-        return res.status(400).json({ error: 'No se subió ningún archivo' });
+        return res.status(400).json({ error: 'No se subio ningun archivo' });
       }
       res.json({
         message: 'Foto subida exitosamente',
@@ -500,3 +554,5 @@ module.exports = {
     }
   }
 };
+
+

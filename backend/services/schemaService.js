@@ -44,12 +44,15 @@ async function isLegacySchema() {
   return tables.has('personal') && !tables.has('plantel');
 }
 
+<<<<<<< HEAD
 async function isMigratedLegacySchema() {
   const tables = await getTables();
   // Is legacy (has personal) but the tables have been migrated (parroquias no longer exists)
   return tables.has('personal') && !tables.has('parroquias');
 }
 
+=======
+>>>>>>> main
 function mapLegacyAthleteStatus(value) {
   const numericValue = Number(value);
   return LEGACY_ATHLETE_STATUS[numericValue] || String(value || '').toUpperCase();
@@ -151,7 +154,10 @@ module.exports = {
   getTables,
   hasTable,
   isLegacySchema,
+<<<<<<< HEAD
   isMigratedLegacySchema,
+=======
+>>>>>>> main
   mapLegacyAthleteStatus,
   mapAthleteStatusToLegacy,
   mapAttendanceStatusToApi,

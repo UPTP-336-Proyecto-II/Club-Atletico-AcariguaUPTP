@@ -292,12 +292,17 @@ export default {
     },
     async fetchEntrenadores() {
       try {
-        this.entrenadores = await getPlantel({ rol: 'ENTRENADOR' })
-        if (this.entrenadores.length > 0) {
+        let entrenadores = await getPlantel({ rol: 'ENTRENADOR' })
+        if (!Array.isArray(entrenadores) || entrenadores.length === 0) {
+          entrenadores = await getPlantel()
+        }
+        this.entrenadores = Array.isArray(entrenadores) ? entrenadores : []
+        if (this.entrenadores.length > 0 && !this.entrenador_id) {
           this.entrenador_id = this.entrenadores[0].plantel_id
         }
       } catch (error) {
         console.error(error)
+        this.entrenadores = []
       }
     },
     async loadData() {
@@ -307,8 +312,7 @@ export default {
       this.listaAtletas = []
 
       try {
-        const allAtletas = await getAtletas()
-        const atletasCategoria = allAtletas.filter(a => a.categoria_id === this.categoria_id)
+        const atletasCategoria = await getAtletas({ categoria_id: this.categoria_id })
 
         const asistencias = await getAsistencias({
           categoria_id: this.categoria_id,
@@ -346,7 +350,7 @@ export default {
       })
     },
     async performSave() {
-      if (!this.entrenador_id) {
+      if (this.entrenadores.length > 0 && !this.entrenador_id) {
         this.$message.warning('Seleccione un entrenador responsable')
         return
       }
@@ -365,7 +369,7 @@ export default {
           tipo_evento: this.tipo_evento,
           estatus: atleta.status,
           observaciones: atleta.observaciones,
-          entrenador_id: this.entrenador_id
+          entrenador_id: this.entrenador_id || null
         }
 
         try {
@@ -1005,3 +1009,4 @@ export default {
   }
 }
 </style>
+
