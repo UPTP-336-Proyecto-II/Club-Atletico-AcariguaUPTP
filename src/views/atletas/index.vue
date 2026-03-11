@@ -444,6 +444,16 @@
               />
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="Sexo" prop="sexo">
+              <el-select v-model="atletaForm.sexo" placeholder="Seleccionar" style="width: 100%">
+                <el-option label="Masculino" value="M" />
+                <el-option label="Femenino" value="F" />
+              </el-select>
+            </el-form-item>
+          </el-col>
           <el-col :span="12">
             <el-form-item label="Posición de Juego">
               <el-select v-model="atletaForm.posicion_de_juego" placeholder="Seleccionar" style="width: 100%">
@@ -867,6 +877,7 @@ export default {
         apellido: '',
         cedula: '',
         fecha_nacimiento: '',
+        sexo: 'M',
         posicion_de_juego: '',
         categoria_id: '',
         tutor_id: null,
@@ -933,6 +944,7 @@ export default {
           { pattern: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, message: 'Solo se permiten letras', trigger: 'blur' }
         ],
         fecha_nacimiento: [{ required: true, message: 'La fecha de nacimiento es requerida', trigger: 'change' }],
+        sexo: [{ required: true, message: 'El sexo es requerido', trigger: 'change' }],
         categoria_id: [{ required: true, message: 'La categoría es requerida', trigger: 'change' }]
       },
       tutorRules: {
@@ -1191,9 +1203,9 @@ export default {
         this.atletaForm = {
           nombre: this.currentAtleta.nombre,
           apellido: this.currentAtleta.apellido,
-
           cedula: this.currentAtleta.cedula,
           fecha_nacimiento: this.currentAtleta.fecha_nacimiento,
+          sexo: this.currentAtleta.sexo || 'M',
           posicion_de_juego: this.currentAtleta.posicion_de_juego || '',
           categoria_id: this.currentAtleta.categoria_id,
           tutor_id: this.currentAtleta.tutor_id || null,
@@ -1516,6 +1528,7 @@ export default {
         apellido: '',
         cedula: '',
         fecha_nacimiento: '',
+        sexo: 'M',
         posicion_de_juego: '',
         categoria_id: '',
         tutor_id: null,

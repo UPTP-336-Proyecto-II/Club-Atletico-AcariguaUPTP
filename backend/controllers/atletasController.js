@@ -1,9 +1,87 @@
 const pool = require('../config/database');
 const addressService = require('../services/addressService');
+<<<<<<< Updated upstream
+=======
+const {
+  isLegacySchema,
+  isMigratedLegacySchema,
+  mapLegacyAthleteStatus,
+  mapAthleteStatusToLegacy
+} = require('../services/schemaService');
+
+function buildLegacyAtletaSelect(isMigrated = false) {
+  let selectColumns;
+  let joins;
+
+  if (isMigrated) {
+      selectColumns = `
+                 d.pais as pais,
+                 d.estado as estado,
+                 d.municipio as municipio,
+                 d.parroquia as parroquia,
+                 d.descripcion_descriptiva as descripcion_descriptiva`;
+      joins = `
+          LEFT JOIN direcciones d ON a.direccion_id = d.direccion_id`;
+  } else {
+      selectColumns = `
+                 'Venezuela' as pais,
+                 e.estado as estado,
+                 m.municipio as municipio,
+                 pa.parroquia as parroquia,
+                 d.localidad as descripcion_descriptiva`;
+      joins = `
+          LEFT JOIN direcciones d ON a.direccion_id = d.direccion_id
+          LEFT JOIN parroquias pa ON d.parroquias_id = pa.parroquia_id
+          LEFT JOIN municipios m ON pa.municipio_id = m.municipio_id
+          LEFT JOIN estados e ON m.estadoi_id = e.estado_id`;
+  }
+
+  return `SELECT a.atleta_id,
+                 a.nombre,
+                 a.apellido,
+                 a.fecha_nacimiento,
+                 a.sexo,
+                 a.cedula,
+                 a.telefono,
+                 a.posicion_de_juego,
+                 a.pierna_dominante,
+                 a.direccion_id,
+                 a.categoria_id,
+                 a.representante_id as tutor_id,
+                 a.foto,
+                 CASE a.estatus
+                   WHEN 0 THEN 'SUSPENDIDO'
+                   WHEN 1 THEN 'ACTIVO'
+                   WHEN 2 THEN 'LESIONADO'
+                   WHEN 3 THEN 'INACTIVO'
+                   ELSE CAST(a.estatus AS CHAR)
+                 END as estatus,
+                 a.created_at,
+                 a.updated_at,
+                 TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad,
+                 c.nombre_categoria as categoria_nombre,
+                 SUBSTRING_INDEX(COALESCE(r.nombre_completo, ''), ' ', 1) as tutor_nombres,
+                 TRIM(SUBSTRING(COALESCE(r.nombre_completo, ''), LENGTH(SUBSTRING_INDEX(COALESCE(r.nombre_completo, ''), ' ', 1)) + 1)) as tutor_apellidos,
+                 COALESCE(r.nombre_completo, '') as tutor_nombre,
+                 r.telefono as tutor_telefono,
+                 p.nombre_posicion as posicion_de_juego_nombre,
+                 ${selectColumns}
+          FROM atletas a
+          LEFT JOIN categoria c ON a.categoria_id = c.categoria_id
+          LEFT JOIN representante r ON a.representante_id = r.representante_id
+          LEFT JOIN posicion_juego p ON a.posicion_de_juego = p.posicion_id
+          ${joins}`;
+}
+>>>>>>> Stashed changes
 
 const getAtletas = async (req, res) => {
   try {
     const { search, cedula, sin_cedula, categoria_id, estatus, order } = req.query;
+<<<<<<< Updated upstream
+=======
+    const legacySchema = await isLegacySchema();
+    const migratedLegacySchema = await isMigratedLegacySchema();
+>>>>>>> Stashed changes
 
     let query = `SELECT a.*, 
                 TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad,
@@ -21,6 +99,27 @@ const getAtletas = async (req, res) => {
 
     const params = [];
 
+<<<<<<< Updated upstream
+=======
+    if (legacySchema) {
+      query = `${buildLegacyAtletaSelect(migratedLegacySchema)} WHERE 1=1`;
+    } else {
+      query = `SELECT a.*,
+                      TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad,
+                      c.nombre_categoria as categoria_nombre,
+                      t.nombres as tutor_nombres, t.apellidos as tutor_apellidos,
+                      CONCAT(t.nombres, ' ', t.apellidos) as tutor_nombre,
+                      ${addressService.getSelectColumns().replace(/d\./g, 'd.')},
+                      p.nombre_posicion as posicion_de_juego_nombre
+               FROM atletas a
+               LEFT JOIN categoria c ON a.categoria_id = c.categoria_id
+               LEFT JOIN tutor t ON a.tutor_id = t.tutor_id
+               LEFT JOIN posicion_juego p ON a.posicion_de_juego = p.posicion_id
+               ${addressService.getJoins().replace('entity.direccion_id', 'a.direccion_id')}
+               WHERE 1=1`;
+    }
+
+>>>>>>> Stashed changes
     if (search) {
       query += ' AND (a.nombre LIKE ? OR a.apellido LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
@@ -79,6 +178,7 @@ const getAtletas = async (req, res) => {
 const getAtletaById = async (req, res) => {
   try {
     const { id } = req.params;
+<<<<<<< Updated upstream
     const [rows] = await pool.execute(
       `SELECT a.*, 
               TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad,
@@ -94,6 +194,28 @@ const getAtletaById = async (req, res) => {
        LEFT JOIN posicion_juego p ON a.posicion_de_juego = p.posicion_id
        ${addressService.getJoins().replace('entity.direccion_id', 'a.direccion_id')}
        WHERE a.atleta_id = ?`,
+=======
+    const legacySchema = await isLegacySchema();
+    const migratedLegacySchema = await isMigratedLegacySchema();
+
+    const [rows] = await pool.execute(
+      legacySchema
+        ? `${buildLegacyAtletaSelect(migratedLegacySchema)} WHERE a.atleta_id = ?`
+        : `SELECT a.*,
+                  TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) as edad,
+                  c.nombre_categoria as categoria_nombre,
+                  t.nombres as tutor_nombres, t.apellidos as tutor_apellidos,
+                  CONCAT(t.nombres, ' ', t.apellidos) as tutor_nombre,
+                  t.telefono as tutor_telefono,
+                  ${addressService.getSelectColumns().replace(/d\./g, 'd.')},
+                  p.nombre_posicion as posicion_de_juego_nombre
+           FROM atletas a
+           LEFT JOIN categoria c ON a.categoria_id = c.categoria_id
+           LEFT JOIN tutor t ON a.tutor_id = t.tutor_id
+           LEFT JOIN posicion_juego p ON a.posicion_de_juego = p.posicion_id
+           ${addressService.getJoins().replace('entity.direccion_id', 'a.direccion_id')}
+           WHERE a.atleta_id = ?`,
+>>>>>>> Stashed changes
       [id]
     );
 
@@ -117,6 +239,7 @@ const createAtleta = async (req, res) => {
       telefono,
       direccion, // Objeto { pais, estado, municipio, parroquia, descripcion_descriptiva }
       fecha_nacimiento,
+      sexo,
       posicion_de_juego,
       pierna_dominante,
       categoria_id,
@@ -125,12 +248,14 @@ const createAtleta = async (req, res) => {
       foto
     } = req.body;
 
-    let direccion_id = null;
+    const legacySchema = await isLegacySchema();
 
+    let direccion_id = null;
     if (direccion && (direccion.pais || direccion.estado || direccion.municipio || direccion.parroquia || direccion.descripcion_descriptiva)) {
       direccion_id = await addressService.findOrCreateAddress(direccion);
     }
 
+<<<<<<< Updated upstream
     const [result] = await pool.execute(
       `INSERT INTO atletas 
        (nombre, apellido, cedula, telefono, direccion_id, fecha_nacimiento, posicion_de_juego, pierna_dominante, categoria_id, tutor_id, estatus, foto) 
@@ -143,9 +268,53 @@ const createAtleta = async (req, res) => {
       id: result.insertId
     });
 
+=======
+    if (legacySchema) {
+      if (!direccion_id) {
+        const connection = await pool.getConnection();
+        try {
+          const [dirRes] = await connection.execute(
+            'INSERT INTO direcciones (parroquias_id, localidad, tipo_vivienda, `ubicación vivienda`) VALUES (?, ?, ?, ?)',
+            [0, '', '', '']
+          );
+          direccion_id = dirRes.insertId;
+        } finally {
+          connection.release();
+        }
+      }
+
+      const estatusNumeric = mapAthleteStatusToLegacy(estatus || 'ACTIVO');
+      const piernaNorm = (pierna_dominante || 'derecha').toLowerCase();
+      const sexoValue = (sexo || 'M').toUpperCase().charAt(0);
+
+      const [result] = await pool.execute(
+        `INSERT INTO atletas
+         (nombre, apellido, cedula, telefono, direccion_id, fecha_nacimiento, sexo, posicion_de_juego, pierna_dominante, categoria_id, representante_id, estatus, foto)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [nombre, apellido, cedula || null, telefono || null, direccion_id, fecha_nacimiento, sexoValue, posicion_de_juego || null, piernaNorm, categoria_id, tutor_id || null, estatusNumeric, foto || null]
+      );
+
+      res.status(201).json({
+        message: 'Atleta creado exitosamente',
+        id: result.insertId
+      });
+    } else {
+      const [result] = await pool.execute(
+        `INSERT INTO atletas
+         (nombre, apellido, cedula, telefono, direccion_id, fecha_nacimiento, posicion_de_juego, pierna_dominante, categoria_id, tutor_id, estatus, foto)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [nombre, apellido, cedula || null, telefono, direccion_id, fecha_nacimiento, posicion_de_juego, pierna_dominante || 'Derecha', categoria_id, tutor_id, estatus || 'ACTIVO', foto]
+      );
+
+      res.status(201).json({
+        message: 'Atleta creado exitosamente',
+        id: result.insertId
+      });
+    }
+>>>>>>> Stashed changes
   } catch (error) {
     console.error('Error creando atleta:', error);
-    res.status(500).json({ error: 'Error al crear atleta' });
+    res.status(500).json({ error: 'Error al crear atleta', details: error.message });
   }
 };
 
@@ -158,6 +327,7 @@ const updateAtleta = async (req, res) => {
       telefono,
       direccion, // Objeto { pais, estado, municipio, parroquia, descripcion_descriptiva }
       fecha_nacimiento,
+      sexo,
       posicion_de_juego,
       pierna_dominante,
       categoria_id,
@@ -167,6 +337,7 @@ const updateAtleta = async (req, res) => {
       cedula
     } = req.body;
 
+<<<<<<< Updated upstream
     // 1. Obtener el direccion_id actual del atleta (opcional, si quisieramos actualizar en lugar de crear nuevo, pero AddressService maneja IDs complejos)
     // Simplificación: Resolvemos la nueva dirección (o existente) y actualizamos la FK.
 
@@ -201,8 +372,13 @@ const updateAtleta = async (req, res) => {
 
     // Better logic:
     let finalDireccionId = undefined; // Undefined means "do not update column"
+=======
+    const legacySchema = await isLegacySchema();
 
-    if (direccion) {
+    let finalDireccionId = undefined;
+>>>>>>> Stashed changes
+
+    if (direccion && (direccion.pais || direccion.estado || direccion.municipio || direccion.parroquia || direccion.descripcion_descriptiva)) {
       finalDireccionId = await addressService.findOrCreateAddress(direccion);
     } else {
       // If we want to preserve existing, we just don't include it in UPDATE SET?
@@ -212,6 +388,7 @@ const updateAtleta = async (req, res) => {
       if (existing.length > 0) finalDireccionId = existing[0].direccion_id;
     }
 
+<<<<<<< Updated upstream
     // 3. Actualizar atleta
     await pool.execute(
       `UPDATE atletas 
@@ -220,11 +397,42 @@ const updateAtleta = async (req, res) => {
        WHERE atleta_id = ?`,
       [nombre, apellido, cedula || null, telefono, finalDireccionId, fecha_nacimiento, posicion_de_juego, pierna_dominante, categoria_id, tutor_id, estatus, foto, id]
     );
+=======
+    if (legacySchema) {
+      const estatusNumeric = mapAthleteStatusToLegacy(estatus || 'ACTIVO');
+      const piernaNorm = (pierna_dominante || 'derecha').toLowerCase();
+      const sexoValue = sexo ? sexo.toUpperCase().charAt(0) : undefined;
+
+      let query = `UPDATE atletas SET nombre = ?, apellido = ?, cedula = ?, telefono = ?, direccion_id = ?, 
+                   fecha_nacimiento = ?, posicion_de_juego = ?, pierna_dominante = ?, categoria_id = ?, 
+                   representante_id = ?, estatus = ?, foto = ?`;
+      const params = [nombre, apellido, cedula || null, telefono || null, finalDireccionId, fecha_nacimiento,
+                      posicion_de_juego || null, piernaNorm, categoria_id, tutor_id || null, estatusNumeric, foto || null];
+
+      if (sexoValue) {
+        query += ', sexo = ?';
+        params.push(sexoValue);
+      }
+
+      query += ' WHERE atleta_id = ?';
+      params.push(id);
+
+      await pool.execute(query, params);
+    } else {
+      await pool.execute(
+        `UPDATE atletas
+         SET nombre = ?, apellido = ?, cedula = ?, telefono = ?, direccion_id = ?, fecha_nacimiento = ?,
+             posicion_de_juego = ?, pierna_dominante = ?, categoria_id = ?, tutor_id = ?, estatus = ?, foto = ?
+         WHERE atleta_id = ?`,
+        [nombre, apellido, cedula || null, telefono, finalDireccionId, fecha_nacimiento, posicion_de_juego, pierna_dominante, categoria_id, tutor_id, estatus, foto, id]
+      );
+    }
+>>>>>>> Stashed changes
 
     res.json({ message: 'Atleta actualizado exitosamente' });
   } catch (error) {
     console.error('Error actualizando atleta:', error);
-    res.status(500).json({ error: 'Error al actualizar atleta' });
+    res.status(500).json({ error: 'Error al actualizar atleta', details: error.message });
   }
 };
 

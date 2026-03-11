@@ -1,14 +1,24 @@
 const pool = require('../config/database');
+const { isLegacySchema } = require('../services/schemaService');
 
 // Obtener todas las fichas médicas
 const getFichasMedicas = async (req, res) => {
     try {
         const { atleta_id } = req.query;
-        let query = `SELECT f.*,
-    a.nombre as atleta_nombre,
-    a.apellido as atleta_apellido
-       FROM ficha_medica f
-       LEFT JOIN atletas a ON f.atleta_id = a.atleta_id`;
+        const legacySchema = await isLegacySchema();
+
+        let query = legacySchema 
+            ? `SELECT f.ficha_id, f.atleta_id, f.grupo_sanguineo as tipo_sanguineo, f.alergias, 
+                      f.antecedentes_quirurgicos as lesion, f.condicion_cronica as condicion_medica, 
+                      f.medicacion_actual as observacion, f.antecedentes_familiares, f.updated_at,
+                      a.nombre as atleta_nombre, a.apellido as atleta_apellido
+               FROM ficha_medica f
+               LEFT JOIN atletas a ON f.atleta_id = a.atleta_id`
+            : `SELECT f.*,
+                      a.nombre as atleta_nombre,
+                      a.apellido as atleta_apellido
+               FROM ficha_medica f
+               LEFT JOIN atletas a ON f.atleta_id = a.atleta_id`;
 
         const params = [];
 
@@ -17,7 +27,7 @@ const getFichasMedicas = async (req, res) => {
             params.push(atleta_id);
         }
 
-        query += ' ORDER BY f.created_at DESC';
+        query += legacySchema ? ' ORDER BY f.updated_at DESC' : ' ORDER BY f.created_at DESC';
 
         const [rows] = await pool.execute(query, params);
         res.json(rows);
@@ -27,20 +37,27 @@ const getFichasMedicas = async (req, res) => {
     }
 };
 
-// Obtener ficha médica por atleta
 const getFichaMedicaByAtleta = async (req, res) => {
     try {
         const { atleta_id } = req.params;
+        const legacySchema = await isLegacySchema();
 
-        const [rows] = await pool.execute(
-            `SELECT f.*,
-    a.nombre as atleta_nombre,
-    a.apellido as atleta_apellido
-       FROM ficha_medica f
-       LEFT JOIN atletas a ON f.atleta_id = a.atleta_id
-       WHERE f.atleta_id = ? `,
-            [atleta_id]
-        );
+        const query = legacySchema
+            ? `SELECT f.ficha_id, f.atleta_id, f.grupo_sanguineo as tipo_sanguineo, f.alergias, 
+                      f.antecedentes_quirurgicos as lesion, f.condicion_cronica as condicion_medica, 
+                      f.medicacion_actual as observacion, f.antecedentes_familiares, f.updated_at,
+                      a.nombre as atleta_nombre, a.apellido as atleta_apellido
+               FROM ficha_medica f
+               LEFT JOIN atletas a ON f.atleta_id = a.atleta_id
+               WHERE f.atleta_id = ? `
+            : `SELECT f.*,
+                      a.nombre as atleta_nombre,
+                      a.apellido as atleta_apellido
+               FROM ficha_medica f
+               LEFT JOIN atletas a ON f.atleta_id = a.atleta_id
+               WHERE f.atleta_id = ? `;
+
+        const [rows] = await pool.execute(query, [atleta_id]);
 
         if (rows.length === 0) {
             return res.status(404).json({ error: 'Ficha médica no encontrada' });
@@ -65,6 +82,8 @@ const createFichaMedica = async (req, res) => {
             observacion
         } = req.body;
 
+        const legacySchema = await isLegacySchema();
+
         // Verificar si ya existe ficha para este atleta
         const [existing] = await pool.execute(
             'SELECT ficha_id FROM ficha_medica WHERE atleta_id = ?',
@@ -75,12 +94,22 @@ const createFichaMedica = async (req, res) => {
             return res.status(400).json({ error: 'Ya existe una ficha médica para este atleta' });
         }
 
-        const [result] = await pool.execute(
-            `INSERT INTO ficha_medica
-    (atleta_id, alergias, tipo_sanguineo, lesion, condicion_medica, observacion)
-VALUES(?, ?, ?, ?, ?, ?)`,
-            [atleta_id, alergias, tipo_sanguineo, lesion, condicion_medica, observacion]
-        );
+        let result;
+        if (legacySchema) {
+            [result] = await pool.execute(
+                `INSERT INTO ficha_medica
+                (atleta_id, grupo_sanguineo, alergias, antecedentes_quirurgicos, condicion_cronica, medicacion_actual)
+                VALUES(?, ?, ?, ?, ?, ?)`,
+                [atleta_id, tipo_sanguineo || 'O+', alergias, lesion, condicion_medica, observacion]
+            );
+        } else {
+            [result] = await pool.execute(
+                `INSERT INTO ficha_medica
+                (atleta_id, alergias, tipo_sanguineo, lesion, condicion_medica, observacion)
+                VALUES(?, ?, ?, ?, ?, ?)`,
+                [atleta_id, alergias, tipo_sanguineo, lesion, condicion_medica, observacion]
+            );
+        }
 
         res.status(201).json({
             message: 'Ficha médica creada exitosamente',
@@ -105,12 +134,24 @@ const updateFichaMedica = async (req, res) => {
             observacion
         } = req.body;
 
-        const [result] = await pool.execute(
-            `UPDATE ficha_medica 
-       SET alergias = ?, tipo_sanguineo = ?, lesion = ?, condicion_medica = ?, observacion = ?
-    WHERE ficha_id = ? `,
-            [alergias, tipo_sanguineo, lesion, condicion_medica, observacion, id]
-        );
+        const legacySchema = await isLegacySchema();
+
+        let result;
+        if (legacySchema) {
+            [result] = await pool.execute(
+                `UPDATE ficha_medica 
+                 SET alergias = ?, grupo_sanguineo = ?, antecedentes_quirurgicos = ?, condicion_cronica = ?, medicacion_actual = ?
+                 WHERE ficha_id = ? `,
+                [alergias, tipo_sanguineo || 'O+', lesion, condicion_medica, observacion, id]
+            );
+        } else {
+            [result] = await pool.execute(
+                `UPDATE ficha_medica 
+                 SET alergias = ?, tipo_sanguineo = ?, lesion = ?, condicion_medica = ?, observacion = ?
+                 WHERE ficha_id = ? `,
+                [alergias, tipo_sanguineo, lesion, condicion_medica, observacion, id]
+            );
+        }
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Ficha médica no encontrada' });
