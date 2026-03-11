@@ -1,5 +1,26 @@
 # 📋 Guía de Implementación de la Base de Datos
 
+---
+
+## 🔄 Cómo Actualizar el Proyecto (PARA TODOS)
+
+Si tus compañeros han subido cambios y necesitas tener la versión más reciente en tu computadora, sigue estos pasos **antes** de arrancar el sistema:
+
+1. **Abrir la terminal** en la carpeta raíz del proyecto.
+2. Escribir el siguiente comando y presionar Enter:
+   ```bash
+   git pull
+   ```
+3. (Opcional) Si ves que hubo cambios grandes en el backend, es bueno reconstruir los módulos (solo si falla algo):
+   ```bash
+   npm install
+   cd backend
+   npm install
+   cd ..
+   ```
+
+---
+
 ## ✅ Pasos Completados
 
 ### 1. **Instalación de Dependencias** ✓
