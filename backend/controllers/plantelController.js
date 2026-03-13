@@ -1,51 +1,19 @@
 const pool = require('../config/database');
 const addressService = require('../services/addressService');
-const { isLegacySchema } = require('../services/schemaService');
 
+// Obtener todo el plantel
 const getPlantel = async (req, res) => {
   try {
     const { rol, sort, cedula, sin_cedula } = req.query;
-    const legacySchema = await isLegacySchema();
 
-    let query;
-    const params = [];
-
-    if (legacySchema) {
-      query = `
-            SELECT p.personal_id as plantel_id,
-                   p.email_id,
-                   p.nombre,
-                   p.apellido,
-                   p.cedula,
-                   p.telefono,
-                   p.fecha_nac,
-                   p.rol_personal as rol_id,
-                   p.direccion_id,
-                   p.foto,
-                   p.created_at,
-                   p.updated_at,
-                   r.nombre_rol,
-                   'Venezuela' as pais,
-                   e.estado as estado,
-                   m.municipio as municipio,
-                   pa.parroquia as parroquia,
-                   d.localidad as descripcion_descriptiva
-            FROM personal p
-            LEFT JOIN rol_usuarios r ON p.rol_personal = r.rol_id
-            LEFT JOIN direcciones d ON p.direccion_id = d.direccion_id
-            LEFT JOIN parroquias pa ON d.parroquias_id = pa.parroquia_id
-            LEFT JOIN municipios m ON pa.municipio_id = m.municipio_id
-            LEFT JOIN estados e ON m.estadoi_id = e.estado_id
-            WHERE 1=1`;
-    } else {
-      query = `
+    let query = `
             SELECT p.*, r.nombre_rol,
                    ${addressService.getSelectColumns().replace(/d\./g, 'd.')}
             FROM plantel p
             LEFT JOIN rol_usuarios r ON p.rol_id = r.rol_id
             ${addressService.getJoins().replace('entity.direccion_id', 'p.direccion_id')}
             WHERE 1=1`;
-    }
+    const params = [];
 
     if (cedula) {
       query += ' AND p.cedula LIKE ?';
@@ -57,9 +25,9 @@ const getPlantel = async (req, res) => {
     }
 
     if (rol) {
-      const rolId = parseInt(rol, 10);
-      if (!Number.isNaN(rolId)) {
-        query += legacySchema ? ' AND p.rol_personal = ?' : ' AND p.rol_id = ?';
+      const rolId = parseInt(rol);
+      if (!isNaN(rolId)) {
+        query += ' AND p.rol_id = ?';
         params.push(rolId);
       } else {
         query += ' AND UPPER(r.nombre_rol) = UPPER(?)';
@@ -67,7 +35,8 @@ const getPlantel = async (req, res) => {
       }
     }
 
-    let orderBy = legacySchema ? 'p.rol_personal ASC, p.nombre ASC' : 'p.rol_id ASC, p.nombre ASC';
+    // Ordenamiento
+    let orderBy = 'p.rol_id ASC, p.nombre ASC'; // Default
 
     switch (sort) {
       case 'reciente':
@@ -94,43 +63,17 @@ const getPlantel = async (req, res) => {
   }
 };
 
+// Obtener miembro del plantel por ID
 const getPlantelById = async (req, res) => {
   try {
     const { id } = req.params;
-    const legacySchema = await isLegacySchema();
 
     const [rows] = await pool.execute(
-      legacySchema
-        ? `SELECT p.personal_id as plantel_id,
-                  p.email_id,
-                  p.nombre,
-                  p.apellido,
-                  p.cedula,
-                  p.telefono,
-                  p.fecha_nac,
-                  p.rol_personal as rol_id,
-                  p.direccion_id,
-                  p.foto,
-                  p.created_at,
-                  p.updated_at,
-                  r.nombre_rol,
-                  'Venezuela' as pais,
-                  e.estado as estado,
-                  m.municipio as municipio,
-                  pa.parroquia as parroquia,
-                  d.localidad as descripcion_descriptiva
-           FROM personal p
-           LEFT JOIN rol_usuarios r ON p.rol_personal = r.rol_id
-           LEFT JOIN direcciones d ON p.direccion_id = d.direccion_id
-           LEFT JOIN parroquias pa ON d.parroquias_id = pa.parroquia_id
-           LEFT JOIN municipios m ON pa.municipio_id = m.municipio_id
-           LEFT JOIN estados e ON m.estadoi_id = e.estado_id
-           WHERE p.personal_id = ?`
-        : `SELECT p.*,
-                  ${addressService.getSelectColumns().replace(/d\./g, 'd.')}
-           FROM plantel p
-           ${addressService.getJoins().replace('entity.direccion_id', 'p.direccion_id')}
-           WHERE p.plantel_id = ?`,
+      `SELECT p.*,
+                    ${addressService.getSelectColumns().replace(/d\./g, 'd.')}
+             FROM plantel p
+             ${addressService.getJoins().replace('entity.direccion_id', 'p.direccion_id')}
+             WHERE p.plantel_id = ?`,
       [id]
     );
 
@@ -145,11 +88,24 @@ const getPlantelById = async (req, res) => {
   }
 };
 
+// Obtener plantel por rol
 const getPlantelByRol = async (req, res) => {
-  req.query = { ...req.query, rol: req.params.rol };
-  return getPlantel(req, res);
+  try {
+    const { rol } = req.params;
+
+    const [rows] = await pool.execute(
+      'SELECT * FROM plantel WHERE rol_id = ? ORDER BY nombre ASC',
+      [rol]
+    );
+
+    res.json(rows);
+  } catch (error) {
+    console.error('Error obteniendo plantel por rol:', error);
+    res.status(500).json({ error: 'Error al obtener plantel' });
+  }
 };
 
+// Crear miembro del plantel
 const createMiembroPlantel = async (req, res) => {
   try {
     const { nombre, apellido, telefono, rol, cedula, fecha_nac, direccion } = req.body;
@@ -160,7 +116,7 @@ const createMiembroPlantel = async (req, res) => {
     }
 
     const [result] = await pool.execute(
-      `INSERT INTO plantel (nombre, apellido, telefono, rol_id, cedula, fecha_nac, direccion_id)
+      `INSERT INTO plantel (nombre, apellido, telefono, rol_id, cedula, fecha_nac, direccion_id) 
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [nombre, apellido, telefono, rol, cedula || null, fecha_nac || null, direccion_id]
     );
@@ -169,12 +125,14 @@ const createMiembroPlantel = async (req, res) => {
       message: 'Miembro del plantel agregado exitosamente',
       id: result.insertId
     });
+
   } catch (error) {
     console.error('Error creando miembro del plantel:', error);
     res.status(500).json({ error: 'Error al crear miembro del plantel' });
   }
 };
 
+// Actualizar miembro del plantel
 const updateMiembroPlantel = async (req, res) => {
   try {
     const { id } = req.params;
@@ -188,8 +146,9 @@ const updateMiembroPlantel = async (req, res) => {
       if (existing.length > 0) finalDireccionId = existing[0].direccion_id;
     }
 
+    // Actualizar miembro
     const [result] = await pool.execute(
-      `UPDATE plantel
+      `UPDATE plantel 
        SET nombre = ?, apellido = ?, telefono = ?, rol_id = ?, cedula = ?, fecha_nac = ?, direccion_id = ?
        WHERE plantel_id = ?`,
       [nombre, apellido, telefono, rol, cedula || null, fecha_nac || null, finalDireccionId, id]
@@ -206,6 +165,7 @@ const updateMiembroPlantel = async (req, res) => {
   }
 };
 
+// Eliminar miembro del plantel
 const deleteMiembroPlantel = async (req, res) => {
   try {
     const { id } = req.params;
@@ -217,7 +177,7 @@ const deleteMiembroPlantel = async (req, res) => {
 
     if (categorias[0].total > 0) {
       return res.status(400).json({
-        error: 'No se puede eliminar porque esta asignado a una o mas categorias'
+        error: 'No se puede eliminar porque está asignado a una o más categorías'
       });
     }
 
