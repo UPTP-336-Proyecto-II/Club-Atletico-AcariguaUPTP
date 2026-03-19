@@ -1,16 +1,13 @@
 <template>
-  <div :id="id" />
+  <div :id="id" :style="{ height: height }">
+    <div style="padding: 20px; border: 1px dashed #ccc; background-color: #f9f9f9; text-align: center; color: #666;">
+      <h3>Markdown Editor (Deshabilitado)</h3>
+      <p>El componente tui-editor ha sido removido temporalmente para solucionar errores en la instalación de las dependencias (`npm install`).</p>
+    </div>
+  </div>
 </template>
 
 <script>
-// deps for editor
-import 'codemirror/lib/codemirror.css' // codemirror
-import 'tui-editor/dist/tui-editor.css' // editor ui
-import 'tui-editor/dist/tui-editor-contents.css' // editor content
-
-import Editor from 'tui-editor'
-import defaultOptions from './default-options'
-
 export default {
   name: 'MarkdownEditor',
   props: {
@@ -28,7 +25,7 @@ export default {
     options: {
       type: Object,
       default() {
-        return defaultOptions
+        return {}
       }
     },
     mode: {
@@ -43,75 +40,21 @@ export default {
     language: {
       type: String,
       required: false,
-      default: 'en_US' // https://github.com/nhnent/tui.editor/tree/master/src/js/langs
+      default: 'en_US'
     }
-  },
-  data() {
-    return {
-      editor: null
-    }
-  },
-  computed: {
-    editorOptions() {
-      const options = Object.assign({}, defaultOptions, this.options)
-      options.initialEditType = this.mode
-      options.height = this.height
-      options.language = this.language
-      return options
-    }
-  },
-  watch: {
-    value(newValue, preValue) {
-      if (newValue !== preValue && newValue !== this.editor.getValue()) {
-        this.editor.setValue(newValue)
-      }
-    },
-    language(val) {
-      this.destroyEditor()
-      this.initEditor()
-    },
-    height(newValue) {
-      this.editor.height(newValue)
-    },
-    mode(newValue) {
-      this.editor.changeMode(newValue)
-    }
-  },
-  mounted() {
-    this.initEditor()
-  },
-  destroyed() {
-    this.destroyEditor()
   },
   methods: {
-    initEditor() {
-      this.editor = new Editor({
-        el: document.getElementById(this.id),
-        ...this.editorOptions
-      })
-      if (this.value) {
-        this.editor.setValue(this.value)
-      }
-      this.editor.on('change', () => {
-        this.$emit('input', this.editor.getValue())
-      })
-    },
-    destroyEditor() {
-      if (!this.editor) return
-      this.editor.off('change')
-      this.editor.remove()
-    },
     setValue(value) {
-      this.editor.setValue(value)
+      this.$emit('input', value)
     },
     getValue() {
-      return this.editor.getValue()
+      return this.value
     },
     setHtml(value) {
-      this.editor.setHtml(value)
+      this.$emit('input', value)
     },
     getHtml() {
-      return this.editor.getHtml()
+      return this.value
     }
   }
 }
