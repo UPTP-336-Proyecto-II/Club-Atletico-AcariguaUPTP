@@ -18,7 +18,8 @@
       <!-- Sidebar con lista de miembros -->
       <aside class="sidebar">
         <el-card shadow="hover">
-          <div slot="header" class="sidebar-header">
+          <template #header>
+            <div class="sidebar-header">
             <span><i class="el-icon-user" /> Lista del Plantel</span>
             <el-popover
               placement="bottom-end"
@@ -55,16 +56,20 @@
                   </el-select>
                 </div>
               </div>
-              <el-button slot="reference" type="text" icon="el-icon-s-operation" class="filter-btn" />
+              <template #reference><el-button type="text" icon="el-icon-s-operation" class="filter-btn" /></template>
             </el-popover>
-          </div>
+            </div>
+          </template>
           <div class="search-container">
-            <el-input
-              v-model="searchQuery"
-              placeholder="Buscar por nombre..."
-              size="small"
-              clearable
-            />
+            <div class="search-field">
+              <label class="search-label">Buscar Miembro</label>
+              <el-input
+                v-model="searchQuery"
+                placeholder="Nombre o apellido..."
+                size="small"
+                clearable
+              />
+            </div>
           </div>
           <div class="member-list">
             <div
@@ -142,7 +147,7 @@
                   <label>Fecha de Nacimiento</label>
                   <p>
                     {{ currentMember.fecha_nac ? new Date(currentMember.fecha_nac).toLocaleDateString() : 'No especificada' }}
-                    <span v-if="currentMember.fecha_nac" style="color: #64748b; font-size: 0.9em">
+                    <span v-if="currentMember.fecha_nac" style="color: var(--color-text-muted); font-size: 0.9em">
                       ({{ calculateAge(currentMember.fecha_nac) }} años)
                     </span>
                   </p>
@@ -165,7 +170,7 @@
     <!-- Dialog Crear/Editar -->
     <el-dialog
       :title="isEdit ? 'Editar Miembro' : 'Nuevo Miembro'"
-      :visible.sync="dialogVisible"
+      v-model="dialogVisible"
       width="500px"
       @close="resetForm"
     >
@@ -268,7 +273,7 @@
                 maxlength="11"
                 @input="filterOnlyNumbers"
               >
-                <i slot="prefix" class="el-icon-phone" />
+                <template #prefix><i class="el-icon-phone" /></template>
               </el-input>
             </el-form-item>
           </el-col>
@@ -286,274 +291,279 @@
           </el-col>
         </el-row>
       </el-form>
-      <span slot="footer" class="dialog-footer">
+      <template #footer><span class="dialog-footer">
         <el-button @click="dialogVisible = false">Cancelar</el-button>
         <el-button type="primary" :loading="submitting" @click="handleSubmit">
           {{ isEdit ? 'Actualizar' : 'Crear' }}
         </el-button>
-      </span>
+      </span></template>
     </el-dialog>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, watch, onMounted } from 'vue'
 import { getPlantel, createPlantel, updatePlantel, deletePlantel } from '@/api/plantel'
 import { getRoles } from '@/api/roles'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
-export default {
-  name: 'PlantelIndex',
-  data() {
-    return {
-      loading: false,
-      submitting: false,
-      plantelList: [],
-      searchCedula: '',
-      filterSinCedula: false,
-      filterRol: '',
-      filterSort: 'az',
-      searchQuery: '',
-      searchCedulaTimeout: null,
-      dialogVisible: false,
-      isEdit: false,
-      currentMemberId: null,
-      currentMember: {},
-      activeTab: 'general',
-      editingId: null,
-      formData: {
-        nombre: '',
-        apellido: '',
-        telefono: '',
-        rol: '',
-        cedula: '',
-        fecha_nac: '',
-        direccion: {
-          pais: 'Venezuela',
-          estado: '',
-          municipio: '',
-          parroquia: '',
-          descripcion_descriptiva: ''
-        }
-      },
-      formRules: {
-        nombre: [
-          { required: true, message: 'El nombre es obligatorio', trigger: 'blur' }
-        ],
-        apellido: [
-          { required: true, message: 'El apellido es obligatorio', trigger: 'blur' }
-        ],
-        cedula: [
-          { required: true, message: 'La cédula es obligatoria', trigger: 'blur' },
-          { min: 7, message: 'Mínimo 7 dígitos', trigger: 'blur' }
-        ],
-        telefono: [
-          { required: true, message: 'El teléfono es obligatorio', trigger: 'blur' },
-          { pattern: /^[0-9]*$/, message: 'Solo se permiten números', trigger: 'blur' }
-        ],
-        rol: [
-          { required: true, message: 'Seleccione un rol', trigger: 'change' }
-        ]
-      },
-      rolesOptions: []
-    }
-  },
-  computed: {
-    filteredPlantel() {
-      let filtered = this.plantelList
-      if (this.searchQuery) {
-        const query = this.searchQuery.toLowerCase()
-        filtered = filtered.filter(m =>
-          m.nombre.toLowerCase().includes(query) ||
-          m.apellido.toLowerCase().includes(query)
-        )
-      }
-      return filtered
-    }
-  },
-  watch: {
-    searchCedula() {
-      if (this.searchCedulaTimeout) clearTimeout(this.searchCedulaTimeout)
-      this.searchCedulaTimeout = setTimeout(() => {
-        this.fetchPlantel()
-      }, 500)
-    }
-  },
-  created() {
-    this.loadRoles()
-    this.fetchPlantel()
-  },
-  methods: {
-    async loadRoles() {
-      try {
-        const response = await getRoles()
-        this.rolesOptions = response.map(r => ({
-          value: r.rol_id,
-          label: r.nombre_rol
-        }))
-      } catch (error) {
-        console.error('Error cargando roles:', error)
-      }
-    },
-    filterOnlyNumbers() {
-      // Remover cualquier carácter que no sea número
-      this.formData.telefono = this.formData.telefono.replace(/[^0-9]/g, '')
-    },
-    async fetchPlantel() {
-      this.loading = true
-      try {
-        const params = {}
-        if (this.searchCedula) {
-          params.cedula = this.searchCedula
-        }
-        if (this.filterSinCedula) {
-          params.sin_cedula = 'true'
-        }
-        if (this.filterRol) {
-          params.rol = this.filterRol
-        }
-        params.sort = this.filterSort
-        const response = await getPlantel(params)
-        this.plantelList = response.data || response || []
+const plantelForm = ref(null)
 
-        // Si hay un miembro seleccionado, actualizar sus datos
-        if (this.currentMemberId) {
-          const found = this.plantelList.find(p => p.plantel_id === this.currentMemberId)
-          if (found) {
-            this.currentMember = found
-          } else {
-            this.currentMemberId = null
-          }
-        }
-      } catch (error) {
-        console.error('Error cargando plantel:', error)
-        this.$message.error('Error al cargar el plantel')
-      } finally {
-        this.loading = false
-      }
-    },
-    selectMember(member) {
-      this.currentMemberId = member.plantel_id
-      this.currentMember = member
-    },
-    getRolTagType(rolName) {
-      if (!rolName) return ''
-      const name = rolName.toUpperCase()
-      if (name.includes('ENTRENADOR')) return 'success'
-      if (name.includes('ASISTENTE')) return 'info'
-      if (name.includes('MEDICO') || name.includes('MÉDICO')) return 'warning'
-      if (name.includes('ADMINISTRATIVO') || name.includes('DIRECTIVO')) return 'danger'
-      return ''
-    },
-    calculateAge(dateString) {
-      if (!dateString) return 0
-      const today = new Date()
-      const birthDate = new Date(dateString)
-      let age = today.getFullYear() - birthDate.getFullYear()
-      const m = today.getMonth() - birthDate.getMonth()
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--
-      }
-      return age
-    },
-    handleCreate() {
-      this.isEdit = false
-      this.editingId = null
-      this.resetForm()
-      this.dialogVisible = true
-    },
-    handleEdit(row) {
-      this.isEdit = true
-      this.editingId = row.plantel_id
-      this.formData = {
-        nombre: row.nombre,
-        apellido: row.apellido,
-        telefono: row.telefono || '',
-        rol: row.rol_id, // Usar ID para el select
-        cedula: row.cedula ? String(row.cedula) : '',
-        fecha_nac: row.fecha_nac ? row.fecha_nac.split('T')[0] : '', // Formato YYYY-MM-DD
-        direccion: {
-          pais: row.pais || 'Venezuela',
-          estado: row.estado || '',
-          municipio: row.municipio || '',
-          parroquia: row.parroquia || '',
-          descripcion_descriptiva: row.descripcion_descriptiva || ''
-        }
-      }
-      this.dialogVisible = true
-    },
-    async handleSubmit() {
-      try {
-        await this.$refs.plantelForm.validate()
-        this.submitting = true
+const loading = ref(false)
+const submitting = ref(false)
+const plantelList = ref([])
+const searchCedula = ref('')
+const filterSinCedula = ref(false)
+const filterRol = ref('')
+const filterSort = ref('az')
+const searchQuery = ref('')
+let searchCedulaTimeout = null
+const dialogVisible = ref(false)
+const isEdit = ref(false)
+const currentMemberId = ref(null)
+const currentMember = ref({})
+const activeTab = ref('general')
+const editingId = ref(null)
 
-        if (this.isEdit) {
-          await updatePlantel(this.editingId, this.formData)
-          this.$message.success('Miembro actualizado exitosamente')
-        } else {
-          await createPlantel(this.formData)
-          this.$message.success('Miembro creado exitosamente')
-        }
+const formData = ref({
+  nombre: '',
+  apellido: '',
+  telefono: '',
+  rol: '',
+  cedula: '',
+  fecha_nac: '',
+  direccion: {
+    pais: 'Venezuela',
+    estado: '',
+    municipio: '',
+    parroquia: '',
+    descripcion_descriptiva: ''
+  }
+})
 
-        this.dialogVisible = false
-        await this.fetchPlantel()
+const formRules = {
+  nombre: [
+    { required: true, message: 'El nombre es obligatorio', trigger: 'blur' }
+  ],
+  apellido: [
+    { required: true, message: 'El apellido es obligatorio', trigger: 'blur' }
+  ],
+  cedula: [
+    { required: true, message: 'La cédula es obligatoria', trigger: 'blur' },
+    { min: 7, message: 'Mínimo 7 dígitos', trigger: 'blur' }
+  ],
+  telefono: [
+    { required: true, message: 'El teléfono es obligatorio', trigger: 'blur' },
+    { pattern: /^[0-9]*$/, message: 'Solo se permiten números', trigger: 'blur' }
+  ],
+  rol: [
+    { required: true, message: 'Seleccione un rol', trigger: 'change' }
+  ]
+}
 
-        // Si estábamos editando, actualizar el miembro actual
-        if (this.isEdit && this.currentMemberId === this.editingId) {
-          const updated = this.plantelList.find(p => p.plantel_id === this.editingId)
-          if (updated) this.currentMember = updated
-        }
-      } catch (error) {
-        if (error !== false) {
-          console.error('Error guardando miembro:', error)
-          this.$message.error('Error al guardar el miembro')
-        }
-      } finally {
-        this.submitting = false
-      }
-    },
-    handleDelete(row) {
-      this.$confirm(
-        `¿Está seguro de eliminar a ${row.nombre} ${row.apellido}?`,
-        'Confirmar eliminación',
-        {
-          confirmButtonText: 'Eliminar',
-          cancelButtonText: 'Cancelar',
-          type: 'warning'
-        }
-      ).then(async() => {
-        try {
-          await deletePlantel(row.plantel_id)
-          this.$message.success('Miembro eliminado exitosamente')
-          this.currentMemberId = null
-          this.fetchPlantel()
-        } catch (error) {
-          console.error('Error eliminando miembro:', error)
-          const errorMsg = error.response?.data?.error || 'Error al eliminar el miembro'
-          this.$message.error(errorMsg)
-        }
-      }).catch(() => {})
-    },
-    resetForm() {
-      this.formData = {
-        nombre: '',
-        apellido: '',
-        telefono: '',
-        rol: '',
-        cedula: '',
-        fecha_nac: '',
-        direccion: {
-          pais: 'Venezuela',
-          estado: '',
-          municipio: '',
-          parroquia: '',
-          descripcion_descriptiva: ''
-        }
-      }
-      if (this.$refs.plantelForm) {
-        this.$refs.plantelForm.resetFields()
-      }
-    }
+const rolesOptions = ref([])
+
+const filteredPlantel = computed(() => {
+  let filtered = plantelList.value
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(m =>
+      m.nombre.toLowerCase().includes(query) ||
+      m.apellido.toLowerCase().includes(query)
+    )
+  }
+  return filtered
+})
+
+watch(searchCedula, () => {
+  if (searchCedulaTimeout) clearTimeout(searchCedulaTimeout)
+  searchCedulaTimeout = setTimeout(() => {
+    fetchPlantel()
+  }, 500)
+})
+
+const loadRoles = async () => {
+  try {
+    const response = await getRoles()
+    rolesOptions.value = response.map(r => ({
+      value: r.rol_id,
+      label: r.nombre_rol
+    }))
+  } catch (error) {
+    console.error('Error cargando roles:', error)
   }
 }
+
+const filterOnlyNumbers = () => {
+  formData.value.telefono = formData.value.telefono.replace(/[^0-9]/g, '')
+}
+
+const fetchPlantel = async () => {
+  loading.value = true
+  try {
+    const params = {}
+    if (searchCedula.value) {
+      params.cedula = searchCedula.value
+    }
+    if (filterSinCedula.value) {
+      params.sin_cedula = 'true'
+    }
+    if (filterRol.value) {
+      params.rol = filterRol.value
+    }
+    params.sort = filterSort.value
+    const response = await getPlantel(params)
+    plantelList.value = response.data || response || []
+
+    if (currentMemberId.value) {
+      const found = plantelList.value.find(p => p.plantel_id === currentMemberId.value)
+      if (found) {
+        currentMember.value = found
+      } else {
+        currentMemberId.value = null
+      }
+    }
+  } catch (error) {
+    console.error('Error cargando plantel:', error)
+    ElMessage.error('Error al cargar el plantel')
+  } finally {
+    loading.value = false
+  }
+}
+
+const selectMember = (member) => {
+  currentMemberId.value = member.plantel_id
+  currentMember.value = member
+}
+
+const getRolTagType = (rolName) => {
+  if (!rolName) return ''
+  const name = rolName.toUpperCase()
+  if (name.includes('ENTRENADOR')) return 'success'
+  if (name.includes('ASISTENTE')) return 'info'
+  if (name.includes('MEDICO') || name.includes('MÉDICO')) return 'warning'
+  if (name.includes('ADMINISTRATIVO') || name.includes('DIRECTIVO')) return 'danger'
+  return ''
+}
+
+const calculateAge = (dateString) => {
+  if (!dateString) return 0
+  const today = new Date()
+  const birthDate = new Date(dateString)
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const m = today.getMonth() - birthDate.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+  return age
+}
+
+const resetForm = () => {
+  formData.value = {
+    nombre: '',
+    apellido: '',
+    telefono: '',
+    rol: '',
+    cedula: '',
+    fecha_nac: '',
+    direccion: {
+      pais: 'Venezuela',
+      estado: '',
+      municipio: '',
+      parroquia: '',
+      descripcion_descriptiva: ''
+    }
+  }
+  if (plantelForm.value) {
+    plantelForm.value.resetFields()
+  }
+}
+
+const handleCreate = () => {
+  isEdit.value = false
+  editingId.value = null
+  resetForm()
+  dialogVisible.value = true
+}
+
+const handleEdit = (row) => {
+  isEdit.value = true
+  editingId.value = row.plantel_id
+  formData.value = {
+    nombre: row.nombre,
+    apellido: row.apellido,
+    telefono: row.telefono || '',
+    rol: row.rol_id,
+    cedula: row.cedula ? String(row.cedula) : '',
+    fecha_nac: row.fecha_nac ? row.fecha_nac.split('T')[0] : '',
+    direccion: {
+      pais: row.pais || 'Venezuela',
+      estado: row.estado || '',
+      municipio: row.municipio || '',
+      parroquia: row.parroquia || '',
+      descripcion_descriptiva: row.descripcion_descriptiva || ''
+    }
+  }
+  dialogVisible.value = true
+}
+
+const handleSubmit = async () => {
+  try {
+    await plantelForm.value.validate()
+    submitting.value = true
+
+    if (isEdit.value) {
+      await updatePlantel(editingId.value, formData.value)
+      ElMessage.success('Miembro actualizado exitosamente')
+    } else {
+      await createPlantel(formData.value)
+      ElMessage.success('Miembro creado exitosamente')
+    }
+
+    dialogVisible.value = false
+    await fetchPlantel()
+
+    if (isEdit.value && currentMemberId.value === editingId.value) {
+      const updated = plantelList.value.find(p => p.plantel_id === editingId.value)
+      if (updated) currentMember.value = updated
+    }
+  } catch (error) {
+    if (error !== false) {
+      console.error('Error guardando miembro:', error)
+      ElMessage.error('Error al guardar el miembro')
+    }
+  } finally {
+    submitting.value = false
+  }
+}
+
+const handleDelete = (row) => {
+  ElMessageBox.confirm(
+    `¿Está seguro de eliminar a ${row.nombre} ${row.apellido}?`,
+    'Confirmar eliminación',
+    {
+      confirmButtonText: 'Eliminar',
+      cancelButtonText: 'Cancelar',
+      type: 'warning'
+    }
+  ).then(async () => {
+    try {
+      await deletePlantel(row.plantel_id)
+      ElMessage.success('Miembro eliminado exitosamente')
+      currentMemberId.value = null
+      fetchPlantel()
+    } catch (error) {
+      console.error('Error eliminando miembro:', error)
+      const errorMsg = error.response?.data?.error || 'Error al eliminar el miembro'
+      ElMessage.error(errorMsg)
+    }
+  }).catch(() => {})
+}
+
+onMounted(() => {
+  loadRoles()
+  fetchPlantel()
+})
 </script>
 
 <style scoped>
@@ -563,12 +573,12 @@ export default {
 }
 
 .page-header {
-  background: linear-gradient(135deg, #E51D22, #c41a1d);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   color: white;
   padding: 20px;
   border-radius: 10px;
   margin-bottom: 30px;
-  box-shadow: 0 4px 12px rgba(229, 29, 34, 0.2);
+  box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
 }
 
 .header-content {
@@ -590,7 +600,7 @@ export default {
 }
 
 /* Header Button - Modern Executive Style */
-.header-content ::v-deep > .el-button--primary {
+.header-content :deep(> .el-button--primary) {
   background: rgba(255, 255, 255, 0.15) !important;
   border: 2px solid rgba(255, 255, 255, 0.3) !important;
   color: #fff !important;
@@ -603,14 +613,14 @@ export default {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-.header-content ::v-deep > .el-button--primary:hover {
+.header-content :deep(> .el-button--primary:hover) {
   background: rgba(255, 255, 255, 0.25) !important;
   border-color: rgba(255, 255, 255, 0.5) !important;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   transform: translateY(-2px);
 }
 
-.header-content ::v-deep > .el-button--primary:active {
+.header-content :deep(> .el-button--primary:active) {
   transform: translateY(0);
 }
 
@@ -626,9 +636,12 @@ export default {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+  border: 2px solid var(--color-border) !important;
+  border-radius: 14px;
 }
 
-.sidebar ::v-deep .el-card__body {
+.sidebar :deep(.el-card__body) {
   padding: 0;
   flex: 1;
   display: flex;
@@ -640,42 +653,39 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  color: #fff;
 }
 
 .search-container {
   padding: 15px;
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-  border-bottom: 2px solid #e2e8f0;
+  background: var(--color-bg-card);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.search-container ::v-deep .el-input__inner {
-  background: #fff !important;
-  border: 2px solid #64748b !important;
+.search-container :deep(.el-input__inner) {
+  background: var(--color-bg-body) !important;
+  border: none !important;
+  box-shadow: none !important;
   border-radius: 10px;
   padding: 10px 14px 10px 36px;
   font-size: 0.9rem;
   font-weight: 500;
-  color: #1e293b;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  color: var(--color-text-muted);
+  transition: all 0.2s ease;
 }
 
-.search-container ::v-deep .el-input__inner:hover {
-  border-color: #E51D22 !important;
+.search-container :deep(.el-input__inner:focus) {
+  background: var(--color-bg-card) !important;
+  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1) !important;
 }
 
-.search-container ::v-deep .el-input__inner:focus {
-  border-color: #E51D22 !important;
-  box-shadow: 0 0 0 3px rgba(229, 29, 34, 0.12);
+.search-container :deep(.el-input__inner::placeholder) {
+  color: var(--color-text-placeholder) !important;
 }
 
-.search-container ::v-deep .el-input__inner::placeholder {
-  color: #64748b !important;
-  font-weight: 500;
-}
-
-.search-container ::v-deep .el-input__prefix {
-  color: #64748b;
+.search-container :deep(.el-input__prefix) {
+  color: var(--color-border);
 }
 
 .member-list {
@@ -685,30 +695,29 @@ export default {
 }
 
 .member-item {
-  padding: 16px;
+  padding: 14px;
   margin: 8px 12px;
-  border: 2px solid #cbd5e1;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
-  gap: 14px;
-  background: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  gap: 12px;
+  background: var(--color-bg-card);
 }
 
 .member-item:hover {
-  border-color: #E51D22;
-  background: linear-gradient(135deg, #fff5f5, #fff);
-  box-shadow: 0 4px 12px rgba(229, 29, 34, 0.12);
-  transform: translateX(4px);
+  border-color: #cbd5e1;
+  background: var(--color-bg-card);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
 }
 
 .member-item.active {
-  background: linear-gradient(135deg, #fee2e2, #fff);
-  border: 2px solid #E51D22;
-  box-shadow: 0 4px 16px rgba(229, 29, 34, 0.2);
+  background: var(--color-bg-card);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary), 0 4px 12px rgba(30, 41, 59, 0.1);
 }
 
 .member-photo {
@@ -718,14 +727,14 @@ export default {
   min-height: 48px;
   flex-shrink: 0;
   border-radius: 12px;
-  background: linear-gradient(135deg, #E51D22, #c41a1d);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 22px;
   overflow: hidden;
-  box-shadow: 0 3px 8px rgba(229, 29, 34, 0.3);
+  box-shadow: 0 3px 8px rgba(30, 41, 59, 0.3);
 }
 
 .member-info {
@@ -737,12 +746,12 @@ export default {
   font-size: 0.95rem;
   font-weight: 700;
   margin: 0 0 6px 0;
-  color: #1e293b;
+  color: var(--color-text-main);
 }
 
 .member-info p {
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   margin: 3px 0;
   font-weight: 500;
 }
@@ -777,14 +786,14 @@ export default {
   gap: 20px;
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid var(--color-border);
 }
 
 .member-details-photo {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background-color: #E51D22;
+  background-color: var(--color-primary);
   color: white;
   display: flex;
   align-items: center;
@@ -817,7 +826,7 @@ export default {
 .form-item label {
   display: block;
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   margin-bottom: 5px;
   font-weight: 600;
 }
@@ -836,8 +845,8 @@ export default {
   margin: 0 0 18px 0;
   font-size: 1rem;
   font-weight: 700;
-  color: #E51D22;
-  border-bottom: 2px solid #E51D22;
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
   padding-bottom: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -851,64 +860,64 @@ export default {
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-text-main);
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 
-.filter-item ::v-deep .el-select .el-input__inner {
-  background: #fff !important;
+.filter-item :deep(.el-select .el-input__inner) {
+  background: var(--color-bg-card) !important;
   border: 2px solid #64748b !important;
   border-radius: 10px;
   font-size: 0.9rem;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--color-text-main);
   transition: all 0.3s ease;
 }
 
-.filter-item ::v-deep .el-select .el-input__inner:hover {
-  border-color: #E51D22 !important;
+.filter-item :deep(.el-select .el-input__inner:hover) {
+  border-color: var(--color-primary) !important;
 }
 
-.filter-item ::v-deep .el-select .el-input.is-focus .el-input__inner {
-  border-color: #E51D22 !important;
-  box-shadow: 0 0 0 3px rgba(229, 29, 34, 0.12);
+.filter-item :deep(.el-select .el-input.is-focus .el-input__inner) {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.12);
 }
 
 .filter-btn {
   font-size: 1.3rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   padding: 5px;
   transition: all 0.3s ease;
 }
 
 .filter-btn:hover {
-  color: #E51D22;
+  color: var(--color-primary);
   transform: rotate(90deg);
 }
 
-::v-deep .el-button--primary {
-  background-color: #E51D22;
-  border-color: #E51D22;
+:deep(.el-button--primary) {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
-::v-deep .el-button--primary:hover,
-::v-deep .el-button--primary:focus {
-  background-color: #c41a1d;
-  border-color: #c41a1d;
+:deep(.el-button--primary:hover),
+:deep(.el-button--primary:focus) {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
 }
 
-::v-deep .el-tabs__item.is-active {
-  color: #E51D22;
+:deep(.el-tabs__item.is-active) {
+  color: var(--color-primary);
 }
 
-::v-deep .el-tabs__active-bar {
-  background-color: #E51D22;
+:deep(.el-tabs__active-bar) {
+  background-color: var(--color-primary);
 }
 
-::v-deep .el-tabs__item:hover {
-  color: #E51D22;
+:deep(.el-tabs__item:hover) {
+  color: var(--color-primary);
 }
 
 /* ============================================
@@ -993,7 +1002,7 @@ export default {
     font-size: 0.85rem;
   }
 
-  .header-content ::v-deep > .el-button--primary {
+  .header-content :deep(> .el-button--primary) {
     width: 100%;
     padding: 12px 20px;
   }
@@ -1002,7 +1011,7 @@ export default {
     max-height: 300px;
   }
 
-  .sidebar ::v-deep .el-card__header {
+  .sidebar :deep(.el-card__header) {
     padding: 12px 15px;
   }
 
@@ -1037,7 +1046,7 @@ export default {
     font-size: 0.75rem;
   }
 
-  .content-area ::v-deep .el-card__body {
+  .content-area :deep(.el-card__body) {
     padding: 15px;
   }
 
@@ -1067,27 +1076,27 @@ export default {
   }
 
   /* Modal responsive */
-  ::v-deep .el-dialog {
+  :deep(.el-dialog) {
     width: 95% !important;
     max-width: 95vw !important;
     margin: 5vh auto !important;
   }
 
-  ::v-deep .el-dialog__body {
+  :deep(.el-dialog__body) {
     padding: 15px;
   }
 
-  ::v-deep .el-row {
+  :deep(.el-row) {
     margin-left: 0 !important;
     margin-right: 0 !important;
   }
 
-  ::v-deep .el-col {
+  :deep(.el-col) {
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
 
-  ::v-deep .el-col-12 {
+  :deep(.el-col-12) {
     width: 100%;
     margin-bottom: 10px;
   }
@@ -1162,7 +1171,7 @@ export default {
     font-size: 0.9rem;
   }
 
-  ::v-deep .el-tabs__item {
+  :deep(.el-tabs__item) {
     font-size: 12px;
     padding: 0 12px;
   }
@@ -1194,6 +1203,21 @@ export default {
     width: 60px;
     height: 60px;
     font-size: 24px;
+  }
+
+  .search-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    padding-left: 2px;
+  }
+
+  .search-field {
+    padding: 4px;
   }
 }
 </style>

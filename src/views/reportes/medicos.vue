@@ -2,11 +2,10 @@
   <placeholder-view title="Reportes Médicos" icon="el-icon-first-aid-kit" />
 </template>
 
-<script>
-import PlaceholderView from '@/components/PlaceholderView'
+<script setup>
+import PlaceholderView from '@/components/PlaceholderView.vue'
 
-export default {
-  name: 'ReportesMedicos',
-  components: { PlaceholderView }
-}
+defineOptions({
+  name: 'ReportesMedicos'
+})
 </script>

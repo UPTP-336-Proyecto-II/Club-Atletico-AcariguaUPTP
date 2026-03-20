@@ -44,16 +44,19 @@
 .pan-btn {
   font-size: 14px;
   color: #fff;
+  background: var(--color-primary);
   padding: 14px 36px;
   border-radius: 8px;
   border: none;
   outline: none;
+  appearance: none;
+  -webkit-appearance: none;
   transition: 600ms ease all;
   position: relative;
   display: inline-block;
 
   &:hover {
-    background: #fff;
+    background: var(--color-primary-hover);
 
     &:before,
     &:after {
@@ -86,8 +89,9 @@
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
-  background: #fff;
+  background: var(--color-primary);
   color: #fff;
+  appearance: none;
   -webkit-appearance: none;
   text-align: center;
   box-sizing: border-box;

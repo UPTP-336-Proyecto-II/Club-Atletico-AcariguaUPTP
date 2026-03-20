@@ -146,13 +146,13 @@ export default {
   transition: all .3s cubic-bezier(.645, .045, .355, 1);
   position: relative;
   color: rgba(0, 0, 0, .65);
-  background-color: #fff;
+  background-color: var(--color-bg-card);
   border-color: #d9d9d9;
 }
 
 .example-btn:hover {
   color: #4AB7BD;
-  background-color: #fff;
+  background-color: var(--color-bg-card);
   border-color: #4AB7BD;
 }
 .example {
@@ -182,7 +182,7 @@ input {
   font-size: 12px;
   line-height: 1.5;
   color: rgba(0, 0, 0, .65);
-  background-color: #fff;
+  background-color: var(--color-bg-card);
   background-image: none;
   border: 1px solid #d9d9d9;
   border-radius: 4px;
@@ -194,7 +194,7 @@ input {
   margin-left: 20px;
   font-size: 20px;
   color: #30B08F;
-  background-color: #fff;
+  background-color: var(--color-bg-card);
 }
 
 .startBtn:hover {
@@ -206,7 +206,7 @@ input {
 .pause-resume-btn {
   font-size: 20px;
   color: #E65D6E;
-  background-color: #fff;
+  background-color: var(--color-bg-card);
 }
 
 .pause-resume-btn:hover {

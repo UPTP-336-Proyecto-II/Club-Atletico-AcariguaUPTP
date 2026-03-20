@@ -892,7 +892,7 @@ export default {
   width: 600px;
   height: 330px;
   padding: 25px;
-  background-color: #fff;
+  background-color: var(--color-bg-card);
   border-radius: 2px;
   -webkit-animation: vicp 0.12s ease-in;
   animation: vicp 0.12s ease-in;
@@ -929,7 +929,7 @@ export default {
   -webkit-transform: rotate(45deg);
   -ms-transform: rotate(45deg);
   transform: rotate(45deg);
-  background-color: #fff;
+  background-color: var(--color-bg-card);
 }
 .vue-image-crop-upload .vicp-wrap .vicp-close .vicp-icon4::after {
   -webkit-transform: rotate(-45deg);
@@ -1227,7 +1227,7 @@ export default {
   top: 8px;
   width: 12px;
   height: 2px;
-  background-color: #fff;
+  background-color: var(--color-bg-card);
 }
 .vue-image-crop-upload
   .vicp-wrap
@@ -1252,7 +1252,7 @@ export default {
   top: 8px;
   width: 12px;
   height: 2px;
-  background-color: #fff;
+  background-color: var(--color-bg-card);
 }
 .vue-image-crop-upload
   .vicp-wrap
@@ -1268,7 +1268,7 @@ export default {
   left: 8px;
   width: 2px;
   height: 12px;
-  background-color: #fff;
+  background-color: var(--color-bg-card);
 }
 .vue-image-crop-upload
   .vicp-wrap
@@ -1552,7 +1552,7 @@ export default {
   right: 0;
   margin: auto;
   padding: 3px;
-  background-color: #fff;
+  background-color: var(--color-bg-card);
   border: 1px solid rgba(0, 0, 0, 0.15);
   overflow: hidden;
   -webkit-user-select: none;

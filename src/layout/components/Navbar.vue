@@ -6,60 +6,108 @@
     <breadcrumb id="breadcrumb-container" class="breadcrumb-container" />
 
     <div class="right-menu">
+      <!-- Theme Toggle -->
+      <div class="right-menu-item hover-effect theme-switch" @click="toggleTheme">
+        <el-icon v-if="theme === 'dark'"><sunny /></el-icon>
+        <el-icon v-else><moon /></el-icon>
+      </div>
+
       <el-dropdown class="avatar-container right-menu-item hover-effect" trigger="click">
         <div class="avatar-wrapper">
           <img :src="avatar+'?imageView2/1/w/80/h/80'" class="user-avatar">
-          <i class="el-icon-caret-bottom" />
+          <el-icon class="el-icon--right"><arrow-down /></el-icon>
         </div>
-        <el-dropdown-menu slot="dropdown">
-          <router-link to="/profile/index">
-            <el-dropdown-item>Perfil</el-dropdown-item>
-          </router-link>
-          <el-dropdown-item @click.native="toggleTagsView">
-            <span>{{ tagsView ? 'Ocultar Tags-View' : 'Mostrar Tags-View' }}</span>
-          </el-dropdown-item>
-          <el-dropdown-item divided @click.native="logout">
-            <span style="display:block;">Cerrar Sesión</span>
-          </el-dropdown-item>
-        </el-dropdown-menu>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <router-link to="/profile/index">
+              <el-dropdown-item>Perfil</el-dropdown-item>
+            </router-link>
+            <el-dropdown-item @click="toggleTagsView">
+              <span>{{ tagsView ? 'Ocultar Tags-View' : 'Mostrar Tags-View' }}</span>
+            </el-dropdown-item>
+            <el-dropdown-item divided @click="logout">
+              <span style="display:block;">Cerrar Sesión</span>
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
       </el-dropdown>
     </div>
   </div>
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
-import Breadcrumb from '@/components/Breadcrumb'
-import Hamburger from '@/components/Hamburger'
+import { ref, computed, onMounted } from 'vue'
+import { useStore } from 'vuex'
+import { useRoute, useRouter } from 'vue-router'
+import { ArrowDown, Moon, Sunny } from '@element-plus/icons-vue'
+import Breadcrumb from '@/components/Breadcrumb/index.vue'
+import Hamburger from '@/components/Hamburger/index.vue'
 
 export default {
   components: {
     Breadcrumb,
-    Hamburger
+    Hamburger,
+    ArrowDown,
+    Moon,
+    Sunny
   },
-  computed: {
-    ...mapGetters([
-      'sidebar',
-      'avatar',
-      'device'
-    ]),
-    tagsView() {
-      return this.$store.state.settings.tagsView
+  setup() {
+    const store = useStore()
+    const route = useRoute()
+    const router = useRouter()
+    
+    const theme = ref(localStorage.getItem('theme') || 'light')
+
+    const sidebar = computed(() => store.getters.sidebar)
+    const avatar = computed(() => store.getters.avatar)
+    const device = computed(() => store.getters.device)
+    const tagsView = computed(() => store.state.settings.tagsView)
+
+    function toggleSideBar() {
+      store.dispatch('app/toggleSideBar')
     }
-  },
-  methods: {
-    toggleSideBar() {
-      this.$store.dispatch('app/toggleSideBar')
-    },
-    toggleTagsView() {
-      this.$store.dispatch('settings/changeSetting', {
+
+    function toggleTagsView() {
+      store.dispatch('settings/changeSetting', {
         key: 'tagsView',
-        value: !this.tagsView
+        value: !tagsView.value
       })
-    },
-    async logout() {
-      await this.$store.dispatch('user/logout')
-      this.$router.push(`/login?redirect=${this.$route.fullPath}`)
+    }
+
+    function toggleTheme() {
+      theme.value = theme.value === 'light' ? 'dark' : 'light'
+      localStorage.setItem('theme', theme.value)
+      updateTheme()
+    }
+
+    function updateTheme() {
+      document.documentElement.setAttribute('data-theme', theme.value)
+      if (theme.value === 'dark') {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+    }
+
+    async function logout() {
+      await store.dispatch('user/logout')
+      router.push(`/login?redirect=${route.fullPath}`)
+    }
+
+    onMounted(() => {
+      updateTheme()
+    })
+
+    return {
+      sidebar,
+      avatar,
+      device,
+      tagsView,
+      theme,
+      toggleSideBar,
+      toggleTagsView,
+      toggleTheme,
+      logout
     }
   }
 }
@@ -70,7 +118,7 @@ export default {
   height: 60px;
   overflow: hidden;
   position: relative;
-  background: #E51D22;
+  background: var(--color-primary);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
@@ -98,7 +146,9 @@ export default {
   }
 
   .right-menu {
-    float: right;
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
     height: 100%;
     line-height: 60px;
     padding-right: 20px;
@@ -116,6 +166,23 @@ export default {
       vertical-align: middle;
     }
 
+    .theme-switch {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: rgba(255, 255, 255, 0.9);
+      transition: all 0.3s ease;
+      padding: 0 12px;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.1);
+        color: #fff;
+        transform: scale(1.1);
+      }
+    }
+
     .avatar-container {
       margin-right: 10px;
 
@@ -124,6 +191,7 @@ export default {
         position: relative;
         display: flex;
         align-items: center;
+        cursor: pointer;
 
         .user-avatar {
           cursor: pointer;
@@ -138,7 +206,7 @@ export default {
           }
         }
 
-        .el-icon-caret-bottom {
+        .el-icon--right {
           cursor: pointer;
           position: relative;
           margin-left: 5px;
@@ -147,28 +215,6 @@ export default {
           transition: transform 0.3s ease;
         }
       }
-    }
-  }
-}
-
-/* Estilos para el dropdown del perfil */
-.el-dropdown-menu {
-  background: white;
-  border: 1px solid rgba(229, 29, 34, 0.1);
-  box-shadow: 0 4px 12px rgba(229, 29, 34, 0.15);
-
-  .el-dropdown-menu__item {
-    font-size: 13px;
-    color: #333;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: rgba(229, 29, 34, 0.08);
-      color: #E51D22;
-    }
-
-    &[divided] {
-      border-top-color: rgba(229, 29, 34, 0.1);
     }
   }
 }
@@ -219,7 +265,7 @@ export default {
           height: 32px;
         }
 
-        .el-icon-caret-bottom {
+        .el-icon--right {
           display: none;
         }
       }
