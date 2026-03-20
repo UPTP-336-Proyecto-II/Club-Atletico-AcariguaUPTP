@@ -95,7 +95,7 @@
         stripe
       >
         <el-table-column label="Atleta" min-width="250">
-          <template slot-scope="{row}">
+          <template #default="{row}">
             <div class="athlete-cell">
               <img v-if="row.foto" :src="getFotoUrl(row.foto)" class="cell-avatar" @error="handleImgError">
               <div v-else class="cell-avatar-placeholder"><i class="el-icon-user" /></div>
@@ -108,31 +108,31 @@
         </el-table-column>
 
         <el-table-column label="Edad" width="100" align="center">
-          <template slot-scope="{row}">
+          <template #default="{row}">
             {{ calculateAge(row.fecha_nacimiento) }}
           </template>
         </el-table-column>
 
         <el-table-column label="Posición" align="center" min-width="120">
-          <template slot-scope="{row}">
+          <template #default="{row}">
             <el-tag size="mini" type="info" effect="plain">{{ row.posicion_de_juego_nombre || 'N/A' }}</el-tag>
           </template>
         </el-table-column>
 
         <el-table-column label="Categoría" align="center" min-width="130">
-          <template slot-scope="{row}">
+          <template #default="{row}">
             {{ row.categoria_nombre || '-' }}
           </template>
         </el-table-column>
 
         <el-table-column label="Estatus" align="center" width="110">
-          <template slot-scope="{row}">
+          <template #default="{row}">
             <el-tag size="small" :type="getStatusType(row.estatus)">{{ row.estatus }}</el-tag>
           </template>
         </el-table-column>
 
         <el-table-column label="Acciones" align="center" width="150" class-name="no-print">
-          <template slot-scope="{row}">
+          <template #default="{row}">
             <el-button type="primary" circle size="small" icon="el-icon-view" title="Ver Detalles" @click="openDetailModal(row)" />
             <el-button type="danger" circle size="small" icon="el-icon-printer" title="Imprimir Ficha" @click="handlePrintAthlete(row)" />
           </template>
@@ -201,7 +201,7 @@
 
     <!-- Detail Modal -->
     <el-dialog
-      :visible.sync="showModal"
+      v-model="showModal"
       width="900px"
       top="5vh"
       custom-class="athlete-detail-modal"
@@ -327,251 +327,252 @@
         </div>
 
       </div>
-      <span slot="footer" class="dialog-footer">
+      <template #footer><span class="dialog-footer">
         <el-button @click="showModal = false">Cerrar</el-button>
         <el-button type="danger" icon="el-icon-printer" @click="printModal">Imprimir Ficha</el-button>
-      </span>
+      </span></template>
     </el-dialog>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted } from 'vue'
 import request from '@/utils/request'
-export default {
-  name: 'ListaAtletas',
-  data() {
-    return {
-      atletas: [],
-      categories: [],
-      loading: false,
-      backendUrl: 'http://localhost:3000',
-      filters: {
-        category: 'all',
-        position: 'all',
-        status: 'all',
-        age: 'all',
-        cedulaFilter: 'todos',
-        cedula: ''
-      },
-      // Modal Data
-      showModal: false,
-      activeTab: 'personal',
-      selectedAthlete: null,
-      selectedMedical: null,
-      selectedMetrics: null,
-      selectedTest: null,
-      selectedTutor: null
+import { ElMessage } from 'element-plus'
+
+const atletas = ref([])
+const categories = ref([])
+const loading = ref(false)
+const backendUrl = ref('http://localhost:3000')
+
+const filters = ref({
+  category: 'all',
+  position: 'all',
+  status: 'all',
+  age: 'all',
+  cedulaFilter: 'todos',
+  cedula: ''
+})
+
+const showModal = ref(false)
+const activeTab = ref('personal')
+const selectedAthlete = ref(null)
+const selectedMedical = ref(null)
+const selectedMetrics = ref(null)
+const selectedTest = ref(null)
+const selectedTutor = ref(null)
+
+const positions = computed(() => {
+  const pos = new Set(atletas.value.map(a => a.posicion_de_juego_nombre).filter(p => p))
+  return Array.from(pos)
+})
+
+const calculateAge = (dateString) => {
+  if (!dateString) return 0
+  const today = new Date()
+  const birthDate = new Date(dateString)
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const m = today.getMonth() - birthDate.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+  return age
+}
+
+const filteredAthletes = computed(() => {
+  return atletas.value.filter(athlete => {
+    if (filters.value.category !== 'all' && athlete.categoria_id !== filters.value.category) return false
+    if (filters.value.position !== 'all' && athlete.posicion_de_juego_nombre !== filters.value.position) return false
+    if (filters.value.status !== 'all' && athlete.estatus?.toUpperCase() !== filters.value.status?.toUpperCase()) return false
+
+    const age = calculateAge(athlete.fecha_nacimiento)
+    if (filters.value.age !== 'all') {
+      if (filters.value.age === 'under15' && age >= 15) return false
+      if (filters.value.age === '15-17' && (age < 15 || age > 17)) return false
+      if (filters.value.age === '18-20' && (age < 18 || age > 20)) return false
+      if (filters.value.age === 'over20' && age <= 20) return false
     }
-  },
-  computed: {
-    positions() {
-      const pos = new Set(this.atletas.map(a => a.posicion_de_juego_nombre).filter(p => p))
-      return Array.from(pos)
-    },
-    filteredAthletes() {
-      return this.atletas.filter(athlete => {
-        if (this.filters.category !== 'all' && athlete.categoria_id !== this.filters.category) return false
-        if (this.filters.position !== 'all' && athlete.posicion_de_juego_nombre !== this.filters.position) return false
-        if (this.filters.status !== 'all' && athlete.estatus?.toUpperCase() !== this.filters.status?.toUpperCase()) return false
 
-        const age = this.calculateAge(athlete.fecha_nacimiento)
-        if (this.filters.age !== 'all') {
-          if (this.filters.age === 'under15' && age >= 15) return false
-          if (this.filters.age === '15-17' && (age < 15 || age > 17)) return false
-          if (this.filters.age === '18-20' && (age < 18 || age > 20)) return false
-          if (this.filters.age === 'over20' && age <= 20) return false
-        }
-
-        // Filtro por cédula
-        if (this.filters.cedulaFilter === 'con_cedula') {
-          if (!athlete.cedula || String(athlete.cedula).trim() === '') return false
-          // Si hay búsqueda por número de cédula
-          if (this.filters.cedula && !String(athlete.cedula).includes(this.filters.cedula)) return false
-        } else if (this.filters.cedulaFilter === 'sin_cedula') {
-          if (athlete.cedula && String(athlete.cedula).trim() !== '') return false
-        }
-
-        return true
-      })
+    if (filters.value.cedulaFilter === 'con_cedula') {
+      if (!athlete.cedula || String(athlete.cedula).trim() === '') return false
+      if (filters.value.cedula && !String(athlete.cedula).includes(filters.value.cedula)) return false
+    } else if (filters.value.cedulaFilter === 'sin_cedula') {
+      if (athlete.cedula && String(athlete.cedula).trim() !== '') return false
     }
-  },
-  created() {
-    this.fetchData()
-  },
-  methods: {
-    async fetchData() {
-      this.loading = true
-      try {
-        const [atletasData, categoriasData] = await Promise.all([
-          request({ url: '/atletas', method: 'get' }),
-          request({ url: '/categoria', method: 'get' })
-        ])
 
-        this.atletas = Array.isArray(atletasData) ? atletasData : []
-        this.categories = Array.isArray(categoriasData) ? categoriasData : []
+    return true
+  })
+})
 
-        this.atletas.forEach(a => {
-          const cat = this.categories.find(c => c.categoria_id === a.categoria_id)
-          if (cat) a.categoria_nombre = cat.nombre_categoria
-        })
-      } catch (err) {
-        console.error(err)
-        this.$message.error('Error cargando los datos')
-      } finally {
-        this.loading = false
-      }
-    },
-    async openDetailModal(athlete) {
-      this.selectedAthlete = athlete
-      this.selectedMedical = null
-      this.selectedMetrics = null
-      this.selectedTest = null
-      this.selectedTutor = null
-      this.activeTab = 'personal'
-      this.showModal = true // Show immediately with personal data
+const fetchData = async () => {
+  loading.value = true
+  try {
+    const [atletasData, categoriasData] = await Promise.all([
+      request({ url: '/atletas', method: 'get' }),
+      request({ url: '/categoria', method: 'get' })
+    ])
 
-      // Fetch details asynchronously
-      try {
-        // Corrected endpoint from previous error (was /ficha_medica 404)
-        const [medical, metrics, tests, tutors] = await Promise.all([
-          request({ url: `/ficha-medica`, method: 'get' }),
-          request({ url: `/mediciones?atleta_id=${athlete.atleta_id}`, method: 'get' }),
-          request({ url: `/tests?atleta_id=${athlete.atleta_id}`, method: 'get' }),
-          request({ url: `/tutor`, method: 'get' })
-        ])
+    atletas.value = Array.isArray(atletasData) ? atletasData : []
+    categories.value = Array.isArray(categoriasData) ? categoriasData : []
 
-        if (Array.isArray(medical)) {
-          // If backend doesn't support filter param, find locally
-          this.selectedMedical = medical.find(m => m.atleta_id === athlete.atleta_id)
-        }
-
-        if (Array.isArray(metrics) && metrics.length > 0) this.selectedMetrics = metrics[metrics.length - 1]
-        if (Array.isArray(tests) && tests.length > 0) this.selectedTest = tests[0]
-
-        if (athlete.tutor_id && Array.isArray(tutors)) {
-          this.selectedTutor = tutors.find(t => t.tutor_id === athlete.tutor_id)
-        }
-      } catch (e) {
-        console.error('Error loading details', e)
-        this.$message.error('Error cargando detalles del atleta')
-      }
-    },
-    calculateAge(dateString) {
-      if (!dateString) return 0
-      const today = new Date()
-      const birthDate = new Date(dateString)
-      let age = today.getFullYear() - birthDate.getFullYear()
-      const m = today.getMonth() - birthDate.getMonth()
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--
-      }
-      return age
-    },
-    formatDate(date) {
-      if (!date) return '-'
-      return new Date(date).toLocaleDateString('es-ES')
-    },
-    getFotoUrl(filename) {
-      return `${this.backendUrl}/uploads/atletas/${filename}`
-    },
-    handleImgError(e) {
-      e.target.style.display = 'none'
-      if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex'
-    },
-    getStatusType(status) {
-      if (status === 'ACTIVO') return 'success'
-      if (status === 'LESIONADO') return 'warning'
-      if (status === 'INACTIVO') return 'info'
-      if (status === 'SUSPENDIDO') return 'danger'
-      return 'info'
-    },
-    handleExport() {
-      import('@/vendor/Export2Excel').then(excel => {
-        const tHeader = ['Nombre', 'Apellido', 'Edad', 'Posición', 'Categoría', 'Teléfono', 'Estatus']
-        const filterVal = ['nombre', 'apellido', 'age', 'posicion_de_juego_nombre', 'categoria_nombre', 'telefono', 'estatus']
-        const dataToExport = this.filteredAthletes.map(a => ({
-          ...a,
-          age: this.calculateAge(a.fecha_nacimiento)
-        }))
-        const data = dataToExport.map(v => filterVal.map(j => v[j]))
-        excel.export_json_to_excel({
-          header: tHeader,
-          data,
-          filename: 'Lista_Atletas_' + new Date().toISOString().slice(0, 10),
-          autoWidth: true,
-          bookType: 'xlsx'
-        })
-      })
-    },
-    async handlePrintList() {
-      // Logic for printing the generic list
-      try {
-        this.loading = true
-        const { PdfReportService } = await import('@/utils/pdfReportService')
-        PdfReportService.generateAthleteListReport(this.filteredAthletes)
-      } catch (e) {
-        console.error(e)
-        this.$message.error('Error generando PDF')
-      } finally {
-        this.loading = false
-      }
-    },
-    async handlePrintAthlete(row) {
-      if (!this.showModal || this.selectedAthlete?.atleta_id !== row.atleta_id) {
-        await this.openDetailModal(row)
-      }
-      this.printModal()
-    },
-    async printModal() {
-      try {
-        this.loading = true
-
-        const { PdfReportService } = await import('@/utils/pdfReportService')
-
-        // Convert Profile Photo to Base64
-        let photoBase64 = null
-        if (this.selectedAthlete && this.selectedAthlete.foto) {
-          try {
-            const url = this.getFotoUrl(this.selectedAthlete.foto)
-            photoBase64 = await this.toDataURL(url)
-          } catch (e) {
-            console.warn('Could not load profile photo for PDF', e)
-          }
-        }
-
-        PdfReportService.generateAthleteCardReport(
-          this.selectedAthlete,
-          this.selectedMedical,
-          this.selectedMetrics,
-          this.selectedTest,
-          this.selectedTutor,
-          photoBase64
-        )
-      } catch (e) {
-        console.error(e)
-        this.$message.error('Error generando Ficha PDF')
-      } finally {
-        this.loading = false
-      }
-    },
-    toDataURL(url) {
-      return new Promise((resolve, reject) => {
-        const img = new Image()
-        img.crossOrigin = 'Anonymous'
-        img.onload = () => {
-          const canvas = document.createElement('canvas')
-          canvas.width = img.width
-          canvas.height = img.height
-          const ctx = canvas.getContext('2d')
-          ctx.drawImage(img, 0, 0)
-          resolve(canvas.toDataURL('image/png'))
-        }
-        img.onerror = reject
-        img.src = url
-      })
-    }
+    atletas.value.forEach(a => {
+      const cat = categories.value.find(c => c.categoria_id === a.categoria_id)
+      if (cat) a.categoria_nombre = cat.nombre_categoria
+    })
+  } catch (err) {
+    console.error(err)
+    ElMessage.error('Error cargando los datos')
+  } finally {
+    loading.value = false
   }
 }
+
+const openDetailModal = async (athlete) => {
+  selectedAthlete.value = athlete
+  selectedMedical.value = null
+  selectedMetrics.value = null
+  selectedTest.value = null
+  selectedTutor.value = null
+  activeTab.value = 'personal'
+  showModal.value = true 
+
+  try {
+    const [medical, metrics, tests, tutors] = await Promise.all([
+      request({ url: `/ficha-medica`, method: 'get' }),
+      request({ url: `/mediciones?atleta_id=${athlete.atleta_id}`, method: 'get' }),
+      request({ url: `/tests?atleta_id=${athlete.atleta_id}`, method: 'get' }),
+      request({ url: `/tutor`, method: 'get' })
+    ])
+
+    if (Array.isArray(medical)) {
+      selectedMedical.value = medical.find(m => m.atleta_id === athlete.atleta_id)
+    }
+
+    if (Array.isArray(metrics) && metrics.length > 0) selectedMetrics.value = metrics[metrics.length - 1]
+    if (Array.isArray(tests) && tests.length > 0) selectedTest.value = tests[0]
+
+    if (athlete.tutor_id && Array.isArray(tutors)) {
+      selectedTutor.value = tutors.find(t => t.tutor_id === athlete.tutor_id)
+    }
+  } catch (e) {
+    console.error('Error loading details', e)
+    ElMessage.error('Error cargando detalles del atleta')
+  }
+}
+
+const formatDate = (date) => {
+  if (!date) return '-'
+  return new Date(date).toLocaleDateString('es-ES')
+}
+
+const getFotoUrl = (filename) => {
+  return `${backendUrl.value}/uploads/atletas/${filename}`
+}
+
+const handleImgError = (e) => {
+  e.target.style.display = 'none'
+  if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex'
+}
+
+const getStatusType = (status) => {
+  if (status === 'ACTIVO') return 'success'
+  if (status === 'LESIONADO') return 'warning'
+  if (status === 'INACTIVO') return 'info'
+  if (status === 'SUSPENDIDO') return 'danger'
+  return 'info'
+}
+
+const handleExport = () => {
+  import('@/vendor/Export2Excel').then(excel => {
+    const tHeader = ['Nombre', 'Apellido', 'Edad', 'Posición', 'Categoría', 'Teléfono', 'Estatus']
+    const filterVal = ['nombre', 'apellido', 'age', 'posicion_de_juego_nombre', 'categoria_nombre', 'telefono', 'estatus']
+    const dataToExport = filteredAthletes.value.map(a => ({
+      ...a,
+      age: calculateAge(a.fecha_nacimiento)
+    }))
+    const data = dataToExport.map(v => filterVal.map(j => v[j]))
+    excel.export_json_to_excel({
+      header: tHeader,
+      data,
+      filename: 'Lista_Atletas_' + new Date().toISOString().slice(0, 10),
+      autoWidth: true,
+      bookType: 'xlsx'
+    })
+  })
+}
+
+const handlePrintList = async () => {
+  try {
+    loading.value = true
+    const { PdfReportService } = await import('@/utils/pdfReportService')
+    PdfReportService.generateAthleteListReport(filteredAthletes.value)
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('Error generando PDF')
+  } finally {
+    loading.value = false
+  }
+}
+
+const toDataURL = (url) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'Anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0)
+      resolve(canvas.toDataURL('image/png'))
+    }
+    img.onerror = reject
+    img.src = url
+  })
+}
+
+const printModal = async () => {
+  try {
+    loading.value = true
+
+    const { PdfReportService } = await import('@/utils/pdfReportService')
+
+    let photoBase64 = null
+    if (selectedAthlete.value && selectedAthlete.value.foto) {
+      try {
+        const url = getFotoUrl(selectedAthlete.value.foto)
+        photoBase64 = await toDataURL(url)
+      } catch (e) {
+        console.warn('Could not load profile photo for PDF', e)
+      }
+    }
+
+    PdfReportService.generateAthleteCardReport(
+      selectedAthlete.value,
+      selectedMedical.value,
+      selectedMetrics.value,
+      selectedTest.value,
+      selectedTutor.value,
+      photoBase64
+    )
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('Error generando Ficha PDF')
+  } finally {
+    loading.value = false
+  }
+}
+
+const handlePrintAthlete = async (row) => {
+  if (!showModal.value || selectedAthlete.value?.atleta_id !== row.atleta_id) {
+    await openDetailModal(row)
+  }
+  printModal()
+}
+
+onMounted(() => {
+  fetchData()
+})
 </script>
 
 <style scoped>
@@ -583,12 +584,12 @@ export default {
 
 /* Header styled as per red theme */
 .page-header {
-  background: linear-gradient(135deg, #E51D22 0%, #a3161a 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   color: white;
   padding: 25px 20px;
   border-radius: 8px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 10px rgba(229, 29, 34, 0.2);
+  box-shadow: 0 4px 10px rgba(30, 41, 59, 0.2);
 }
 
 .header-content h1 {
@@ -609,7 +610,7 @@ export default {
 /* Control Panel Control Panel matching Rendimiento */
 .control-panel {
   margin-bottom: 20px;
-  border-left: 5px solid #E51D22;
+  border-left: 5px solid var(--color-primary);
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
@@ -637,7 +638,7 @@ export default {
 
 .filter-label {
   font-weight: 700;
-  color: #1e293b;
+  color: var(--color-text-main);
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -652,30 +653,30 @@ export default {
 }
 
 /* Modern Select Styles */
-.filter-item ::v-deep .el-input__inner {
-  background: #fff !important;
+.filter-item :deep(.el-input__inner) {
+  background: var(--color-bg-card) !important;
   border: 2px solid #64748b !important;
   border-radius: 12px;
   padding: 10px 14px;
   height: 44px;
   font-size: 0.9rem;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--color-text-main);
   transition: all 0.3s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
-.filter-item ::v-deep .el-input__inner:hover {
-  border-color: #E51D22 !important;
+.filter-item :deep(.el-input__inner:hover) {
+  border-color: var(--color-primary) !important;
 }
 
-.filter-item ::v-deep .el-input.is-focus .el-input__inner {
-  border-color: #E51D22 !important;
-  box-shadow: 0 0 0 4px rgba(229, 29, 34, 0.12);
+.filter-item :deep(.el-input.is-focus .el-input__inner) {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 4px rgba(30, 41, 59, 0.12);
 }
 
-.filter-item ::v-deep .el-input__inner::placeholder {
-  color: #64748b !important;
+.filter-item :deep(.el-input__inner::placeholder) {
+  color: var(--color-text-placeholder) !important;
   font-weight: 500;
 }
 
@@ -684,30 +685,30 @@ export default {
   width: 140px;
 }
 
-.filter-input ::v-deep .el-input__inner {
-  background: #fff !important;
+.filter-input :deep(.el-input__inner) {
+  background: var(--color-bg-card) !important;
   border: 2px solid #64748b !important;
   border-radius: 12px;
   padding: 10px 14px;
   height: 44px;
   font-size: 0.9rem;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--color-text-main);
   transition: all 0.3s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
-.filter-input ::v-deep .el-input__inner:hover {
-  border-color: #E51D22 !important;
+.filter-input :deep(.el-input__inner:hover) {
+  border-color: var(--color-primary) !important;
 }
 
-.filter-input ::v-deep .el-input__inner:focus {
-  border-color: #E51D22 !important;
-  box-shadow: 0 0 0 4px rgba(229, 29, 34, 0.12);
+.filter-input :deep(.el-input__inner:focus) {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 4px rgba(30, 41, 59, 0.12);
 }
 
-.filter-input ::v-deep .el-input__inner::placeholder {
-  color: #64748b !important;
+.filter-input :deep(.el-input__inner::placeholder) {
+  color: var(--color-text-placeholder) !important;
   font-weight: 500;
 }
 
@@ -717,48 +718,48 @@ export default {
   align-items: center;
 }
 
-.filter-switch ::v-deep .el-switch {
+.filter-switch :deep(.el-switch) {
   height: 28px;
 }
 
-.filter-switch ::v-deep .el-switch__core {
+.filter-switch :deep(.el-switch__core) {
   width: 50px !important;
   height: 26px !important;
   border-radius: 13px;
   border: 2px solid #cbd5e1;
-  background-color: #e2e8f0;
+  background-color: var(--color-border);
   transition: all 0.3s ease;
 }
 
-.filter-switch ::v-deep .el-switch__core::after {
+.filter-switch :deep(.el-switch__core::after) {
   width: 20px;
   height: 20px;
   top: 1px;
   left: 1px;
   border-radius: 50%;
-  background-color: #fff;
+  background-color: var(--color-bg-card);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
 }
 
-.filter-switch ::v-deep .el-switch.is-checked .el-switch__core {
-  background-color: #E51D22 !important;
-  border-color: #E51D22 !important;
+.filter-switch :deep(.el-switch.is-checked .el-switch__core) {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
 }
 
-.filter-switch ::v-deep .el-switch.is-checked .el-switch__core::after {
+.filter-switch :deep(.el-switch.is-checked .el-switch__core::after) {
   left: 100%;
   margin-left: -23px;
 }
 
-.filter-switch ::v-deep .el-switch__label {
+.filter-switch :deep(.el-switch__label) {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
-.filter-switch ::v-deep .el-switch__label.is-active {
-  color: #1e293b;
+.filter-switch :deep(.el-switch__label.is-active) {
+  color: var(--color-text-main);
 }
 
 .actions-section {
@@ -768,54 +769,54 @@ export default {
 
 /* Table */
 .table-container {
-  background: white;
+  background: var(--color-bg-card);
   padding: 24px;
   border-radius: 16px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
 }
 
 /* Modern Table Row Styles */
-.table-container ::v-deep .el-table {
+.table-container :deep(.el-table) {
   border-radius: 12px;
   overflow: hidden;
 }
 
-.table-container ::v-deep .el-table__header-wrapper th {
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9) !important;
-  color: #1e293b !important;
+.table-container :deep(.el-table__header-wrapper th) {
+  background: linear-gradient(135deg, var(--color-bg-card), var(--color-bg-body)) !important;
+  color: var(--color-text-main) !important;
   font-weight: 700 !important;
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  border-bottom: 3px solid #E51D22 !important;
+  border-bottom: 3px solid var(--color-primary) !important;
   padding: 16px 12px !important;
   white-space: nowrap;
 }
 
-.table-container ::v-deep .el-table__body tr {
+.table-container :deep(.el-table__body tr) {
   transition: all 0.3s ease;
 }
 
-.table-container ::v-deep .el-table__body tr td {
+.table-container :deep(.el-table__body tr td) {
   padding: 16px 12px !important;
-  border-bottom: 2px solid #94a3b8 !important;
+  border-bottom: 2px solid var(--color-border) !important;
 }
 
-.table-container ::v-deep .el-table__body tr:hover > td {
+.table-container :deep(.el-table__body tr:hover > td) {
+  background: var(--color-bg-hover) !important;
+  border-bottom-color: var(--color-primary) !important;
+}
+
+.table-container :deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  background: var(--color-bg-card) !important;
+}
+
+.table-container :deep(.el-table--striped .el-table__body tr.el-table__row--striped:hover > td) {
   background: linear-gradient(135deg, #fff5f5, #fff) !important;
-  border-bottom-color: #E51D22 !important;
 }
 
-.table-container ::v-deep .el-table--striped .el-table__body tr.el-table__row--striped td {
-  background: #f8fafc !important;
-}
-
-.table-container ::v-deep .el-table--striped .el-table__body tr.el-table__row--striped:hover > td {
-  background: linear-gradient(135deg, #fff5f5, #fff) !important;
-}
-
-.table-container ::v-deep .el-table--border td {
+.table-container :deep(.el-table--border td) {
   border-right: 2px solid #cbd5e1 !important;
 }
 
@@ -830,21 +831,21 @@ export default {
   height: 48px;
   border-radius: 12px;
   object-fit: cover;
-  border: 2px solid #E51D22;
-  box-shadow: 0 3px 8px rgba(229, 29, 34, 0.2);
+  border: 2px solid var(--color-primary);
+  box-shadow: 0 3px 8px rgba(30, 41, 59, 0.2);
 }
 
 .cell-avatar-placeholder {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #E51D22, #c41a1d);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   font-size: 20px;
-  box-shadow: 0 3px 8px rgba(229, 29, 34, 0.3);
+  box-shadow: 0 3px 8px rgba(30, 41, 59, 0.3);
 }
 
 .athlete-name {
@@ -855,26 +856,26 @@ export default {
 
 .name {
   font-weight: 700;
-  color: #1e293b;
+  color: var(--color-text-main);
   font-size: 0.95rem;
 }
 
 .sub-text {
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   font-weight: 500;
 }
 
 .table-footer {
   margin-top: 20px;
   text-align: right;
-  color: #1e293b;
+  color: var(--color-text-main);
   font-size: 0.95rem;
   font-weight: 600;
   padding: 12px 16px;
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  background: linear-gradient(135deg, var(--color-bg-card), var(--color-bg-body));
   border-radius: 10px;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
 }
 
 /* Modal Styling */
@@ -884,13 +885,13 @@ export default {
 }
 
 .modal-header-custom {
-  border-bottom: 2px solid #E51D22;
+  border-bottom: 2px solid var(--color-primary);
   margin-bottom: 20px;
   padding-bottom: 10px;
 }
 
 .modal-title h2 {
-  color: #E51D22;
+  color: var(--color-primary);
   margin: 0;
   display: flex;
   align-items: center;
@@ -899,7 +900,7 @@ export default {
 
 /* Personal Section */
 .section-block {
-  background: #fff;
+  background: var(--color-bg-card);
   margin-bottom: 20px;
 }
 
@@ -949,7 +950,7 @@ export default {
 .athlete-fullname {
   margin: 0 0 10px 0;
   font-size: 1.8rem;
-  color: #E51D22;
+  color: var(--color-primary);
   border-bottom: 1px solid #eee;
   padding-bottom: 5px;
 }
@@ -968,9 +969,9 @@ export default {
 }
 
 .info-tag.category { background: #e6f7ff; color: #0050b3; }
-.info-tag.position { background: #fff7e6; color: #d46b08; }
+.info-tag.position { background: var(--color-bg-card)7e6; color: #d46b08; }
 .info-tag.status { background: #f6ffed; color: #389e0d; }
-.info-tag.status.lesionado { background: #fff1f0; color: #cf1322; }
+.info-tag.status.lesionado { background: var(--color-bg-card)1f0; color: #cf1322; }
 
 .basic-details-grid {
   display: grid;
@@ -1017,7 +1018,7 @@ export default {
 
 .sheet-content {
   padding: 15px;
-  background: white;
+  background: var(--color-bg-card);
 }
 
 .info-grid-3 {
@@ -1103,7 +1104,7 @@ export default {
 }
 
 .metric-box.performance span {
-  color: #E51D22;
+  color: var(--color-primary);
 }
 
 .metric-row {
@@ -1173,13 +1174,13 @@ export default {
 }
 
 .athlete-card {
-  background: white;
+  background: var(--color-bg-card);
   border-radius: 12px;
   padding: 15px;
   margin-bottom: 15px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e2e8f0;
-  border-left: 4px solid #E51D22;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
 }
 
 .card-header-section {
@@ -1188,7 +1189,7 @@ export default {
   gap: 12px;
   margin-bottom: 12px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--color-bg-body);
 }
 
 .card-photo-wrapper {
@@ -1202,14 +1203,14 @@ export default {
   height: 100%;
   border-radius: 10px;
   object-fit: cover;
-  border: 2px solid #E51D22;
+  border: 2px solid var(--color-primary);
 }
 
 .card-avatar-placeholder {
   width: 100%;
   height: 100%;
   border-radius: 10px;
-  background: linear-gradient(135deg, #E51D22, #c41a1d);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1226,12 +1227,12 @@ export default {
 .card-name {
   font-weight: 700;
   font-size: 1rem;
-  color: #1e293b;
+  color: var(--color-text-main);
 }
 
 .card-phone {
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 .card-info-section {
@@ -1257,14 +1258,14 @@ export default {
 
 .card-info-section .info-label {
   font-size: 0.7rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   font-weight: 600;
 }
 
 .card-info-section .info-value {
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-text-main);
   font-size: 0.9rem;
 }
 
@@ -1272,7 +1273,7 @@ export default {
   display: flex;
   gap: 10px;
   padding-top: 12px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--color-bg-body);
 }
 
 .card-actions-section .el-button {
@@ -1393,7 +1394,7 @@ export default {
     border-radius: 10px;
   }
 
-  .control-panel ::v-deep .el-card__body {
+  .control-panel :deep(.el-card__body) {
     padding: 12px;
   }
 
@@ -1402,7 +1403,7 @@ export default {
     min-width: 80px;
   }
 
-  .filter-item ::v-deep .el-input__inner {
+  .filter-item :deep(.el-input__inner) {
     height: 40px;
     padding: 8px 12px;
     font-size: 0.85rem;
@@ -1423,12 +1424,12 @@ export default {
     -webkit-overflow-scrolling: touch;
   }
 
-  .table-container ::v-deep .el-table__header-wrapper th {
+  .table-container :deep(.el-table__header-wrapper th) {
     padding: 10px 8px !important;
     font-size: 0.75rem;
   }
 
-  .table-container ::v-deep .el-table__body tr td {
+  .table-container :deep(.el-table__body tr td) {
     padding: 10px 8px !important;
     font-size: 0.85rem;
   }
@@ -1458,7 +1459,7 @@ export default {
   }
 
   /* Modal responsive */
-  ::v-deep .athlete-detail-modal {
+  :deep(.athlete-detail-modal) {
     width: 95% !important;
     max-width: 95vw !important;
   }
@@ -1609,7 +1610,7 @@ export default {
     font-size: 1rem;
   }
 
-  .control-panel ::v-deep .el-card__body {
+  .control-panel :deep(.el-card__body) {
     padding: 8px;
   }
 }

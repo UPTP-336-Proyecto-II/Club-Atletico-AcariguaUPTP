@@ -13,19 +13,15 @@
   </div>
 </template>
 
-<script>
-import { mapGetters } from 'vuex'
+<script setup>
+import { computed } from 'vue'
+import { useStore } from 'vuex'
 
-export default {
-  name: 'Inicio',
-  computed: {
-    ...mapGetters([
-      'name',
-      'avatar',
-      'roles'
-    ])
-  }
-}
+const store = useStore()
+
+const name = computed(() => store.getters.name)
+const avatar = computed(() => store.getters.avatar)
+const roles = computed(() => store.getters.roles)
 </script>
 
 <style lang="scss" scoped>
@@ -38,14 +34,14 @@ export default {
 }
 
 .welcome-card {
-  background: white;
+  background: var(--color-bg-card);
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(229, 29, 34, 0.1);
+  box-shadow: 0 4px 20px rgba(30, 41, 59, 0.1);
   padding: 60px 80px;
   text-align: center;
   max-width: 600px;
   width: 100%;
-  border-top: 4px solid #E51D22;
+  border-top: 4px solid var(--color-primary);
 }
 
 .welcome-content {
@@ -67,8 +63,8 @@ export default {
       width: 100px;
       height: 100px;
       border-radius: 50%;
-      border: 4px solid #E51D22;
-      box-shadow: 0 4px 12px rgba(229, 29, 34, 0.2);
+      border: 4px solid var(--color-primary);
+      box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
       transition: transform 0.3s ease;
 
       &:hover {
@@ -79,7 +75,7 @@ export default {
     .user-name {
       font-size: 24px;
       font-weight: 600;
-      color: #E51D22;
+      color: var(--color-primary);
       margin: 0;
       font-family: 'Figtree', 'Segoe UI', sans-serif;
     }

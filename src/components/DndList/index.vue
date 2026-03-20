@@ -106,7 +106,7 @@ export default {
 
 <style lang="scss" scoped>
 .dndList {
-  background: #fff;
+  background: var(--color-bg-card);
   padding-bottom: 40px;
   &:after {
     content: "";

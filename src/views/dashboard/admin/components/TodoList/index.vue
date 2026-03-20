@@ -23,11 +23,11 @@
     <footer v-show="todos.length" class="footer">
       <span class="todo-count">
         <strong>{{ remaining }}</strong>
-        {{ remaining | pluralize('item') }} left
+        {{ pluralize(remaining, 'item') }} left
       </span>
       <ul class="filters">
         <li v-for="(val, key) in filters" :key="key">
-          <a :class="{ selected: visibility === key }" @click.prevent="visibility = key">{{ key | capitalize }}</a>
+          <a :class="{ selected: visibility === key }" @click.prevent="visibility = key">{{ capitalize(key) }}</a>
         </li>
       </ul>
       <!-- <button class="clear-completed" v-show="todos.length > remaining" @click="clearCompleted">
@@ -37,7 +37,8 @@
   </section>
 </template>
 
-<script>
+<script setup>
+import { ref, computed } from 'vue'
 import Todo from './Todo.vue'
 
 const STORAGE_KEY = 'todos'
@@ -56,69 +57,58 @@ const defalutList = [
   { text: 'axios', done: true },
   { text: 'webpack', done: true }
 ]
-export default {
-  components: { Todo },
-  filters: {
-    pluralize: (n, w) => n === 1 ? w : w + 's',
-    capitalize: s => s.charAt(0).toUpperCase() + s.slice(1)
-  },
-  data() {
-    return {
-      visibility: 'all',
-      filters,
-      // todos: JSON.parse(window.localStorage.getItem(STORAGE_KEY)) || defalutList
-      todos: defalutList
-    }
-  },
-  computed: {
-    allChecked() {
-      return this.todos.every(todo => todo.done)
-    },
-    filteredTodos() {
-      return filters[this.visibility](this.todos)
-    },
-    remaining() {
-      return this.todos.filter(todo => !todo.done).length
-    }
-  },
-  methods: {
-    setLocalStorage() {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(this.todos))
-    },
-    addTodo(e) {
-      const text = e.target.value
-      if (text.trim()) {
-        this.todos.push({
-          text,
-          done: false
-        })
-        this.setLocalStorage()
-      }
-      e.target.value = ''
-    },
-    toggleTodo(val) {
-      val.done = !val.done
-      this.setLocalStorage()
-    },
-    deleteTodo(todo) {
-      this.todos.splice(this.todos.indexOf(todo), 1)
-      this.setLocalStorage()
-    },
-    editTodo({ todo, value }) {
-      todo.text = value
-      this.setLocalStorage()
-    },
-    clearCompleted() {
-      this.todos = this.todos.filter(todo => !todo.done)
-      this.setLocalStorage()
-    },
-    toggleAll({ done }) {
-      this.todos.forEach(todo => {
-        todo.done = done
-        this.setLocalStorage()
-      })
-    }
+
+const visibility = ref('all')
+const todos = ref(defalutList)
+
+const allChecked = computed(() => todos.value.every(todo => todo.done))
+const filteredTodos = computed(() => filters[visibility.value](todos.value))
+const remaining = computed(() => todos.value.filter(todo => !todo.done).length)
+
+const pluralize = (n, w) => n === 1 ? w : w + 's'
+const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1)
+
+const setLocalStorage = () => {
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(todos.value))
+}
+
+const addTodo = (e) => {
+  const text = e.target.value
+  if (text.trim()) {
+    todos.value.push({
+      text,
+      done: false
+    })
+    setLocalStorage()
   }
+  e.target.value = ''
+}
+
+const toggleTodo = (val) => {
+  val.done = !val.done
+  setLocalStorage()
+}
+
+const deleteTodo = (todo) => {
+  todos.value.splice(todos.value.indexOf(todo), 1)
+  setLocalStorage()
+}
+
+const editTodo = ({ todo, value }) => {
+  todo.text = value
+  setLocalStorage()
+}
+
+// const clearCompleted = () => {
+//   todos.value = todos.value.filter(todo => !todo.done)
+//   setLocalStorage()
+// }
+
+const toggleAll = ({ done }) => {
+  todos.value.forEach(todo => {
+    todo.done = done
+  })
+  setLocalStorage()
 }
 </script>
 

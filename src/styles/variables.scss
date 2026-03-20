@@ -1,44 +1,55 @@
 :root {
-  /* Rojo principal */
-  --color-primary: #E51D22;
+  /* Paleta Elegante (Pizarra/Navy) - Más agradable a la vista */
+  --color-primary: #1e293b;       // Slate 800
+  --color-primary-hover: #334155; // Slate 700
+  --color-accent: #3b82f6;        // Blue 500
 
-  /* Colores Secundarios/Texto/Fondos */
-  --color-background: #ffffff;
-  --color-text-dark: #000000;
-  --color-text-light: #c7c7c7;
+  /* Colores de Fondo y Texto (Light Mode) */
+  --color-bg-body: #f1f5f9;       // Slate 100
+  --color-bg-card: #ffffff;
+  --color-text-main: #0f172a;     // Slate 900
+  --color-text-muted: #64748b;    // Slate 500
+  --color-text-placeholder: #94a3b8; // Slate 400
+  --color-bg-hover: #f8fafc;        // Slate 50
+  --color-border: #e2e8f0;        // Slate 200
+  --color-white: #ffffff;
 }
 
-// base color
-$blue: #324157;
-$light-blue: #3A71A8;
-$red: #C03639;
-$pink: #E65D6E;
-$green: #30B08F;
-$tiffany: #4AB7BD;
-$yellow: #FEC171;
-$panGreen: #30B08F;
-
-// sidebar - MODIFICADO PARA COINCIDIR CON EL HOME
-$menuText: rgba(255, 255, 255, 0.9); // Texto blanco con opacidad
-$menuActiveText: #ffffff; // Texto blanco cuando está activo
-$subMenuActiveText: rgba(255, 255, 255, 0.9); // Texto de submenús activo
-
-$menuBg: #E51D22; // Fondo rojo igual que navbar
-$menuHover: rgba(0, 0, 0, 0.15); // Hover con oscurecimiento
-
-$subMenuBg: rgba(0, 0, 0, 0.1); // Fondo oscuro para submenús
-$subMenuHover: rgba(0, 0, 0, 0.2); // Hover más oscuro para submenús
-
-$sideBarWidth: 260px; // Ancho más amplio
-
-// the :export directive is the magic sauce for webpack
-:export {
-  menuText: $menuText;
-  menuActiveText: $menuActiveText;
-  subMenuActiveText: $subMenuActiveText;
-  menuBg: $menuBg;
-  menuHover: $menuHover;
-  subMenuBg: $subMenuBg;
-  subMenuHover: $subMenuHover;
-  sideBarWidth: $sideBarWidth;
+/* Dark Mode Overrides */
+[data-theme='dark'] {
+  --color-bg-body: #010409;       // Darker background
+  --color-bg-card: #0d1117;       // Card background
+  --color-text-main: #f0f6fc;     // Light text
+  --color-text-muted: #8b949e;    // Muted text
+  --color-text-placeholder: #4b5563; // Brighter grey for placeholders
+  --color-bg-hover: #1e293b;        // Dark hover
+  --color-border: #30363d;        // Border
+  
+  /* Primary color adjustment for dark mode if needed */
+  --color-primary: #1e293b; 
+  --color-primary-hover: #334155;
+  --color-white: #0d1117;         // In dark mode, 'white' containers should be dark
 }
+
+// SCSS variables for legacy support
+$blue: #3b82f6;
+$light-blue: #60a5fa;
+$red: #ef4444; 
+$pink: #f472b6;
+$green: #10b981;
+$tiffany: #2dd4bf;
+$yellow: #f59e0b;
+$panGreen: #10b981;
+
+// Sidebar Config
+$menuText: rgba(255, 255, 255, 0.7); 
+$menuActiveText: #ffffff;
+$subMenuActiveText: #ffffff;
+
+$menuBg: #1e293b; 
+$menuHover: rgba(255, 255, 255, 0.1);
+
+$subMenuBg: #0f172a; 
+$subMenuHover: rgba(255, 255, 255, 0.05);
+
+$sideBarWidth: 260px;

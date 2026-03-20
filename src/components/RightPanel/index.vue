@@ -13,7 +13,8 @@
 </template>
 
 <script>
-import { addClass, removeClass } from '@/utils'
+import { ref, computed, watch, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue'
+import { useStore } from 'vuex'
 
 export default {
   name: 'RightPanel',
@@ -27,51 +28,51 @@ export default {
       type: Number
     }
   },
-  data() {
-    return {
-      show: false
-    }
-  },
-  computed: {
-    theme() {
-      return this.$store.state.settings.theme
-    }
-  },
-  watch: {
-    show(value) {
-      if (value && !this.clickNotClose) {
-        this.addEventClick()
-      }
-      if (value) {
-        addClass(document.body, 'showRightPanel')
-      } else {
-        removeClass(document.body, 'showRightPanel')
-      }
-    }
-  },
-  mounted() {
-    this.insertToBody()
-  },
-  beforeDestroy() {
-    const elx = this.$refs.rightPanel
-    elx.remove()
-  },
-  methods: {
-    addEventClick() {
-      window.addEventListener('click', this.closeSidebar)
-    },
-    closeSidebar(evt) {
+  setup(props) {
+    const store = useStore()
+    const rightPanel = ref(null)
+    const show = ref(false)
+
+    const theme = computed(() => store.state.settings.theme)
+
+    function closeSidebar(evt) {
       const parent = evt.target.closest('.rightPanel')
       if (!parent) {
-        this.show = false
-        window.removeEventListener('click', this.closeSidebar)
+        show.value = false
+        window.removeEventListener('click', closeSidebar)
       }
-    },
-    insertToBody() {
-      const elx = this.$refs.rightPanel
-      const body = document.querySelector('body')
-      body.insertBefore(elx, body.firstChild)
     }
+
+    function addEventClick() {
+      window.addEventListener('click', closeSidebar)
+    }
+
+    watch(show, (value) => {
+      if (value && !props.clickNotClose) {
+        addEventClick()
+      }
+      if (value) {
+        document.body.classList.add('showRightPanel')
+      } else {
+        document.body.classList.remove('showRightPanel')
+      }
+    })
+
+    onMounted(() => {
+      const el = rightPanel.value
+      if (el) {
+        document.body.insertBefore(el, document.body.firstChild)
+      }
+    })
+
+    onBeforeUnmount(() => {
+      const el = rightPanel.value
+      if (el) {
+        el.remove()
+      }
+    })
+
+    return { rightPanel, show, theme }
   }
 }
 </script>
@@ -105,7 +106,7 @@ export default {
   box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, .05);
   transition: all .25s cubic-bezier(.7, .3, .1, 1);
   transform: translate(100%);
-  background: #fff;
+  background: var(--color-bg-card);
   z-index: 40000;
 }
 

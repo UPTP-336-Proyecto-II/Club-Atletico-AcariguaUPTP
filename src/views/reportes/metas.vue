@@ -2,11 +2,10 @@
   <placeholder-view title="Metas Cumplidas" icon="el-icon-trophy" />
 </template>
 
-<script>
-import PlaceholderView from '@/components/PlaceholderView'
+<script setup>
+import PlaceholderView from '@/components/PlaceholderView.vue'
 
-export default {
-  name: 'MetasCumplidas',
-  components: { PlaceholderView }
-}
+defineOptions({
+  name: 'MetasCumplidas'
+})
 </script>

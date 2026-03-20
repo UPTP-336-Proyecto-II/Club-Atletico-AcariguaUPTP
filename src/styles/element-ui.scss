@@ -258,7 +258,7 @@
   }
 
   .el-tabs--border-card>.el-tabs__header {
-    background-color: #fff;
+    background-color: var(--color-bg-card);
   }
 
   .el-tabs--border-card>.el-tabs__content {
