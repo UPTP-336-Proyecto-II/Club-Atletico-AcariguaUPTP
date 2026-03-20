@@ -55,13 +55,18 @@
   </el-row>
 </template>
 
-<script setup>
-import { CountTo } from 'vue3-count-to'
+<script>
+import CountTo from 'vue-count-to'
 
-const emit = defineEmits(['handleSetLineChartData'])
-
-const handleSetLineChartData = (type) => {
-  emit('handleSetLineChartData', type)
+export default {
+  components: {
+    CountTo
+  },
+  methods: {
+    handleSetLineChartData(type) {
+      this.$emit('handleSetLineChartData', type)
+    }
+  }
 }
 </script>
 
@@ -80,7 +85,7 @@ const handleSetLineChartData = (type) => {
     position: relative;
     overflow: hidden;
     color: #666;
-    background: var(--color-bg-card);
+    background: #fff;
     box-shadow: 4px 4px 40px rgba(0, 0, 0, .05);
     border-color: rgba(0, 0, 0, .05);
 

@@ -50,7 +50,7 @@ export default {
 
 <style lang="scss" scoped>
 .drag-select {
-  :deep() {
+  ::v-deep {
     .sortable-ghost {
       opacity: .8;
       color: #fff !important;

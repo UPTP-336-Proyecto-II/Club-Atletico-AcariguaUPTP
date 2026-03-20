@@ -1,49 +1,59 @@
 <template>
   <div class="errPage-container">
-    <el-button class="pan-back-btn" @click="back">
-      Volver
+    <el-button icon="el-icon-arrow-left" class="pan-back-btn" @click="back">
+      返回
     </el-button>
     <el-row>
       <el-col :span="12">
         <h1 class="text-jumbo text-ginormous">
           Oops!
         </h1>
-        <h2>No tienes permisos para acceder a esta página</h2>
-        <h6>Contacta con el administrador si crees que es un error</h6>
+        gif来源<a href="https://zh.airbnb.com/" target="_blank">airbnb</a> 页面
+        <h2>你没有权限去该页面</h2>
+        <h6>如有不满请联系你领导</h6>
         <ul class="list-unstyled">
-          <li>Puedes ir a:</li>
+          <li>或者你可以去:</li>
           <li class="link-type">
             <router-link to="/dashboard">
-              Página de inicio
+              回首页
             </router-link>
           </li>
+          <li class="link-type">
+            <a href="https://www.taobao.com/">随便看看</a>
+          </li>
+          <li><a href="#" @click.prevent="dialogVisible=true">点我看图</a></li>
         </ul>
       </el-col>
       <el-col :span="12">
-        <img :src="errGif" width="313" height="428" alt="Error 401">
+        <img :src="errGif" width="313" height="428" alt="Girl has dropped her ice cream.">
       </el-col>
     </el-row>
+    <el-dialog :visible.sync="dialogVisible" title="随便看">
+      <img :src="ewizardClap" class="pan-img">
+    </el-dialog>
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import errGifImg from '@/assets/401_images/401.gif'
+<script>
+import errGif from '@/assets/401_images/401.gif'
 
-defineOptions({
-  name: 'Page401'
-})
-
-const route = useRoute()
-const router = useRouter()
-const errGif = ref(errGifImg + '?' + +new Date())
-
-function back() {
-  if (route.query.noGoBack) {
-    router.push({ path: '/dashboard' })
-  } else {
-    router.go(-1)
+export default {
+  name: 'Page401',
+  data() {
+    return {
+      errGif: errGif + '?' + +new Date(),
+      ewizardClap: 'https://wpimg.wallstcn.com/007ef517-bafd-4066-aae4-6883632d9646',
+      dialogVisible: false
+    }
+  },
+  methods: {
+    back() {
+      if (this.$route.query.noGoBack) {
+        this.$router.push({ path: '/dashboard' })
+      } else {
+        this.$router.go(-1)
+      }
+    }
   }
 }
 </script>
@@ -57,6 +67,10 @@ function back() {
       background: #008489;
       color: #fff;
       border: none!important;
+    }
+    .pan-gif {
+      margin: 0 auto;
+      display: block;
     }
     .pan-img {
       display: block;

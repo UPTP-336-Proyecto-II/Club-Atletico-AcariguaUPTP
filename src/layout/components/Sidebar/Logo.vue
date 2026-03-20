@@ -17,9 +17,6 @@
 </template>
 
 <script>
-import { useStore } from 'vuex'
-import logoImg from '@/assets/icons/logo.png'
-
 export default {
   name: 'SidebarLogo',
   props: {
@@ -28,17 +25,15 @@ export default {
       required: true
     }
   },
-  setup() {
-    const store = useStore()
-
-    function toggleSideBar() {
-      store.dispatch('app/toggleSideBar')
-    }
-
+  data() {
     return {
       title: 'Club Atlético Deportivo Acarigua',
-      logo: logoImg,
-      toggleSideBar
+      logo: require('@/assets/icons/logo.png')
+    }
+  },
+  methods: {
+    toggleSideBar() {
+      this.$store.dispatch('app/toggleSideBar')
     }
   }
 }
@@ -49,7 +44,7 @@ export default {
   transition: opacity 1.5s;
 }
 
-.sidebarLogoFade-enter-from,
+.sidebarLogoFade-enter,
 .sidebarLogoFade-leave-to {
   opacity: 0;
 }

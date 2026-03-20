@@ -124,7 +124,7 @@
           empty-text="No hay atletas registrados en esta categoría"
         >
           <el-table-column label="Atleta" min-width="250">
-            <template #default="scope">
+            <template slot-scope="scope">
               <div class="athlete-cell">
                 <div class="athlete-photo">
                   <div v-if="scope.row.foto" class="avatar-img-wrapper">
@@ -141,7 +141,7 @@
           </el-table-column>
 
           <el-table-column label="Asistencia" min-width="320" align="center">
-            <template #default="scope">
+            <template slot-scope="scope">
               <el-radio-group v-model="scope.row.status" size="small" class="status-group" @change="scope.row.isSaved = false">
                 <el-radio-button label="presente">
                   <i class="el-icon-check" /> Presente
@@ -157,7 +157,7 @@
           </el-table-column>
 
           <el-table-column label="Observaciones" min-width="200">
-            <template #default="scope">
+            <template slot-scope="scope">
               <el-input
                 v-model="scope.row.observaciones"
                 size="small"
@@ -168,7 +168,7 @@
           </el-table-column>
 
           <el-table-column label="Estado" width="100" align="center">
-            <template #default="scope">
+            <template slot-scope="scope">
               <el-tag v-if="scope.row.isSaved" type="success" size="mini" effect="dark"><i class="el-icon-check" /> Guardado</el-tag>
               <el-tag v-else type="info" size="mini" effect="plain">Pendiente</el-tag>
             </template>
@@ -234,181 +234,182 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue'
+<script>
 import { getCategorias } from '@/api/categorias'
 import { getAtletas } from '@/api/atletas'
 import { getAsistencias, createAsistencia, updateAsistencia } from '@/api/asistencias'
 import { getPlantel } from '@/api/plantel'
-import { ElMessage } from 'element-plus'
 
-const loading = ref(false)
-const saving = ref(false)
-const categorias = ref([])
-const entrenadores = ref([])
-const categoria_id = ref('')
-const entrenador_id = ref('')
-const fecha = ref('')
-const tipo_evento = ref('Entrenamiento')
-const listaAtletas = ref([])
-const searchQuery = ref('')
-const backendUrl = 'http://localhost:3000'
-
-const filteredAtletas = computed(() => {
-  if (!searchQuery.value) return listaAtletas.value
-  const q = searchQuery.value.toLowerCase()
-  return listaAtletas.value.filter(a =>
-    a.nombre.toLowerCase().includes(q) ||
-    a.apellido.toLowerCase().includes(q)
-  )
-})
-
-const countPresentes = computed(() => {
-  return listaAtletas.value.filter(a => a.status === 'presente').length
-})
-
-const getTodayDate = () => {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = String(today.getMonth() + 1).padStart(2, '0')
-  const day = String(today.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-const fetchCategorias = async () => {
-  try {
-    categorias.value = await getCategorias()
-  } catch (error) {
-    ElMessage.error('Error cargando categorías')
-  }
-}
-
-const fetchEntrenadores = async () => {
-  try {
-    let list = await getPlantel({ rol: 'ENTRENADOR' })
-    if (!Array.isArray(list) || list.length === 0) {
-      list = await getPlantel()
+export default {
+  name: 'RegistroAsistenciaBulk',
+  data() {
+    return {
+      loading: false,
+      saving: false,
+      categorias: [],
+      entrenadores: [],
+      categoria_id: '',
+      entrenador_id: '',
+      fecha: '',
+      tipo_evento: 'Entrenamiento',
+      listaAtletas: [],
+      searchQuery: '',
+      backendUrl: 'http://localhost:3000'
     }
-    entrenadores.value = Array.isArray(list) ? list : []
-    if (entrenadores.value.length > 0 && !entrenador_id.value) {
-      entrenador_id.value = entrenadores.value[0].plantel_id
-    }
-  } catch (error) {
-    console.error(error)
-    entrenadores.value = []
-  }
-}
-
-const loadData = async () => {
-  if (!categoria_id.value) return
-
-  loading.value = true
-  listaAtletas.value = []
-
-  try {
-    const atletasCategoria = await getAtletas({ categoria_id: categoria_id.value })
-
-    const asistencias = await getAsistencias({
-      categoria_id: categoria_id.value,
-      fecha: fecha.value
-    })
-
-    listaAtletas.value = atletasCategoria.map(atleta => {
-      const record = asistencias.find(r =>
-        r.atleta_id === atleta.atleta_id &&
-         r.fecha.includes(fecha.value)
+  },
+  computed: {
+    filteredAtletas() {
+      if (!this.searchQuery) return this.listaAtletas
+      const q = this.searchQuery.toLowerCase()
+      return this.listaAtletas.filter(a =>
+        a.nombre.toLowerCase().includes(q) ||
+        a.apellido.toLowerCase().includes(q)
       )
-
-      return {
-        ...atleta,
-        status: record ? record.estatus : 'presente',
-        observaciones: record ? record.observaciones : '',
-        asistencia_id: record ? record.asistencia_id : null,
-        isSaved: !!record
-      }
-    })
-
-    listaAtletas.value.sort((a, b) => a.nombre.localeCompare(b.nombre))
-  } catch (error) {
-    console.error(error)
-    ElMessage.error('Error cargando datos')
-  } finally {
-    loading.value = false
-  }
-}
-
-const setAllStatus = (status) => {
-  listaAtletas.value.forEach(a => {
-    a.status = status
-    a.isSaved = false
-  })
-}
-
-const performSave = async () => {
-  if (entrenadores.value.length > 0 && !entrenador_id.value) {
-    ElMessage.warning('Seleccione un entrenador responsable')
-    return
-  }
-
-  saving.value = true
-  let errors = 0
-
-  for (const atleta of listaAtletas.value) {
-    if (atleta.isSaved) continue
-
-    const payload = {
-      atleta_id: atleta.atleta_id,
-      categoria_id: categoria_id.value,
-      fecha: fecha.value,
-      tipo_evento: tipo_evento.value,
-      estatus: atleta.status,
-      observaciones: atleta.observaciones,
-      entrenador_id: entrenador_id.value || null
+    },
+    countPresentes() {
+      return this.listaAtletas.filter(a => a.status === 'presente').length
     }
+  },
+  created() {
+    this.fecha = this.getTodayDate()
+    this.fetchCategorias()
+    this.fetchEntrenadores()
+  },
+  methods: {
+    getTodayDate() {
+      const today = new Date()
+      const year = today.getFullYear()
+      const month = String(today.getMonth() + 1).padStart(2, '0')
+      const day = String(today.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    },
+    async fetchCategorias() {
+      try {
+        this.categorias = await getCategorias()
+      } catch (error) {
+        this.$message.error('Error cargando categorías')
+      }
+    },
+    async fetchEntrenadores() {
+      try {
+        let entrenadores = await getPlantel({ rol: 'ENTRENADOR' })
+        if (!Array.isArray(entrenadores) || entrenadores.length === 0) {
+          entrenadores = await getPlantel()
+        }
+        this.entrenadores = Array.isArray(entrenadores) ? entrenadores : []
+        if (this.entrenadores.length > 0 && !this.entrenador_id) {
+          this.entrenador_id = this.entrenadores[0].plantel_id
+        }
+      } catch (error) {
+        console.error(error)
+        this.entrenadores = []
+      }
+    },
+    async loadData() {
+      if (!this.categoria_id) return
 
-    try {
-      if (atleta.asistencia_id) {
-        await updateAsistencia(atleta.asistencia_id, payload)
-      } else {
-        const res = await createAsistencia(payload)
-        if (res && res.id) {
-          atleta.asistencia_id = res.id
+      this.loading = true
+      this.listaAtletas = []
+
+      try {
+        const atletasCategoria = await getAtletas({ categoria_id: this.categoria_id })
+
+        const asistencias = await getAsistencias({
+          categoria_id: this.categoria_id,
+          fecha: this.fecha
+        })
+
+        this.listaAtletas = atletasCategoria.map(atleta => {
+          // Check match
+          const record = asistencias.find(r =>
+            r.atleta_id === atleta.atleta_id &&
+             r.fecha.includes(this.fecha)
+          )
+
+          return {
+            ...atleta,
+            status: record ? record.estatus : 'presente',
+            observaciones: record ? record.observaciones : '',
+            asistencia_id: record ? record.asistencia_id : null,
+            isSaved: !!record
+          }
+        })
+
+        this.listaAtletas.sort((a, b) => a.nombre.localeCompare(b.nombre))
+      } catch (error) {
+        console.error(error)
+        this.$message.error('Error cargando datos')
+      } finally {
+        this.loading = false
+      }
+    },
+    setAllStatus(status) {
+      this.listaAtletas.forEach(a => {
+        a.status = status
+        a.isSaved = false
+      })
+    },
+    async performSave() {
+      if (this.entrenadores.length > 0 && !this.entrenador_id) {
+        this.$message.warning('Seleccione un entrenador responsable')
+        return
+      }
+
+      this.saving = true
+      let errors = 0
+
+      // Use sequential loop to avoid 'require-atomic-updates' lint error
+      for (const atleta of this.listaAtletas) {
+        if (atleta.isSaved) continue
+
+        const payload = {
+          atleta_id: atleta.atleta_id,
+          categoria_id: this.categoria_id,
+          fecha: this.fecha,
+          tipo_evento: this.tipo_evento,
+          estatus: atleta.status,
+          observaciones: atleta.observaciones,
+          entrenador_id: this.entrenador_id || null
+        }
+
+        try {
+          if (atleta.asistencia_id) {
+            await updateAsistencia(atleta.asistencia_id, payload)
+          } else {
+            const res = await createAsistencia(payload)
+            // API create returns { message, id }
+            if (res && res.id) {
+              atleta.asistencia_id = res.id
+            }
+          }
+          atleta.isSaved = true
+        } catch (e) {
+          console.error('Error saving athlete ' + atleta.atleta_id, e)
+          errors++
         }
       }
-      atleta.isSaved = true
-    } catch (e) {
-      console.error('Error saving athlete ' + atleta.atleta_id, e)
-      errors++
+
+      this.saving = false
+      if (errors > 0) {
+        this.$message.warning(`Guardado con ${errors} errores.`)
+      } else {
+        this.$message.success('Asistencia actualizada correctamente')
+      }
+    },
+    getFotoUrl(filename) {
+      if (!filename) return ''
+      if (filename.startsWith('/uploads')) {
+        return `${this.backendUrl}${filename}`
+      }
+      return `${this.backendUrl}/uploads/atletas/${filename}`
+    },
+    tableRowClassName({ row }) {
+      if (row.status === 'ausente') return 'row-ausente'
+      if (row.status === 'justificativo') return 'row-justificado'
+      return ''
     }
   }
-
-  saving.value = false
-  if (errors > 0) {
-    ElMessage.warning(`Guardado con ${errors} errores.`)
-  } else {
-    ElMessage.success('Asistencia actualizada correctamente')
-  }
 }
-
-const getFotoUrl = (filename) => {
-  if (!filename) return ''
-  if (filename.startsWith('/uploads')) {
-    return `${backendUrl}${filename}`
-  }
-  return `${backendUrl}/uploads/atletas/${filename}`
-}
-
-const tableRowClassName = ({ row }) => {
-  if (row.status === 'ausente') return 'row-ausente'
-  if (row.status === 'justificativo') return 'row-justificado'
-  return ''
-}
-
-onMounted(() => {
-  fecha.value = getTodayDate()
-  fetchCategorias()
-  fetchEntrenadores()
-})
 </script>
 
 <style scoped>
@@ -419,7 +420,7 @@ onMounted(() => {
 }
 
 .page-header {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  background: linear-gradient(135deg, #E51D22, #c41a1d);
   color: white;
   padding: 24px;
   border-radius: 8px;
@@ -451,7 +452,7 @@ onMounted(() => {
   align-items: center;
 }
 
-.header-date-picker :deep(.el-input__inner) {
+.header-date-picker ::v-deep .el-input__inner {
   background: rgba(255, 255, 255, 0.15);
   border: 2px solid rgba(255, 255, 255, 0.3);
   color: #fff;
@@ -464,26 +465,26 @@ onMounted(() => {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-.header-date-picker :deep(.el-input__inner:hover) {
+.header-date-picker ::v-deep .el-input__inner:hover {
   background: rgba(255, 255, 255, 0.25);
   border-color: rgba(255, 255, 255, 0.5);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   transform: translateY(-1px);
 }
 
-.header-date-picker :deep(.el-input__inner:focus) {
+.header-date-picker ::v-deep .el-input__inner:focus {
   background: rgba(255, 255, 255, 0.3);
   border-color: #fff;
   box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.2);
 }
 
-.header-date-picker :deep(.el-input__prefix) {
+.header-date-picker ::v-deep .el-input__prefix {
   left: 15px;
   color: #fff;
   font-size: 1.1rem;
 }
 
-.header-date-picker :deep(.el-input__inner::placeholder) {
+.header-date-picker ::v-deep .el-input__inner::placeholder {
   color: rgba(255, 255, 255, 0.7);
 }
 
@@ -515,7 +516,7 @@ onMounted(() => {
 .control-item label {
   display: block;
   font-size: 0.85rem;
-  color: var(--color-text-main);
+  color: #1e293b;
   font-weight: 700;
   margin-bottom: 8px;
   text-transform: uppercase;
@@ -523,87 +524,71 @@ onMounted(() => {
 }
 
 /* Modern Input & Select Styles */
-.control-item :deep(.el-input__inner),
-.control-item :deep(.el-select .el-input__inner) {
-  background: var(--color-bg-card) !important;
-  border: 1px solid var(--color-border) !important;
-  border-radius: 10px;
-  padding: 12px 16px;
-  height: 44px;
-  font-size: 0.9rem;
+.control-item ::v-deep .el-input__inner,
+.control-item ::v-deep .el-select .el-input__inner {
+  background: #ffffff !important;
+  border: 2px solid #64748b !important;
+  border-radius: 12px;
+  padding: 14px 16px;
+  height: 48px;
+  font-size: 0.95rem;
   font-weight: 500;
-  color: var(--color-text-muted);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: #1e293b;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
-.control-item :deep(.el-input__inner:hover),
-.control-item :deep(.el-select .el-input__inner:hover) {
-  border-color: #cbd5e1 !important;
-  background: var(--color-bg-card) !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+.control-item ::v-deep .el-input__inner:hover,
+.control-item ::v-deep .el-select .el-input__inner:hover {
+  border-color: #E51D22 !important;
+  background: #fff !important;
 }
 
-.control-item :deep(.el-input__inner:focus),
-.control-item :deep(.el-select .el-input.is-focus .el-input__inner),
-.control-item :deep(.el-input__wrapper.is-focus) {
-  border-color: var(--color-primary) !important;
-  background: var(--color-bg-card) !important;
-  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.12) !important;
-  outline: none !important;
+.control-item ::v-deep .el-input__inner:focus,
+.control-item ::v-deep .el-select .el-input.is-focus .el-input__inner {
+  border-color: #E51D22 !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 4px rgba(229, 29, 34, 0.15);
+  outline: none;
 }
 
-.control-item :deep(.el-input__inner::placeholder) {
-  color: var(--color-text-placeholder) !important;
+.control-item ::v-deep .el-input__inner::placeholder {
+  color: #475569 !important;
   font-weight: 500;
   font-style: normal;
   opacity: 1 !important;
 }
 
-.control-item :deep(.el-input__prefix) {
+.control-item ::v-deep .el-input__prefix {
   left: 12px;
-  color: var(--color-text-muted);
+  color: #64748b;
   font-size: 1.1rem;
 }
 
-.control-item :deep(.el-select .el-input__suffix) {
+.control-item ::v-deep .el-select .el-input__suffix {
   right: 12px;
 }
 
-.control-item :deep(.el-select .el-input__icon) {
-  color: var(--color-border);
-  font-size: 0.9rem;
-}
-
-/* Specific Modern Search Box Style */
-.search-box :deep(.el-input__inner) {
-  border: none !important;
-  background: var(--color-bg-body) !important;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05) !important;
-  padding-left: 20px;
-}
-
-.search-box :deep(.el-input__inner:focus),
-.search-box :deep(.el-input__wrapper.is-focus) {
-  background: var(--color-bg-card) !important;
-  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.12) !important;
-  outline: none !important;
+.control-item ::v-deep .el-select .el-input__icon {
+  color: #64748b;
+  font-size: 1rem;
+  transition: transform 0.3s ease;
 }
 
 /* Primary Button Style */
-.control-item.actions :deep(.el-button--primary) {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+.control-item.actions ::v-deep .el-button--primary {
+  background: linear-gradient(135deg, #E51D22, #c41a1d);
   border: none;
   border-radius: 12px;
   padding: 14px 28px;
   height: 48px;
   font-size: 0.95rem;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(30, 41, 59, 0.3);
+  box-shadow: 0 4px 12px rgba(229, 29, 34, 0.3);
   transition: all 0.3s ease;
 }
 
-.control-item.actions :deep(.el-button--primary:hover) {
+.control-item.actions ::v-deep .el-button--primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(229, 29, 34, 0.4);
 }
@@ -619,13 +604,13 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid #e2e8f0;
   margin-bottom: 15px;
 }
 
 .summary-text {
   font-size: 0.9rem;
-  color: var(--color-text-muted);
+  color: #64748b;
   font-weight: 600;
 }
 
@@ -640,13 +625,13 @@ onMounted(() => {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: var(--color-bg-body);
+  background-color: #f1f5f9;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid var(--color-border);
-  color: var(--color-border);
+  border: 1px solid #e2e8f0;
+  color: #94a3b8;
 }
 
 .avatar-img-wrapper {
@@ -667,50 +652,50 @@ onMounted(() => {
 
 .athlete-info .name {
   font-weight: 600;
-  color: var(--color-text-main);
+  color: #1e293b;
   font-size: 0.95rem;
 }
 
 .athlete-info .cedula {
   font-size: 0.8rem;
-  color: var(--color-border);
+  color: #94a3b8;
 }
 
 /* Status Radio */
-.status-group :deep(.el-radio-button__inner) {
+.status-group ::v-deep .el-radio-button__inner {
   padding: 8px 15px;
   font-size: 13px;
 }
 
-.status-group :deep(.el-radio-button__orig-radio:checked + .el-radio-button__inner) {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
-  box-shadow: -1px 0 0 0 var(--color-primary);
+.status-group ::v-deep .el-radio-button__orig-radio:checked + .el-radio-button__inner {
+  background-color: #E51D22;
+  border-color: #E51D22;
+  box-shadow: -1px 0 0 0 #E51D22;
 }
 
 /* Custom Overrides */
-:deep(.el-button--primary) {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
+::v-deep .el-button--primary {
+  background-color: #E51D22;
+  border-color: #E51D22;
 }
 
-:deep(.el-button--primary:hover) {
+::v-deep .el-button--primary:hover {
   background-color: #cf1a1e;
   border-color: #cf1a1e;
 }
 
-:deep(.row-ausente) {
+::v-deep .row-ausente {
   background-color: #fef2f2 !important;
 }
 
-:deep(.row-justificado) {
-  background-color: var(--color-bg-card)beb !important;
+::v-deep .row-justificado {
+  background-color: #fffbeb !important;
 }
 
 .empty-state {
   text-align: center;
   padding: 60px;
-  color: var(--color-border);
+  color: #94a3b8;
 }
 
 .empty-state i {
@@ -781,7 +766,7 @@ onMounted(() => {
     border-radius: 10px;
   }
 
-  .control-card :deep(.el-card__body) {
+  .control-card ::v-deep .el-card__body {
     padding: 12px;
   }
 
@@ -790,36 +775,36 @@ onMounted(() => {
     margin-bottom: 5px;
   }
 
-  .control-item :deep(.el-input__inner),
-  .control-item :deep(.el-select .el-input__inner) {
+  .control-item ::v-deep .el-input__inner,
+  .control-item ::v-deep .el-select .el-input__inner {
     height: 44px;
     padding: 10px 12px;
     font-size: 0.9rem;
   }
 
-  .control-item.actions :deep(.el-button--primary) {
+  .control-item.actions ::v-deep .el-button--primary {
     width: 100%;
     height: 44px;
     padding: 10px 16px;
   }
 
   /* Tabla scrollable en móvil */
-  .main-card :deep(.el-table) {
+  .main-card ::v-deep .el-table {
     overflow-x: auto;
   }
 
-  .main-card :deep(.el-table__body-wrapper) {
+  .main-card ::v-deep .el-table__body-wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
 
   /* Radio buttons más compactos */
-  .status-group :deep(.el-radio-button__inner) {
+  .status-group ::v-deep .el-radio-button__inner {
     padding: 6px 10px;
     font-size: 11px;
   }
 
-  .status-group :deep(.el-radio-button__inner i) {
+  .status-group ::v-deep .el-radio-button__inner i {
     margin-right: 2px;
   }
 
@@ -859,7 +844,7 @@ onMounted(() => {
     font-size: 1rem;
   }
 
-  .header-date-picker :deep(.el-input__inner) {
+  .header-date-picker ::v-deep .el-input__inner {
     padding: 10px 12px 10px 35px;
     font-size: 0.85rem;
   }
@@ -868,7 +853,7 @@ onMounted(() => {
     font-size: 0.8rem;
   }
 
-  .bulk-actions :deep(.el-button) {
+  .bulk-actions ::v-deep .el-button {
     padding: 8px 12px;
     font-size: 0.75rem;
   }
@@ -880,11 +865,11 @@ onMounted(() => {
     width: 100%;
   }
 
-  .status-group :deep(.el-radio-button) {
+  .status-group ::v-deep .el-radio-button {
     width: 100%;
   }
 
-  .status-group :deep(.el-radio-button__inner) {
+  .status-group ::v-deep .el-radio-button__inner {
     width: 100%;
     border-radius: 6px !important;
     border: 1px solid #dcdfe6 !important;
@@ -905,13 +890,13 @@ onMounted(() => {
 }
 
 .attendance-card {
-  background: var(--color-bg-card);
+  background: white;
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-border);
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #94a3b8;
   transition: all 0.3s ease;
 }
 
@@ -938,7 +923,7 @@ onMounted(() => {
   gap: 12px;
   margin-bottom: 14px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--color-bg-body);
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .attendance-card .athlete-photo {
@@ -955,13 +940,13 @@ onMounted(() => {
 .attendance-card .athlete-info .name {
   font-weight: 700;
   font-size: 1rem;
-  color: var(--color-text-main);
+  color: #1e293b;
   display: block;
 }
 
 .attendance-card .athlete-info .cedula {
   font-size: 0.8rem;
-  color: var(--color-text-muted);
+  color: #64748b;
 }
 
 .attendance-card .status-tag {
@@ -976,7 +961,7 @@ onMounted(() => {
 .card-observations-section .section-label {
   display: block;
   font-size: 0.75rem;
-  color: var(--color-text-muted);
+  color: #64748b;
   text-transform: uppercase;
   font-weight: 600;
   margin-bottom: 8px;
@@ -988,27 +973,27 @@ onMounted(() => {
   gap: 6px;
 }
 
-.status-group-mobile :deep(.el-radio-button) {
+.status-group-mobile ::v-deep .el-radio-button {
   flex: 1;
 }
 
-.status-group-mobile :deep(.el-radio-button__inner) {
+.status-group-mobile ::v-deep .el-radio-button__inner {
   width: 100%;
   padding: 10px 8px;
   font-size: 0.85rem;
   border-radius: 8px !important;
-  border: 1px solid var(--color-border) !important;
+  border: 1px solid #e2e8f0 !important;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
 }
 
-.status-group-mobile :deep(.el-radio-button__orig-radio:checked + .el-radio-button__inner) {
+.status-group-mobile ::v-deep .el-radio-button__orig-radio:checked + .el-radio-button__inner {
   box-shadow: none;
 }
 
-.card-observations-section :deep(.el-input__inner) {
+.card-observations-section ::v-deep .el-input__inner {
   border-radius: 8px;
   padding: 10px 12px;
 }

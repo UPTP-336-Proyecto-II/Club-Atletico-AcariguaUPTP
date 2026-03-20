@@ -82,6 +82,7 @@ const actions = {
         resetRouter()
 
         // reset visited views and cached views
+        // to fixed https://github.com/PanJiaChen/vue-element-admin/issues/2485
         dispatch('tagsView/delAllViews', null, { root: true })
 
         resolve()
@@ -114,10 +115,8 @@ const actions = {
 
     // generate accessible routes map based on roles
     const accessRoutes = await dispatch('permission/generateRoutes', roles, { root: true })
-    // dynamically add accessible routes (Vue Router 4)
-    accessRoutes.forEach(route => {
-      router.addRoute(route)
-    })
+    // dynamically add accessible routes
+    router.addRoutes(accessRoutes)
 
     // reset visited views and cached views
     dispatch('tagsView/delAllViews', null, { root: true })

@@ -13,15 +13,19 @@
   </div>
 </template>
 
-<script setup>
-import { computed } from 'vue'
-import { useStore } from 'vuex'
+<script>
+import { mapGetters } from 'vuex'
 
-const store = useStore()
-
-const name = computed(() => store.getters.name)
-const avatar = computed(() => store.getters.avatar)
-const roles = computed(() => store.getters.roles)
+export default {
+  name: 'Inicio',
+  computed: {
+    ...mapGetters([
+      'name',
+      'avatar',
+      'roles'
+    ])
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -34,14 +38,14 @@ const roles = computed(() => store.getters.roles)
 }
 
 .welcome-card {
-  background: var(--color-bg-card);
+  background: white;
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(30, 41, 59, 0.1);
+  box-shadow: 0 4px 20px rgba(229, 29, 34, 0.1);
   padding: 60px 80px;
   text-align: center;
   max-width: 600px;
   width: 100%;
-  border-top: 4px solid var(--color-primary);
+  border-top: 4px solid #E51D22;
 }
 
 .welcome-content {
@@ -63,8 +67,8 @@ const roles = computed(() => store.getters.roles)
       width: 100px;
       height: 100px;
       border-radius: 50%;
-      border: 4px solid var(--color-primary);
-      box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
+      border: 4px solid #E51D22;
+      box-shadow: 0 4px 12px rgba(229, 29, 34, 0.2);
       transition: transform 0.3s ease;
 
       &:hover {
@@ -75,7 +79,7 @@ const roles = computed(() => store.getters.roles)
     .user-name {
       font-size: 24px;
       font-weight: 600;
-      color: var(--color-primary);
+      color: #E51D22;
       margin: 0;
       font-family: 'Figtree', 'Segoe UI', sans-serif;
     }

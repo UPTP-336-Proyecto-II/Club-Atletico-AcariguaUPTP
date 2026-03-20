@@ -4,7 +4,7 @@
 
     <panel-group @handleSetLineChartData="handleSetLineChartData" />
 
-    <el-row style="background: var(--color-bg-card);padding:16px 16px 0;margin-bottom:32px;">
+    <el-row style="background:#fff;padding:16px 16px 0;margin-bottom:32px;">
       <line-chart :chart-data="lineChartData" />
     </el-row>
 
@@ -37,18 +37,17 @@
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue'
-import GithubCorner from '@/components/GithubCorner/index.vue'
-import PanelGroup from './components/PanelGroup.vue'
-import LineChart from './components/LineChart.vue'
-import RaddarChart from './components/RaddarChart.vue'
-import PieChart from './components/PieChart.vue'
-import BarChart from './components/BarChart.vue'
-import TodoList from './components/TodoList/index.vue'
-import BoxCard from './components/BoxCard.vue'
+<script>
+import GithubCorner from '@/components/GithubCorner'
+import PanelGroup from './components/PanelGroup'
+import LineChart from './components/LineChart'
+import RaddarChart from './components/RaddarChart'
+import PieChart from './components/PieChart'
+import BarChart from './components/BarChart'
+import TodoList from './components/TodoList'
+import BoxCard from './components/BoxCard'
 
-const lineChartDataOptions = {
+const lineChartData = {
   newVisitis: {
     expectedData: [100, 120, 161, 134, 105, 160, 165],
     actualData: [120, 82, 91, 154, 162, 140, 145]
@@ -67,10 +66,28 @@ const lineChartDataOptions = {
   }
 }
 
-const lineChartData = ref(lineChartDataOptions.newVisitis)
-
-const handleSetLineChartData = (type) => {
-  lineChartData.value = lineChartDataOptions[type]
+export default {
+  name: 'DashboardAdmin',
+  components: {
+    GithubCorner,
+    PanelGroup,
+    LineChart,
+    RaddarChart,
+    PieChart,
+    BarChart,
+    TodoList,
+    BoxCard
+  },
+  data() {
+    return {
+      lineChartData: lineChartData.newVisitis
+    }
+  },
+  methods: {
+    handleSetLineChartData(type) {
+      this.lineChartData = lineChartData[type]
+    }
+  }
 }
 </script>
 
@@ -88,7 +105,7 @@ const handleSetLineChartData = (type) => {
   }
 
   .chart-wrapper {
-    background: var(--color-bg-card);
+    background: #fff;
     padding: 16px 16px 0;
     margin-bottom: 32px;
   }

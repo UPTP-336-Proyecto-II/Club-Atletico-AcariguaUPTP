@@ -1,4 +1,4 @@
-import { nextTick } from 'vue'
+import Vue from 'vue'
 import store from '@/store'
 import { isString, isArray } from '@/utils/validate'
 import settings from '@/settings'
@@ -8,7 +8,7 @@ import settings from '@/settings'
 const { errorLog: needErrorLog } = settings
 
 function checkNeed() {
-  const env = import.meta.env.MODE
+  const env = process.env.NODE_ENV
   if (isString(needErrorLog)) {
     return env === needErrorLog
   }
@@ -18,18 +18,18 @@ function checkNeed() {
   return false
 }
 
-export function setupErrorLog(app) {
-  if (checkNeed()) {
-    app.config.errorHandler = function(err, vm, info) {
-      nextTick(() => {
-        store.dispatch('errorLog/addErrorLog', {
-          err,
-          vm,
-          info,
-          url: window.location.href
-        })
-        console.error(err, info)
+if (checkNeed()) {
+  Vue.config.errorHandler = function(err, vm, info, a) {
+  // Don't ask me why I use Vue.nextTick, it just a hack.
+  // detail see https://forum.vuejs.org/t/dispatch-in-vue-config-errorhandler-has-some-problem/23500
+    Vue.nextTick(() => {
+      store.dispatch('errorLog/addErrorLog', {
+        err,
+        vm,
+        info,
+        url: window.location.href
       })
-    }
+      console.error(err, info)
+    })
   }
 }

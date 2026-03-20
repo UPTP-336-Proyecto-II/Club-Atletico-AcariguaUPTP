@@ -62,43 +62,56 @@
   </section>
 </template>
 
-<script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import img1 from '@/assets/carousel/1.jpeg'
-import img2 from '@/assets/carousel/2.jpeg'
-import img3 from '@/assets/carousel/3.jpeg'
-import img4 from '@/assets/carousel/4.jpeg'
-import img5 from '@/assets/carousel/5.jpeg'
-import img6 from '@/assets/carousel/6.jpeg'
-import img7 from '@/assets/carousel/7.jpeg'
-
-defineOptions({ name: 'LandingBanner' })
-
-const router = useRouter()
-
-const carouselImages = ref([
-  { url: img1, alt: 'Equipo en gradas' },
-  { url: img2, alt: 'Partido' },
-  { url: img3, alt: 'Entrenamiento' },
-  { url: img4, alt: 'Eventos del club' },
-  { url: img5, alt: 'Equipo' },
-  { url: img6, alt: 'Partido' },
-  { url: img7, alt: 'Partido' }
-])
-
-const goToLogin = () => {
-  router.push('/login')
-}
-
-const scrollToSection = (sectionId) => {
-  const element = document.getElementById(sectionId)
-  if (element) {
-    element.scrollIntoView({ behavior: 'smooth' })
+<script>
+export default {
+  name: 'LandingBanner',
+  data() {
+    return {
+      carouselImages: [
+        {
+          url: require('@/assets/carousel/1.jpeg'),
+          alt: 'Equipo en gradas'
+        },
+        {
+          url: require('@/assets/carousel/2.jpeg'),
+          alt: 'Partido'
+        },
+        {
+          url: require('@/assets/carousel/3.jpeg'),
+          alt: 'Entrenamiento'
+        },
+        {
+          url: require('@/assets/carousel/4.jpeg'),
+          alt: 'Eventos del club'
+        },
+        {
+          url: require('@/assets/carousel/5.jpeg'),
+          alt: 'Equipo'
+        },
+        {
+          url: require('@/assets/carousel/6.jpeg'),
+          alt: 'Partido'
+        },
+        {
+          url: require('@/assets/carousel/7.jpeg'),
+          alt: 'Partido'
+        }
+      ]
+    }
+  },
+  methods: {
+    goToLogin() {
+      this.$router.push('/login')
+    },
+    scrollToSection(sectionId) {
+      const element = document.getElementById(sectionId)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' })
+      }
+    }
   }
 }
 </script>
-
 
 <style scoped>
 .banner {

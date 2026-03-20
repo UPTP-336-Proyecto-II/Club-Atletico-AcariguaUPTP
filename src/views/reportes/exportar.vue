@@ -2,10 +2,11 @@
   <placeholder-view title="Exportar Datos" icon="el-icon-download" />
 </template>
 
-<script setup>
-import PlaceholderView from '@/components/PlaceholderView.vue'
+<script>
+import PlaceholderView from '@/components/PlaceholderView'
 
-defineOptions({
-  name: 'ExportarDatos'
-})
+export default {
+  name: 'ExportarDatos',
+  components: { PlaceholderView }
+}
 </script>

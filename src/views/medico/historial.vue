@@ -2,10 +2,11 @@
   <placeholder-view title="Historial Médico" icon="el-icon-folder-opened" />
 </template>
 
-<script setup>
-import PlaceholderView from '@/components/PlaceholderView.vue'
+<script>
+import PlaceholderView from '@/components/PlaceholderView'
 
-defineOptions({
-  name: 'HistorialMedico'
-})
+export default {
+  name: 'HistorialMedico',
+  components: { PlaceholderView }
+}
 </script>

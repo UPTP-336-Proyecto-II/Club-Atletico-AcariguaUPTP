@@ -68,7 +68,7 @@ export const PdfReportService = {
         headerLogo: {
           fontSize: 18,
           bold: true,
-          color: '#1e293b'
+          color: '#E51D22'
         },
         headerCompany: {
           fontSize: 10,
@@ -88,13 +88,13 @@ export const PdfReportService = {
         reportTitle: {
           fontSize: 22,
           bold: true,
-          color: '#1e293b',
+          color: '#E51D22',
           alignment: 'center',
           margin: [0, 0, 0, 5]
         },
         reportSubtitle: {
           fontSize: 14,
-          color: '#1e293b',
+          color: '#1a3a5f',
           alignment: 'center',
           margin: [0, 0, 0, 20]
         },
@@ -102,7 +102,7 @@ export const PdfReportService = {
           bold: true,
           fontSize: 10,
           color: 'white',
-          fillColor: '#1e293b',
+          fillColor: '#E51D22',
           alignment: 'center'
         },
         tableCell: {
@@ -112,10 +112,10 @@ export const PdfReportService = {
         sectionHeader: {
           fontSize: 14,
           bold: true,
-          color: '#1e293b',
+          color: '#1a3a5f',
           margin: [0, 15, 0, 10],
           decoration: 'underline',
-          decorationColor: '#1e293b'
+          decorationColor: '#E51D22'
         },
         label: {
           bold: true,

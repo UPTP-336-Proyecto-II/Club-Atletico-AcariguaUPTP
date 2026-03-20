@@ -81,16 +81,16 @@
           style="width: 100%"
           class="custom-table desktop-table"
           :header-cell-style="{
-            background: 'linear-gradient(135deg, var(--color-bg-card), var(--color-bg-body))',
-            color: 'var(--color-text-main)',
+            background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+            color: '#1e293b',
             fontWeight: '700',
-            borderBottom: '3px solid var(--color-primary)',
+            borderBottom: '3px solid #E51D22',
             textTransform: 'uppercase',
             padding: '16px 12px'
           }"
         >
           <el-table-column label="Atleta" min-width="280">
-            <template #default="scope">
+            <template slot-scope="scope">
               <div class="athlete-cell">
                 <div class="athlete-photo-wrapper">
                   <img v-if="scope.row.foto" :src="getFotoUrl(scope.row.foto)" class="avatar-img" @error="handleImgError">
@@ -106,7 +106,7 @@
 
           <!-- New Explicit Category Column -->
           <el-table-column label="Categoría" min-width="120" align="center">
-            <template #default="scope">
+            <template slot-scope="scope">
               <el-tag size="medium" effect="plain" type="info" class="category-tag">
                 {{ scope.row.categoria_nombre }}
               </el-tag>
@@ -114,7 +114,7 @@
           </el-table-column>
 
           <el-table-column label="Estadísticas" min-width="320" align="center">
-            <template #default="scope">
+            <template slot-scope="scope">
               <div class="stats-mini-grid">
                 <div class="stat-box present" title="Asistencias">
                   <i class="el-icon-check" /> {{ scope.row.stats.presente }}
@@ -133,7 +133,7 @@
           </el-table-column>
 
           <el-table-column label="% Asistencia" width="180" align="center">
-            <template #default="scope">
+            <template slot-scope="scope">
               <div class="progress-col">
                 <el-progress
                   :percentage="scope.row.stats.percentage"
@@ -147,7 +147,7 @@
           </el-table-column>
 
           <el-table-column label="Acciones" width="140" align="center" class-name="no-print">
-            <template #default="scope">
+            <template slot-scope="scope">
               <el-button
                 size="small"
                 type="primary"
@@ -247,19 +247,17 @@
 
     <!-- Detailed Modal -->
     <el-dialog
-      v-model="showDetailModal"
+      :visible.sync="showDetailModal"
       width="700px"
       append-to-body
       custom-class="detail-modal"
     >
-      <template #title>
-        <div class="modal-header-custom">
-          <span class="modal-title">Historial de Asistencia</span>
-          <span v-if="selectedAthlete" class="modal-subtitle">
-            - {{ selectedAthlete.nombre }} {{ selectedAthlete.apellido }}
-          </span>
-        </div>
-      </template>
+      <div slot="title" class="modal-header-custom">
+        <span class="modal-title">Historial de Asistencia</span>
+        <span v-if="selectedAthlete" class="modal-subtitle">
+          - {{ selectedAthlete.nombre }} {{ selectedAthlete.apellido }}
+        </span>
+      </div>
 
       <div v-if="selectedAthlete" class="modal-content">
 
@@ -287,13 +285,13 @@
           class="detail-table"
         >
           <el-table-column prop="fecha" label="Fecha" width="120">
-            <template #default="scope">
+            <template slot-scope="scope">
               {{ formatDate(scope.row.fecha) }}
             </template>
           </el-table-column>
           <el-table-column prop="tipo_evento" label="Evento" width="140" />
           <el-table-column prop="estatus" label="Estado" align="center">
-            <template #default="scope">
+            <template slot-scope="scope">
               <el-tag :type="getStatusType(scope.row.estatus)">
                 {{ getStatusLabel(scope.row.estatus) }}
               </el-tag>
@@ -304,228 +302,227 @@
 
       </div>
 
-      <template #footer><div class="dialog-footer no-print">
+      <div slot="footer" class="dialog-footer no-print">
         <el-button @click="showDetailModal = false">Cerrar</el-button>
         <el-button type="primary" icon="el-icon-printer" @click="printModal">Imprimir</el-button>
-      </div></template>
+      </div>
     </el-dialog>
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue'
+<script>
 import { getCategorias } from '@/api/categorias'
 import { getAtletas } from '@/api/atletas'
 import { getAsistencias } from '@/api/asistencias'
-import { ElMessage } from 'element-plus'
 
-const loading = ref(false)
-const categorias = ref([])
-const atletas = ref([])
-const asistencias = ref([])
-const filters = ref({
-  categoria_id: '',
-  dateRange: [],
-  search: ''
-})
-const showDetailModal = ref(false)
-const selectedAthlete = ref(null)
-const backendUrl = ref('http://localhost:3000')
-
-const selectedCategoryName = computed(() => {
-  if (!filters.value.categoria_id) return 'Todas las Categorías'
-  const cat = categorias.value.find(c => c.categoria_id === filters.value.categoria_id)
-  return cat ? cat.nombre_categoria : ''
-})
-
-const filteredAthletesStats = computed(() => {
-  let filtered = atletas.value
-
-  if (filters.value.categoria_id) {
-    filtered = filtered.filter(a => a.categoria_id === filters.value.categoria_id)
-  }
-
-  if (filters.value.search) {
-    const q = filters.value.search.toLowerCase()
-    filtered = filtered.filter(a =>
-      a.nombre.toLowerCase().includes(q) ||
-      a.apellido.toLowerCase().includes(q)
-    )
-  }
-
-  return filtered.map(atleta => {
-    const records = asistencias.value.filter(r => {
-      if (r.atleta_id !== atleta.atleta_id) return false
-
-      if (filters.value.dateRange && filters.value.dateRange.length === 2) {
-        const date = new Date(r.fecha)
-        const start = new Date(filters.value.dateRange[0])
-        const end = new Date(filters.value.dateRange[1])
-        date.setHours(0, 0, 0, 0)
-        start.setHours(0, 0, 0, 0)
-        end.setHours(0, 0, 0, 0)
-        return date >= start && date <= end
-      }
-      return true
-    })
-
-    const total = records.length
-    const presente = records.filter(r => r.estatus === 'presente').length
-    const ausente = records.filter(r => r.estatus === 'ausente').length
-    const justificado = records.filter(r => r.estatus === 'justificativo').length
-
-    const percentage = total > 0 ? Math.round((presente / total) * 100) : 0
-
-    const cat = categorias.value.find(c => c.categoria_id === atleta.categoria_id)
-
+export default {
+  name: 'AsistenciaReporte',
+  data() {
     return {
-      ...atleta,
-      categoria_nombre: cat ? cat.nombre_categoria : 'Sin asignar',
-      records,
-      stats: {
-        total,
-        presente,
-        ausente,
-        justificado,
-        percentage
-      }
+      loading: false,
+      categorias: [],
+      atletas: [],
+      asistencias: [],
+      filters: {
+        categoria_id: '',
+        dateRange: [],
+        search: ''
+      },
+      showDetailModal: false,
+      selectedAthlete: null,
+      backendUrl: 'http://localhost:3000'
     }
-  })
-})
+  },
+  computed: {
+    selectedCategoryName() {
+      if (!this.filters.categoria_id) return 'Todas las Categorías'
+      const cat = this.categorias.find(c => c.categoria_id === this.filters.categoria_id)
+      return cat ? cat.nombre_categoria : ''
+    },
+    // Main aggregation logic
+    filteredAthletesStats() {
+      let filtered = this.atletas
 
-const selectedAthleteHistory = computed(() => {
-  if (!selectedAthlete.value) return []
-  return [...selectedAthlete.value.records].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-})
+      // 1. Filter by Category
+      if (this.filters.categoria_id) {
+        filtered = filtered.filter(a => a.categoria_id === this.filters.categoria_id)
+      }
 
-const fetchCategorias = async () => {
-  categorias.value = await getCategorias()
-}
+      // 2. Filter by Search Text
+      if (this.filters.search) {
+        const q = this.filters.search.toLowerCase()
+        filtered = filtered.filter(a =>
+          a.nombre.toLowerCase().includes(q) ||
+          a.apellido.toLowerCase().includes(q)
+        )
+      }
 
-const fetchAtletas = async () => {
-  atletas.value = await getAtletas()
-}
+      // 3. Map aggregates
+      return filtered.map(atleta => {
+        // Get attendance records for this athlete within date range
+        const records = this.asistencias.filter(r => {
+          if (r.atleta_id !== atleta.atleta_id) return false
 
-const fetchAsistencias = async () => {
-  asistencias.value = await getAsistencias()
-}
+          if (this.filters.dateRange && this.filters.dateRange.length === 2) {
+            const date = new Date(r.fecha)
+            const start = new Date(this.filters.dateRange[0])
+            const end = new Date(this.filters.dateRange[1])
+            // Normalize dates to ignore time
+            date.setHours(0, 0, 0, 0)
+            start.setHours(0, 0, 0, 0)
+            end.setHours(0, 0, 0, 0)
+            return date >= start && date <= end
+          }
+          return true
+        })
 
-const initialLoad = async () => {
-  loading.value = true
-  try {
-    await Promise.all([
-      fetchCategorias(),
-      fetchAtletas(),
-      fetchAsistencias()
-    ])
-  } catch (error) {
-    console.error('Error loading report data:', error)
-    ElMessage.error('Error cargando datos del reporte')
-  } finally {
-    loading.value = false
+        const total = records.length
+        const presente = records.filter(r => r.estatus === 'presente').length
+        const ausente = records.filter(r => r.estatus === 'ausente').length
+        const justificado = records.filter(r => r.estatus === 'justificativo').length
+
+        const percentage = total > 0 ? Math.round((presente / total) * 100) : 0
+
+        // Find Category Name
+        const cat = this.categorias.find(c => c.categoria_id === atleta.categoria_id)
+
+        return {
+          ...atleta,
+          categoria_nombre: cat ? cat.nombre_categoria : 'Sin asignar',
+          records, // Store for detailed view
+          stats: {
+            total,
+            presente,
+            ausente,
+            justificado,
+            percentage
+          }
+        }
+      })
+    },
+    selectedAthleteHistory() {
+      if (!this.selectedAthlete) return []
+      // Sort by date desc
+      return [...this.selectedAthlete.records].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+    }
+  },
+  created() {
+    this.initialLoad()
+  },
+  methods: {
+    async initialLoad() {
+      this.loading = true
+      try {
+        await Promise.all([
+          this.fetchCategorias(),
+          this.fetchAtletas(),
+          this.fetchAsistencias()
+        ])
+      } catch (error) {
+        console.error('Error loading report data:', error)
+        this.$message.error('Error cargando datos del reporte')
+      } finally {
+        this.loading = false
+      }
+    },
+    async fetchCategorias() {
+      this.categorias = await getCategorias()
+    },
+    async fetchAtletas() {
+      this.atletas = await getAtletas()
+    },
+    async fetchAsistencias() {
+      this.asistencias = await getAsistencias()
+    },
+    handleFilterChange() {
+    },
+    viewDetail(row) {
+      this.selectedAthlete = row
+      this.showDetailModal = true
+    },
+    async printIndividual(row) {
+      if (!row) return
+      try {
+        const { PdfReportService } = await import('@/utils/pdfReportService')
+
+        // Find history with safety check
+        const dataStats = this.filteredAthletesStats || []
+        const records = dataStats.find(r => r.atleta_id === row.atleta_id)?.records || []
+        const sorted = [...records].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+
+        PdfReportService.generateIndividualAttendanceReport(
+          `${row.nombre} ${row.apellido}`,
+          sorted
+        )
+      } catch (e) {
+        console.error(e)
+        this.$message.error('Error generando PDF')
+      }
+    },
+    async printModal() {
+      if (!this.selectedAthlete) return
+      this.printIndividual(this.selectedAthlete)
+    },
+    async handlePrint() {
+      try {
+        const { PdfReportService } = await import('@/utils/pdfReportService')
+
+        const dataForPdf = this.filteredAthletesStats.map(row => ({
+          athlete_name: `${row.nombre} ${row.apellido}`,
+          present_count: row.stats.presente,
+          absent_count: row.stats.ausente,
+          justified_count: row.stats.justificado,
+          percentage: row.stats.percentage
+        }))
+
+        PdfReportService.generateAttendanceReport(
+          dataForPdf,
+          this.selectedCategoryName,
+          this.filters.dateRange
+        )
+      } catch (e) {
+        console.error(e)
+        this.$message.error('Error generando PDF')
+      }
+    },
+    formatDate(date) {
+      if (!date) return '-'
+      return new Date(date).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    },
+    getStatusType(estatus) {
+      const map = {
+        'presente': 'success',
+        'ausente': 'danger',
+        'justificativo': 'warning'
+      }
+      return map[estatus] || 'info'
+    },
+    getStatusLabel(estatus) {
+      const map = {
+        'presente': 'Presente',
+        'ausente': 'Ausente',
+        'justificativo': 'Justificado'
+      }
+      return map[estatus] || estatus
+    },
+    getProgressColor(per) {
+      if (per >= 80) return '#67C23A' // Success
+      if (per >= 50) return '#E6A23C' // Warning
+      return '#F56C6C' // Danger
+    },
+    getFotoUrl(filename) {
+      if (!filename) return ''
+      if (filename.startsWith('/uploads')) {
+        return `${this.backendUrl}${filename}`
+      }
+      return `${this.backendUrl}/uploads/atletas/${filename}`
+    },
+    handleImgError(e) {
+      e.target.style.display = 'none'
+      if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex'
+    }
   }
 }
-
-const handleFilterChange = () => {
-}
-
-const viewDetail = (row) => {
-  selectedAthlete.value = row
-  showDetailModal.value = true
-}
-
-const printIndividual = async (row) => {
-  if (!row) return
-  try {
-    const { PdfReportService } = await import('@/utils/pdfReportService')
-
-    const dataStats = filteredAthletesStats.value || []
-    const records = dataStats.find(r => r.atleta_id === row.atleta_id)?.records || []
-    const sorted = [...records].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-
-    PdfReportService.generateIndividualAttendanceReport(
-      `${row.nombre} ${row.apellido}`,
-      sorted
-    )
-  } catch (e) {
-    console.error(e)
-    ElMessage.error('Error generando PDF')
-  }
-}
-
-const printModal = async () => {
-  if (!selectedAthlete.value) return
-  printIndividual(selectedAthlete.value)
-}
-
-const handlePrint = async () => {
-  try {
-    const { PdfReportService } = await import('@/utils/pdfReportService')
-
-    const dataForPdf = filteredAthletesStats.value.map(row => ({
-      athlete_name: `${row.nombre} ${row.apellido}`,
-      present_count: row.stats.presente,
-      absent_count: row.stats.ausente,
-      justified_count: row.stats.justificado,
-      percentage: row.stats.percentage
-    }))
-
-    PdfReportService.generateAttendanceReport(
-      dataForPdf,
-      selectedCategoryName.value,
-      filters.value.dateRange
-    )
-  } catch (e) {
-    console.error(e)
-    ElMessage.error('Error generando PDF')
-  }
-}
-
-const formatDate = (date) => {
-  if (!date) return '-'
-  return new Date(date).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
-
-const getStatusType = (estatus) => {
-  const map = {
-    'presente': 'success',
-    'ausente': 'danger',
-    'justificativo': 'warning'
-  }
-  return map[estatus] || 'info'
-}
-
-const getStatusLabel = (estatus) => {
-  const map = {
-    'presente': 'Presente',
-    'ausente': 'Ausente',
-    'justificativo': 'Justificado'
-  }
-  return map[estatus] || estatus
-}
-
-const getProgressColor = (per) => {
-  if (per >= 80) return '#67C23A'
-  if (per >= 50) return '#E6A23C'
-  return '#F56C6C'
-}
-
-const getFotoUrl = (filename) => {
-  if (!filename) return ''
-  if (filename.startsWith('/uploads')) {
-    return `${backendUrl.value}${filename}`
-  }
-  return `${backendUrl.value}/uploads/atletas/${filename}`
-}
-
-const handleImgError = (e) => {
-  e.target.style.display = 'none'
-  if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex'
-}
-
-onMounted(() => {
-  initialLoad()
-})
 </script>
 
 <style scoped>
@@ -537,12 +534,12 @@ onMounted(() => {
 
 /* Page Header - Red Gradient */
 .page-header {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  background: linear-gradient(135deg, #E51D22 0%, #a3161a 100%);
   color: white;
   padding: 25px 20px;
   border-radius: 8px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 10px rgba(30, 41, 59, 0.2);
+  box-shadow: 0 4px 10px rgba(229, 29, 34, 0.2);
 }
 
 .header-content {
@@ -569,25 +566,23 @@ onMounted(() => {
 /* Action Button in Header */
 .header-action-btn {
   background: rgba(255, 255, 255, 0.15) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
   color: #fff !important;
   font-weight: 600;
-  border-radius: 10px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 12px;
+  transition: all 0.3s ease;
   backdrop-filter: blur(10px);
-  padding: 10px 20px;
 }
 .header-action-btn:hover {
   background: rgba(255, 255, 255, 0.25) !important;
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  border-color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
 /* Control Panel */
 .control-panel {
   margin-bottom: 20px;
-  border-left: 5px solid var(--color-primary);
+  border-left: 5px solid #E51D22;
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
@@ -613,7 +608,7 @@ onMounted(() => {
 
 .filter-label {
   font-weight: 700;
-  color: var(--color-text-main);
+  color: #1e293b;
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -626,70 +621,61 @@ onMounted(() => {
   width: 100%;
 }
 
-:deep(.el-input__inner),
-:deep(.el-range-input),
-:deep(.el-input__wrapper) {
-  background: var(--color-bg-body) !important;
-  border: none !important;
+::v-deep .el-input__inner,
+::v-deep .el-range-input {
+  background: #fff !important;
+  border: 2px solid #64748b !important;
   border-radius: 12px;
   height: 44px;
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--color-text-muted);
-  transition: all 0.2s ease;
-  box-shadow: none !important;
+  color: #1e293b;
+  transition: all 0.3s ease;
 }
 
-:deep(.el-input__inner:hover),
-:deep(.el-range-editor:hover),
-:deep(.el-input__wrapper:hover) {
-  background: var(--color-border) !important;
+::v-deep .el-input__inner:hover,
+::v-deep .el-range-editor:hover .el-input__inner {
+  border-color: #E51D22 !important;
 }
 
-:deep(.el-input__inner:focus),
-:deep(.el-input.is-focus .el-input__inner),
-:deep(.el-input__wrapper.is-focus),
-:deep(.el-range-editor.is-active) {
-  background: var(--color-bg-card) !important;
-  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1) !important;
-  outline: none !important;
+::v-deep .el-input__inner:focus,
+::v-deep .el-input.is-focus .el-input__inner,
+::v-deep .el-range-editor.is-active .el-input__inner {
+  border-color: #E51D22 !important;
+  box-shadow: 0 0 0 4px rgba(229, 29, 34, 0.12);
 }
 
-:deep(.el-input__inner::placeholder),
-:deep(.el-range-input::placeholder) {
-  color: var(--color-text-placeholder) !important;
-  font-weight: 500;
+::v-deep .el-input__inner::placeholder,
+::v-deep .el-range-input::placeholder {
+  color: #64748b !important;
+  font-weight: 600;
   opacity: 1;
 }
 
-/* Specific Search Input Modernization - Truly Borderless */
-.filter-input-search :deep(.el-input__inner),
-.filter-input-search :deep(.el-input__wrapper) {
-  border: none !important;
-  background: var(--color-bg-body) !important;
-  box-shadow: none !important;
-  padding-left: 36px;
+/* Select placeholder styling */
+::v-deep .el-select .el-input .el-input__inner::placeholder {
+  color: #64748b !important;
+  font-weight: 600;
+  opacity: 1;
 }
 
-.filter-input-search :deep(.el-input__inner:focus),
-.filter-input-search :deep(.el-input__wrapper.is-focus) {
-  background: var(--color-bg-card) !important;
-  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1) !important;
+::v-deep .el-select .el-input.is-focus .el-input__inner::placeholder {
+  color: #64748b !important;
 }
 
-:deep(.el-range-separator) {
+::v-deep .el-range-separator {
   line-height: 36px;
-  color: var(--color-text-muted);
+  color: #64748b;
   font-weight: 600;
 }
 
 /* Main Table Container */
 .table-container {
-  background: var(--color-bg-card);
+  background: white;
   padding: 24px;
   border-radius: 16px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  border: 2px solid var(--color-border);
+  border: 2px solid #e2e8f0;
 }
 
 .custom-table {
@@ -698,14 +684,14 @@ onMounted(() => {
 }
 
 /* Table Body Styles */
-:deep(.el-table__body tr td) {
+::v-deep .el-table__body tr td {
   padding: 16px 12px !important;
-  border-bottom: 2px solid var(--color-border) !important;
+  border-bottom: 2px solid #94a3b8 !important;
 }
 
-:deep(.el-table__body tr:hover > td) {
-  background: var(--color-bg-hover) !important;
-  border-bottom-color: var(--color-primary) !important;
+::v-deep .el-table__body tr:hover > td {
+  background: linear-gradient(135deg, #fff5f5, #fff) !important;
+  border-bottom-color: #E51D22 !important;
 }
 
 /* Athlete Cell */
@@ -726,21 +712,21 @@ onMounted(() => {
   height: 100%;
   border-radius: 12px;
   object-fit: cover;
-  border: 2px solid var(--color-primary);
-  box-shadow: 0 3px 8px rgba(30, 41, 59, 0.2);
+  border: 2px solid #E51D22;
+  box-shadow: 0 3px 8px rgba(229, 29, 34, 0.2);
 }
 
 .avatar-placeholder {
   width: 100%;
   height: 100%;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  background: linear-gradient(135deg, #E51D22, #c41a1d);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   font-size: 20px;
-  box-shadow: 0 3px 8px rgba(30, 41, 59, 0.3);
+  box-shadow: 0 3px 8px rgba(229, 29, 34, 0.3);
 }
 
 .athlete-info {
@@ -750,13 +736,13 @@ onMounted(() => {
 
 .name {
   font-weight: 700;
-  color: var(--color-text-main);
+  color: #1e293b;
   font-size: 0.95rem;
 }
 
 .sub-text {
   font-size: 0.8rem;
-  color: var(--color-text-muted);
+  color: #64748b;
   font-weight: 500;
 }
 
@@ -791,13 +777,13 @@ onMounted(() => {
 .table-footer {
   margin-top: 20px;
   text-align: right;
-  color: var(--color-text-main);
+  color: #1e293b;
   font-size: 0.95rem;
   font-weight: 600;
   padding: 12px 16px;
-  background: linear-gradient(135deg, var(--color-bg-card), var(--color-bg-body));
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
   border-radius: 10px;
-  border: 2px solid var(--color-border);
+  border: 2px solid #e2e8f0;
 }
 
 /* Modal Headers */
@@ -808,7 +794,7 @@ onMounted(() => {
   border-bottom: 1px solid #eee;
   padding-bottom: 10px;
 }
-.modal-title { font-size: 1.2rem; font-weight: bold; color: var(--color-primary); }
+.modal-title { font-size: 1.2rem; font-weight: bold; color: #E51D22; }
 .modal-subtitle { color: #666; font-size: 1.1rem; }
 
 .modal-summary {
@@ -819,7 +805,7 @@ onMounted(() => {
 }
 
 .summary-item {
-  background: var(--color-bg-card);
+  background: #f8fafc;
   padding: 15px;
   border-radius: 8px;
   text-align: center;
@@ -852,13 +838,13 @@ onMounted(() => {
 }
 
 .athlete-card {
-  background: var(--color-bg-card);
+  background: white;
   border-radius: 12px;
   padding: 15px;
   margin-bottom: 15px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-primary);
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #E51D22;
 }
 
 .card-header-section {
@@ -867,7 +853,7 @@ onMounted(() => {
   gap: 12px;
   margin-bottom: 12px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--color-bg-body);
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .card-header-section .athlete-photo-wrapper {
@@ -885,7 +871,7 @@ onMounted(() => {
 .card-header-section .name {
   font-weight: 700;
   font-size: 1rem;
-  color: var(--color-text-main);
+  color: #1e293b;
 }
 
 .card-stats-section {
@@ -954,11 +940,11 @@ onMounted(() => {
 .progress-label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--color-text-main);
+  color: #1e293b;
   white-space: nowrap;
 }
 
-.card-progress-section :deep(.el-progress) {
+.card-progress-section ::v-deep .el-progress {
   flex: 1;
 }
 
@@ -986,7 +972,7 @@ onMounted(() => {
   }
 
   /* Reducir anchuras de columnas */
-  :deep(.el-table-column) {
+  ::v-deep .el-table-column {
     min-width: auto !important;
   }
 }
@@ -1045,7 +1031,7 @@ onMounted(() => {
   }
 
   /* Modal responsive */
-  :deep(.detail-modal) {
+  ::v-deep .detail-modal {
     width: 95% !important;
     max-width: 95vw !important;
   }
@@ -1099,7 +1085,7 @@ onMounted(() => {
     border-radius: 10px;
   }
 
-  .control-panel :deep(.el-card__body) {
+  .control-panel ::v-deep .el-card__body {
     padding: 12px;
   }
 
@@ -1107,11 +1093,11 @@ onMounted(() => {
     font-size: 0.75rem;
   }
 
-  .date-range-item :deep(.el-date-editor) {
+  .date-range-item ::v-deep .el-date-editor {
     width: 100% !important;
   }
 
-  .date-range-item :deep(.el-range-input) {
+  .date-range-item ::v-deep .el-range-input {
     font-size: 0.8rem;
   }
 
@@ -1125,26 +1111,26 @@ onMounted(() => {
   }
 
   /* Forzar tabla a mostrar todas las columnas con scroll */
-  :deep(.el-table) {
+  ::v-deep .el-table {
     width: 100%;
     overflow: visible;
   }
 
-  :deep(.el-table__header-wrapper),
-  :deep(.el-table__body-wrapper) {
+  ::v-deep .el-table__header-wrapper,
+  ::v-deep .el-table__body-wrapper {
     overflow-x: auto;
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
   }
 
   /* Ancho mínimo de la tabla para forzar scroll */
-  :deep(.el-table__header),
-  :deep(.el-table__body) {
+  ::v-deep .el-table__header,
+  ::v-deep .el-table__body {
     min-width: 800px;
   }
 
   /* Celdas más compactas */
-  :deep(.el-table__body tr td) {
+  ::v-deep .el-table__body tr td {
     padding: 10px 8px !important;
   }
 
@@ -1181,16 +1167,16 @@ onMounted(() => {
   }
 
   /* Progress bar más pequeño */
-  .progress-col :deep(.el-progress) {
+  .progress-col ::v-deep .el-progress {
     min-width: 80px;
   }
 
-  .progress-col :deep(.el-progress-bar__outer) {
+  .progress-col ::v-deep .el-progress-bar__outer {
     height: 12px !important;
   }
 
   /* Acciones */
-  :deep(.el-button--small.is-circle) {
+  ::v-deep .el-button--small.is-circle {
     width: 32px;
     height: 32px;
     padding: 6px;
@@ -1229,7 +1215,7 @@ onMounted(() => {
     font-size: 0.9rem;
   }
 
-  :deep(.detail-modal .el-dialog__body) {
+  ::v-deep .detail-modal .el-dialog__body {
     padding: 15px;
   }
 }
@@ -1252,7 +1238,7 @@ onMounted(() => {
     font-size: 0.7rem;
   }
 
-  .control-panel :deep(.el-card__body) {
+  .control-panel ::v-deep .el-card__body {
     padding: 10px;
   }
 
@@ -1303,12 +1289,12 @@ onMounted(() => {
     margin-right: 2px;
   }
 
-  .progress-col :deep(.el-progress) {
+  .progress-col ::v-deep .el-progress {
     min-width: 60px;
   }
 
   /* Ocultar columna acciones en móvil muy pequeño */
-  :deep(.el-table .no-print) {
+  ::v-deep .el-table .no-print {
     display: none;
   }
 
@@ -1352,7 +1338,7 @@ onMounted(() => {
 
   .report-container {
     padding: 0;
-    background: var(--color-bg-card);
+    background: white;
   }
 
   .table-container {

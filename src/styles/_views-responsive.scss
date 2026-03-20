@@ -23,12 +23,12 @@ $view-content-gap: 20px;
 
     // Header de página
     .page-header {
-        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+        background: linear-gradient(135deg, #E51D22 0%, #c41a1d 100%);
         border-radius: 12px;
         padding: 20px;
         margin-bottom: 20px;
         color: white;
-        box-shadow: 0 4px 15px rgba(30, 41, 59, 0.3);
+        box-shadow: 0 4px 15px rgba(229, 29, 34, 0.3);
 
         .header-content {
             display: flex;

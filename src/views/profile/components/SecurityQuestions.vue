@@ -220,13 +220,13 @@ export default {
 }
 
 .header-section .text-muted {
-  color: var(--color-text-muted);
+  color: #64748b;
   font-size: 0.9rem;
 }
 
 /* Question blocks with enhanced styling */
 .question-block {
-  background: linear-gradient(135deg, var(--color-bg-card), var(--color-bg-body));
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
   padding: 24px;
   border-radius: 12px;
   margin-bottom: 24px;
@@ -236,63 +236,63 @@ export default {
 }
 
 .question-block:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 6px 20px rgba(30, 41, 59, 0.12);
+  border-color: #E51D22;
+  box-shadow: 0 6px 20px rgba(229, 29, 34, 0.12);
   transform: translateY(-2px);
 }
 
 /* Form item labels */
-.question-block :deep(.el-form-item__label) {
+.question-block ::v-deep .el-form-item__label {
   font-weight: 600;
-  color: var(--color-text-main);
+  color: #1e293b;
   font-size: 0.95rem;
   padding-bottom: 8px;
 }
 
 /* Enhanced select inputs */
-.question-block :deep(.el-select .el-input__inner),
-.question-block :deep(.el-input__inner) {
-  background: var(--color-bg-card) !important;
+.question-block ::v-deep .el-select .el-input__inner,
+.question-block ::v-deep .el-input__inner {
+  background: #fff !important;
   border: 2px solid #64748b !important;
   border-radius: 10px;
   padding: 12px 16px;
   font-size: 0.95rem;
   font-weight: 500;
-  color: var(--color-text-main);
+  color: #1e293b;
   transition: all 0.3s ease;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   height: auto;
   min-height: 44px;
 }
 
-.question-block :deep(.el-select .el-input__inner:hover),
-.question-block :deep(.el-input__inner:hover) {
-  border-color: var(--color-primary) !important;
-  box-shadow: 0 4px 12px rgba(30, 41, 59, 0.1);
+.question-block ::v-deep .el-select .el-input__inner:hover,
+.question-block ::v-deep .el-input__inner:hover {
+  border-color: #E51D22 !important;
+  box-shadow: 0 4px 12px rgba(229, 29, 34, 0.1);
 }
 
-.question-block :deep(.el-select .el-input__inner:focus),
-.question-block :deep(.el-input__inner:focus),
-.question-block :deep(.el-input.is-focus .el-input__inner) {
-  border-color: var(--color-primary) !important;
+.question-block ::v-deep .el-select .el-input__inner:focus,
+.question-block ::v-deep .el-input__inner:focus,
+.question-block ::v-deep .el-input.is-focus .el-input__inner {
+  border-color: #E51D22 !important;
   box-shadow: 0 0 0 3px rgba(229, 29, 34, 0.15);
 }
 
 /* Placeholder styling */
-.question-block :deep(.el-input__inner::placeholder) {
-  color: var(--color-text-placeholder) !important;
+.question-block ::v-deep .el-input__inner::placeholder {
+  color: #94a3b8 !important;
   font-weight: 500;
 }
 
 /* Select dropdown arrow */
-.question-block :deep(.el-select .el-input .el-select__caret) {
-  color: var(--color-text-muted);
+.question-block ::v-deep .el-select .el-input .el-select__caret {
+  color: #64748b;
   font-size: 16px;
 }
 
 /* Password input icon */
-.question-block :deep(.el-input__suffix) {
-  color: var(--color-text-muted);
+.question-block ::v-deep .el-input__suffix {
+  color: #64748b;
 }
 
 /* Form actions button */
@@ -301,18 +301,18 @@ export default {
   text-align: right;
 }
 
-.form-actions :deep(.el-button--primary) {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover)) !important;
+.form-actions ::v-deep .el-button--primary {
+  background: linear-gradient(135deg, #E51D22, #c41a1d) !important;
   border: none !important;
   padding: 14px 32px;
   font-size: 1rem;
   font-weight: 600;
   border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(30, 41, 59, 0.3);
+  box-shadow: 0 4px 15px rgba(229, 29, 34, 0.3);
   transition: all 0.3s ease;
 }
 
-.form-actions :deep(.el-button--primary:hover) {
+.form-actions ::v-deep .el-button--primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(229, 29, 34, 0.4);
 }
@@ -321,13 +321,13 @@ export default {
 .loading-container {
   text-align: center;
   padding: 40px;
-  color: var(--color-text-muted);
+  color: #64748b;
   font-size: 1rem;
 }
 
 .loading-container i {
   font-size: 1.5rem;
   margin-right: 8px;
-  color: var(--color-primary);
+  color: #E51D22;
 }
 </style>

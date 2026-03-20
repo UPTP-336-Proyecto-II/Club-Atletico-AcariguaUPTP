@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { Message, MessageBox } from 'element-ui'
 import store from '../store'
 import { getToken } from '@/utils/auth'
 
@@ -31,7 +31,7 @@ service.interceptors.response.use(
 
     // Si la API devuelve un error (200 = OK, 201 = Created son éxitos)
     if (response.status !== 200 && response.status !== 201) {
-      ElMessage({
+      Message({
         message: res.message || 'Error',
         type: 'error',
         duration: 5 * 1000
@@ -39,7 +39,7 @@ service.interceptors.response.use(
 
       // Token expirado o inválido
       if (response.status === 401) {
-        ElMessageBox.confirm(
+        MessageBox.confirm(
           'Tu sesión ha expirado, puedes permanecer en esta página o volver a iniciar sesión',
           'Confirmar cierre de sesión',
           {
@@ -73,7 +73,7 @@ service.interceptors.response.use(
       message = error.response.data.error
     }
 
-    ElMessage({
+    Message({
       message: message,
       type: 'error',
       duration: 5 * 1000

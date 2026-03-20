@@ -1,15 +1,15 @@
 <template>
   <div class="app-container">
     <el-card class="box-card">
-      <template #header><div class="clearfix">
+      <div slot="header" class="clearfix">
         <span style="font-size: 18px; font-weight: bold;">
           <i class="el-icon-s-custom" /> Reporte de Plantel
         </span>
-      </div></template>
+      </div>
 
       <div class="placeholder-content">
         <el-empty description="Módulo en desarrollo">
-          <template #image>
+          <template slot="image">
             <i class="el-icon-document" style="font-size: 100px; color: #909399;" />
           </template>
           <p style="color: #909399; margin-top: 20px;">
@@ -30,10 +30,13 @@
   </div>
 </template>
 
-<script setup>
-defineOptions({
-  name: 'ReportePlantel'
-})
+<script>
+export default {
+  name: 'ReportePlantel',
+  data() {
+    return {}
+  }
+}
 </script>
 
 <style scoped>

@@ -2,10 +2,11 @@
   <placeholder-view title="Asistencia Mensual" icon="el-icon-date" />
 </template>
 
-<script setup>
-import PlaceholderView from '@/components/PlaceholderView.vue'
+<script>
+import PlaceholderView from '@/components/PlaceholderView'
 
-defineOptions({
-  name: 'AsistenciaMensual'
-})
+export default {
+  name: 'AsistenciaMensual',
+  components: { PlaceholderView }
+}
 </script>

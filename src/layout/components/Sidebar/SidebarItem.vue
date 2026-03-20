@@ -8,8 +8,8 @@
       </app-link>
     </template>
 
-    <el-sub-menu v-else ref="subMenu" :index="resolvePath(item.path)" teleported>
-      <template #title>
+    <el-submenu v-else ref="subMenu" :index="resolvePath(item.path)" popper-append-to-body>
+      <template slot="title">
         <item v-if="item.meta" :icon="item.meta && item.meta.icon" :title="item.meta.title" />
       </template>
       <sidebar-item
@@ -20,20 +20,21 @@
         :base-path="resolvePath(child.path)"
         class="nest-menu"
       />
-    </el-sub-menu>
+    </el-submenu>
   </div>
 </template>
 
 <script>
 import path from 'path'
 import { isExternal } from '@/utils/validate'
-import Item from './Item.vue'
-import AppLink from './Link.vue'
-import { ref } from 'vue'
+import Item from './Item'
+import AppLink from './Link'
+import FixiOSBug from './FixiOSBug'
 
 export default {
   name: 'SidebarItem',
   components: { Item, AppLink },
+  mixins: [FixiOSBug],
   props: {
     // route object
     item: {
@@ -49,9 +50,11 @@ export default {
       default: ''
     }
   },
-  setup() {
-    const onlyOneChild = ref(null)
-    return { onlyOneChild }
+  data() {
+    // To fix https://github.com/PanJiaChen/vue-admin-template/issues/237
+    // TODO: refactor with render function
+    this.onlyOneChild = null
+    return {}
   },
   methods: {
     hasOneShowingChild(children = [], parent) {
@@ -72,7 +75,7 @@ export default {
 
       // Show parent if there are no child router to display
       if (showingChildren.length === 0) {
-        this.onlyOneChild = { ...parent, path: '', noShowingChildren: true }
+        this.onlyOneChild = { ... parent, path: '', noShowingChildren: true }
         return true
       }
 

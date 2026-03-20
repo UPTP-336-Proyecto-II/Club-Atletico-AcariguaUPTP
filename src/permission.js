@@ -1,6 +1,6 @@
 import router from './router'
 import store from './store'
-import { ElMessage } from 'element-plus'
+import { Message } from 'element-ui'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 import { getToken } from '@/utils/auth'
@@ -16,6 +16,17 @@ router.beforeEach(async(to, from, next) => {
   document.title = getPageTitle(to.meta.title)
 
   const hasToken = getToken()
+
+  // 🔥 FORZAR LANDING PAGE SIEMPRE AL INICIAR (eliminar esta parte después de testing)
+  if (to.path === '/' && from.path === '/') {
+    // Limpiar token solo para testing
+    const token = getToken()
+    if (token) {
+      console.log('🔍 Token encontrado, forzando landing page para testing...')
+      // Si quieres forzar la landing, comenta esta línea:
+      // await store.dispatch('user/resetToken')
+    }
+  }
 
   if (hasToken) {
     if (to.path === '/login' || to.path === '/') {
@@ -37,9 +48,11 @@ router.beforeEach(async(to, from, next) => {
           return false
         })
 
-        // Rutas constantes que siempre son accesibles
+        // Rutas constantes que siempre son accesibles pero NO deben ocultar errores de permiso
         const isCore = ['/dashboard', '/dashboard/index', '/login', '/', '/profile/index'].some(path => to.path === path || to.path.startsWith(path))
 
+        // Si no tiene permiso y no es una ruta core, o si es un 404, redirigir al dashboard
+        // Note: We include /404 here because if they hit it, it means they matched the '*' route
         if ((!hasPermission && !isCore) || to.path === '/404') {
           next({ path: '/dashboard', replace: true })
           NProgress.done()
@@ -54,17 +67,23 @@ router.beforeEach(async(to, from, next) => {
           // generate accessible routes map based on roles
           const accessRoutes = await store.dispatch('permission/generateRoutes', roles)
 
-          // dynamically add accessible routes (Vue Router 4)
-          accessRoutes.forEach(route => {
-            router.addRoute(route)
-          })
+          // dynamically add accessible routes
+          router.addRoutes(accessRoutes)
 
-          // set the replace: true, so the navigation will not leave a history record
-          next({ ...to, replace: true })
+          // Hack: Check if the current destination (to.path) exists in the newly added routes
+          // If the user was redirected to a page they no longer have access to (due to role change),
+          // router.resolve will help us identify if it's a 404
+          const resolved = router.resolve(to.path)
+          if (resolved.route.name === 'Page404' || resolved.route.matched.length === 0) {
+            next({ path: '/dashboard', replace: true })
+          } else {
+            // set the replace: true, so the navigation will not leave a history record
+            next({ ...to, replace: true })
+          }
         } catch (error) {
           // remove token and go to login page to re-login
           await store.dispatch('user/resetToken')
-          ElMessage.error(error.message || 'Ha ocurrido un error')
+          Message.error(error || 'Has Error')
           next(`/login?redirect=${to.path}`)
           NProgress.done()
         }
