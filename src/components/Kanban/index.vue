@@ -86,7 +86,7 @@ export default {
       width: 100%;
       height: 64px;
       margin: 5px 0;
-      background-color: var(--color-bg-card);
+      background-color: #fff;
       text-align: left;
       line-height: 54px;
       padding: 5px 10px;

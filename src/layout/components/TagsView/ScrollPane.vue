@@ -1,74 +1,76 @@
 <template>
-  <el-scrollbar ref="scrollContainer" class="scroll-container" @wheel.prevent="handleScroll">
+  <el-scrollbar ref="scrollContainer" :vertical="false" class="scroll-container" @wheel.native.prevent="handleScroll">
     <slot />
   </el-scrollbar>
 </template>
 
 <script>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-
-const tagAndTagSpacing = 6
+const tagAndTagSpacing = 6 // Aumentado el espaciado
 
 export default {
   name: 'ScrollPane',
-  emits: ['scroll'],
-  setup(props, { emit }) {
-    const scrollContainer = ref(null)
-
-    const scrollWrapper = computed(() => {
-      return scrollContainer.value?.wrapRef
-    })
-
-    function handleScroll(e) {
+  data() {
+    return {
+      left: 0
+    }
+  },
+  computed: {
+    scrollWrapper() {
+      return this.$refs.scrollContainer.$refs.wrap
+    }
+  },
+  mounted() {
+    this.scrollWrapper.addEventListener('scroll', this.emitScroll, true)
+  },
+  beforeDestroy() {
+    this.scrollWrapper.removeEventListener('scroll', this.emitScroll)
+  },
+  methods: {
+    handleScroll(e) {
       const eventDelta = e.wheelDelta || -e.deltaY * 40
-      const wrapper = scrollWrapper.value
-      if (wrapper) {
-        wrapper.scrollLeft = wrapper.scrollLeft + eventDelta / 4
-      }
-    }
-
-    function emitScroll() {
-      emit('scroll')
-    }
-
-    function moveToTarget(currentTag) {
-      const $container = scrollContainer.value?.$el
-      if (!$container) return
+      const $scrollWrapper = this.scrollWrapper
+      $scrollWrapper.scrollLeft = $scrollWrapper.scrollLeft + eventDelta / 4
+    },
+    emitScroll() {
+      this.$emit('scroll')
+    },
+    moveToTarget(currentTag) {
+      const $container = this.$refs.scrollContainer.$el
       const $containerWidth = $container.offsetWidth
-      const wrapper = scrollWrapper.value
-      if (!wrapper) return
+      const $scrollWrapper = this.scrollWrapper
+      const tagList = this.$parent.$refs.tag
 
-      // Simple scroll to make the tag visible
-      if (currentTag) {
-        const tagOffsetLeft = currentTag.offsetLeft
-        const tagWidth = currentTag.offsetWidth
+      let firstTag = null
+      let lastTag = null
 
-        if (tagOffsetLeft < wrapper.scrollLeft) {
-          wrapper.scrollLeft = tagOffsetLeft - tagAndTagSpacing
-        } else if (tagOffsetLeft + tagWidth > wrapper.scrollLeft + $containerWidth) {
-          wrapper.scrollLeft = tagOffsetLeft + tagWidth - $containerWidth + tagAndTagSpacing
+      // find first tag and last tag
+      if (tagList.length > 0) {
+        firstTag = tagList[0]
+        lastTag = tagList[tagList.length - 1]
+      }
+
+      if (firstTag === currentTag) {
+        $scrollWrapper.scrollLeft = 0
+      } else if (lastTag === currentTag) {
+        $scrollWrapper.scrollLeft = $scrollWrapper.scrollWidth - $containerWidth
+      } else {
+        // find preTag and nextTag
+        const currentIndex = tagList.findIndex(item => item === currentTag)
+        const prevTag = tagList[currentIndex - 1]
+        const nextTag = tagList[currentIndex + 1]
+
+        // the tag's offsetLeft after of nextTag
+        const afterNextTagOffsetLeft = nextTag.$el.offsetLeft + nextTag.$el.offsetWidth + tagAndTagSpacing
+
+        // the tag's offsetLeft before of prevTag
+        const beforePrevTagOffsetLeft = prevTag.$el.offsetLeft - tagAndTagSpacing
+
+        if (afterNextTagOffsetLeft > $scrollWrapper.scrollLeft + $containerWidth) {
+          $scrollWrapper.scrollLeft = afterNextTagOffsetLeft - $containerWidth
+        } else if (beforePrevTagOffsetLeft < $scrollWrapper.scrollLeft) {
+          $scrollWrapper.scrollLeft = beforePrevTagOffsetLeft
         }
       }
-    }
-
-    onMounted(() => {
-      const wrapper = scrollWrapper.value
-      if (wrapper) {
-        wrapper.addEventListener('scroll', emitScroll, true)
-      }
-    })
-
-    onBeforeUnmount(() => {
-      const wrapper = scrollWrapper.value
-      if (wrapper) {
-        wrapper.removeEventListener('scroll', emitScroll)
-      }
-    })
-
-    return {
-      scrollContainer,
-      handleScroll,
-      moveToTarget
     }
   }
 }
@@ -81,19 +83,22 @@ export default {
   overflow: hidden;
   width: 100%;
 
-  :deep(.el-scrollbar__bar) {
-    display: none !important;
-  }
+  ::v-deep {
+    /* OCULTAR COMPLETAMENTE LA BARRA DE SCROLL */
+    .el-scrollbar__bar {
+      display: none !important; /* Esto oculta la barra */
+    }
 
-  :deep(.el-scrollbar__wrap) {
-    height: 49px;
-    padding-bottom: 0;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-  }
+    .el-scrollbar__wrap {
+      height: 49px;
+      padding-bottom: 0; /* Eliminar padding para scrollbar */
+      overflow-x: auto !important; /* Permitir scroll horizontal */
+      overflow-y: hidden !important; /* Ocultar scroll vertical */
+    }
 
-  :deep(.el-scrollbar__view) {
-    padding: 0 2px;
+    .el-scrollbar__view {
+      padding: 0 2px;
+    }
   }
 }
 </style>

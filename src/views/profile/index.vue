@@ -40,7 +40,7 @@
               </div>
               <div class="box-center info-section">
                 <div class="user-name text-center">{{ user.name }}</div>
-                <div class="user-role text-center text-muted">{{ uppercaseFirst(user.role) }}</div>
+                <div class="user-role text-center text-muted">{{ user.role | uppercaseFirst }}</div>
               </div>
             </div>
           </el-card>
@@ -51,7 +51,7 @@
           <el-card shadow="hover">
             <el-tabs v-model="activeTab">
               <el-tab-pane label="Datos de Cuenta" name="account">
-                <el-form ref="formRef" :model="form" :rules="rules" label-width="120px" label-position="top">
+                <el-form ref="form" :model="form" :rules="rules" label-width="120px" label-position="top">
 
                   <div class="form-grid">
                     <!-- Sección Correo -->
@@ -118,138 +118,138 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useStore } from 'vuex'
+<script>
+import { mapGetters } from 'vuex'
 import request from '@/utils/request'
-import SecurityQuestions from './components/SecurityQuestions.vue'
-import { ElMessage } from 'element-plus'
+import SecurityQuestions from './components/SecurityQuestions'
 
-defineOptions({
-  name: 'Profile'
-})
-
-const store = useStore()
-
-const user = ref({})
-const activeTab = ref('account')
-const loading = ref(false)
-const backendUrl = ref('http://localhost:3000')
-
-const headers = ref({
-  Authorization: 'Bearer ' 
-})
-
-const formRef = ref(null)
-
-const form = ref({
-  email: '',
-  newPassword: '',
-  confirmPassword: '',
-  password: '',
-  foto: ''
-})
-
-const uppercaseFirst = (string) => {
-  if (!string) return ''
-  return string.charAt(0).toUpperCase() + string.slice(1)
-}
-
-const validateConfirm = (rule, value, callback) => {
-  if (form.value.newPassword && value !== form.value.newPassword) {
-    callback(new Error('Las contraseñas no coinciden'))
-  } else {
-    callback()
-  }
-}
-
-const rules = {
-  email: [
-    { required: true, message: 'El correo es requerido', trigger: 'blur' },
-    { type: 'email', message: 'Ingrese un correo válido', trigger: 'blur' }
-  ],
-  password: [
-    { required: true, message: 'La contraseña actual es requerida', trigger: 'blur' }
-  ],
-  confirmPassword: [
-    { validator: validateConfirm, trigger: 'blur' }
-  ]
-}
-
-const name = computed(() => store.getters.name)
-const avatar = computed(() => store.getters.avatar)
-const roles = computed(() => store.getters.roles)
-const token = computed(() => store.getters.token)
-
-const getUser = () => {
-  user.value = {
-    name: name.value,
-    role: roles.value.join(' | '),
-    email: name.value,
-    avatar: avatar.value || ''
-  }
-
-  form.value.email = user.value.email
-  form.value.foto = ''
-}
-
-const submit = async () => {
-  if (!formRef.value) return
-  
-  await formRef.value.validate(async valid => {
-    if (valid) {
-      loading.value = true
-      try {
-        await request({
-          url: '/usuarios/profile',
-          method: 'put',
-          data: form.value
-        })
-
-        ElMessage({
-          message: 'Perfil actualizado exitosamente',
-          type: 'success',
-          duration: 3000
-        })
-
-        form.value.password = ''
-        form.value.newPassword = ''
-        form.value.confirmPassword = ''
-
-      } catch (error) {
-        console.error(error)
-      } finally {
-        loading.value = false
+export default {
+  name: 'Profile',
+  components: { SecurityQuestions },
+  data() {
+    const validateConfirm = (rule, value, callback) => {
+      if (this.form.newPassword && value !== this.form.newPassword) {
+        callback(new Error('Las contraseñas no coinciden'))
+      } else {
+        callback()
       }
     }
-  })
-}
+    return {
+      user: {}, // Objeto local para manejar la UI inmediatamente
+      activeTab: 'account',
+      loading: false,
+      backendUrl: 'http://localhost:3000',
+      headers: {
+        Authorization: 'Bearer ' // Se completa en created
+      },
+      form: {
+        email: '',
+        newPassword: '',
+        confirmPassword: '',
+        password: '',
+        foto: ''
+      },
+      rules: {
+        email: [
+          { required: true, message: 'El correo es requerido', trigger: 'blur' },
+          { type: 'email', message: 'Ingrese un correo válido', trigger: 'blur' }
+        ],
+        password: [
+          { required: true, message: 'La contraseña actual es requerida', trigger: 'blur' }
+        ],
+        confirmPassword: [
+          { validator: validateConfirm, trigger: 'blur' }
+        ]
+      }
+    }
+  },
+  computed: {
+    ...mapGetters([
+      'name',
+      'avatar',
+      'roles',
+      'token'
+    ])
+  },
+  created() {
+    // Inicializar headers
+    this.headers.Authorization = 'Bearer ' + this.$store.getters.token
+    this.getUser()
+  },
+  methods: {
+    getUser() {
+      // Mapear datos del store a objeto local
+      this.user = {
+        name: this.name, // En este sistema name=email
+        role: this.roles.join(' | '),
+        email: this.name,
+        avatar: this.avatar || ''
+      }
 
-const handleAvatarSuccess = (res, file) => {
-  if (res.filename) {
-    form.value.foto = res.filename
-    user.value.avatar = URL.createObjectURL(file.raw)
-    ElMessage.success('Foto cargada. Recuerda pulsar "Actualizar Perfil" para guardar permanentemente.')
+      // Si el avatar viene del backend con path relativo (ej: uploads/...), concatenar backendUrl
+      // PERO el componente el-upload devuelve solo el filename.
+      // Si ya es una URL completa (ej: blob:...), dejarla.
+      // Si es un filename simple, concatenar.
+
+      this.form.email = this.user.email
+      this.form.foto = ''
+    },
+    async submit() {
+      this.$refs.form.validate(async valid => {
+        if (valid) {
+          this.loading = true
+          try {
+            await request({
+              url: '/usuarios/profile',
+              method: 'put',
+              data: this.form
+            })
+
+            this.$message({
+              message: 'Perfil actualizado exitosamente',
+              type: 'success',
+              duration: 3000
+            })
+
+            // Limpiar campos sensibles
+            this.form.password = ''
+            this.form.newPassword = ''
+            this.form.confirmPassword = ''
+
+            // Aquí podrías disparar una acción para recargar info del usuario en vuex si fuera necesario
+          } catch (error) {
+            console.error(error)
+          } finally {
+            this.loading = false
+          }
+        }
+      })
+    },
+    handleAvatarSuccess(res, file) {
+      if (res.filename) {
+        // Guardamos el filename en el form para enviarlo al guardar perfil
+        this.form.foto = res.filename
+
+        // Actualizamos visualmente el avatar INMEDIATAMENTE con el blob local para feedback rápido
+        this.user.avatar = URL.createObjectURL(file.raw)
+
+        this.$message.success('Foto cargada. Recuerda pulsar "Actualizar Perfil" para guardar permanentemente.')
+      }
+    },
+    beforeAvatarUpload(file) {
+      const isValidType = file.type === 'image/jpeg' || file.type === 'image/png'
+      const isLt2M = file.size / 1024 / 1024 < 2
+
+      if (!isValidType) {
+        this.$message.error('La imagen debe ser JPG o PNG!')
+      }
+      if (!isLt2M) {
+        this.$message.error('La imagen excede los 2MB!')
+      }
+      return isValidType && isLt2M
+    }
   }
 }
-
-const beforeAvatarUpload = (file) => {
-  const isValidType = file.type === 'image/jpeg' || file.type === 'image/png'
-  const isLt2M = file.size / 1024 / 1024 < 2
-
-  if (!isValidType) {
-    ElMessage.error('La imagen debe ser JPG o PNG!')
-  }
-  if (!isLt2M) {
-    ElMessage.error('La imagen excede los 2MB!')
-  }
-  return isValidType && isLt2M
-}
-
-onMounted(() => {
-  headers.value.Authorization = 'Bearer ' + token.value
-  getUser()
-})
 </script>
 
 <style lang="scss" scoped>
@@ -260,7 +260,7 @@ onMounted(() => {
 }
 
 .page-header {
-  background: var(--color-bg-card);
+  background: #fff;
   padding: 20px;
   margin: -20px -20px 20px -20px;
   box-shadow: 0 1px 4px rgba(0,21,41,.08);
@@ -277,7 +277,7 @@ onMounted(() => {
 
       i {
         margin-right: 10px;
-        color: var(--color-primary);
+        color: #E51D22;
       }
     }
 

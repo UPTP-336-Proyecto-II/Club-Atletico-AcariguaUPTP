@@ -2,10 +2,11 @@
   <placeholder-view title="Consultas Médicas" icon="el-icon-document-checked" />
 </template>
 
-<script setup>
-import PlaceholderView from '@/components/PlaceholderView.vue'
+<script>
+import PlaceholderView from '@/components/PlaceholderView'
 
-defineOptions({
-  name: 'ConsultasMedicas'
-})
+export default {
+  name: 'ConsultasMedicas',
+  components: { PlaceholderView }
+}
 </script>

@@ -43,20 +43,17 @@
         <div v-if="recoveryStep === 1" class="recovery-step">
           <el-form ref="emailForm" :model="recoveryForm" class="recovery-form">
             <el-form-item prop="email">
-                <el-input
-                  v-model="recoveryForm.email"
-                  placeholder="Correo electrónico"
-                  size="large"
-                  @keyup.enter="verifyEmail"
-                >
-                  <template #prefix>
-                    <el-icon><MessageIcon /></el-icon>
-                  </template>
-                </el-input>
+              <el-input
+                v-model="recoveryForm.email"
+                placeholder="Correo electrónico"
+                prefix-icon="el-icon-message"
+                size="large"
+                @keyup.enter.native="verifyEmail"
+              />
             </el-form-item>
           </el-form>
           <div v-if="recoveryError" class="recovery-error">
-            <el-icon><Warning /></el-icon> {{ recoveryError }}
+            <i class="el-icon-warning" /> {{ recoveryError }}
           </div>
           <el-button
             type="primary"
@@ -94,12 +91,12 @@
                 v-model="recoveryForm.respuesta_3"
                 placeholder="Tu respuesta"
                 size="large"
-                @keyup.enter="verifyAnswers"
+                @keyup.enter.native="verifyAnswers"
               />
             </div>
           </el-form>
           <div v-if="recoveryError" class="recovery-error">
-            <el-icon><Warning /></el-icon> {{ recoveryError }}
+            <i class="el-icon-warning" /> {{ recoveryError }}
           </div>
           <el-button
             type="primary"
@@ -126,14 +123,14 @@
               />
             </el-form-item>
             <el-form-item>
-                <el-input
-                  v-model="recoveryForm.confirmar_password"
-                  type="password"
-                  placeholder="Confirmar contraseña"
-                  size="large"
-                  show-password
-                  @keyup.enter="changePassword"
-                />
+              <el-input
+                v-model="recoveryForm.confirmar_password"
+                type="password"
+                placeholder="Confirmar contraseña"
+                size="large"
+                show-password
+                @keyup.enter.native="changePassword"
+              />
             </el-form-item>
           </el-form>
 
@@ -141,23 +138,23 @@
           <div class="password-checklist">
             <div class="checklist-title">Tu contraseña debe tener:</div>
             <div class="checklist-item" :class="{ valid: passwordChecks.length }">
-              <el-icon><component :is="passwordChecks.length ? Check : Close" /></el-icon>
+              <i :class="passwordChecks.length ? 'el-icon-check' : 'el-icon-close'" />
               Mínimo 12 caracteres
             </div>
             <div class="checklist-item" :class="{ valid: passwordChecks.uppercase }">
-              <el-icon><component :is="passwordChecks.uppercase ? Check : Close" /></el-icon>
+              <i :class="passwordChecks.uppercase ? 'el-icon-check' : 'el-icon-close'" />
               Una letra mayúscula (A-Z)
             </div>
             <div class="checklist-item" :class="{ valid: passwordChecks.lowercase }">
-              <el-icon><component :is="passwordChecks.lowercase ? Check : Close" /></el-icon>
+              <i :class="passwordChecks.lowercase ? 'el-icon-check' : 'el-icon-close'" />
               Una letra minúscula (a-z)
             </div>
             <div class="checklist-item" :class="{ valid: passwordChecks.number }">
-              <el-icon><component :is="passwordChecks.number ? Check : Close" /></el-icon>
+              <i :class="passwordChecks.number ? 'el-icon-check' : 'el-icon-close'" />
               Al menos un número (0-9)
             </div>
             <div class="checklist-item" :class="{ valid: passwordChecks.special }">
-              <el-icon><component :is="passwordChecks.special ? Check : Close" /></el-icon>
+              <i :class="passwordChecks.special ? 'el-icon-check' : 'el-icon-close'" />
               Un carácter especial (!@#$%^&*)
             </div>
             <!-- Strength Bar -->
@@ -170,7 +167,7 @@
           </div>
 
           <div v-if="recoveryError" class="recovery-error">
-            <el-icon><Warning /></el-icon> {{ recoveryError }}
+            <i class="el-icon-warning" /> {{ recoveryError }}
           </div>
           <el-button
             type="primary"
@@ -186,7 +183,7 @@
 
         <!-- Paso 4: Éxito -->
         <div v-if="recoveryStep === 4" class="recovery-step success-step">
-          <el-icon class="success-icon"><CircleCheck /></el-icon>
+          <i class="el-icon-circle-check success-icon" />
           <h3>¡Contraseña Actualizada!</h3>
           <p>Tu contraseña ha sido cambiada exitosamente.</p>
           <el-button
@@ -202,7 +199,7 @@
         <div v-if="recoveryStep < 4" class="recovery-footer">
           <p>
             <a href="#" class="back-link" @click.prevent="goToLogin">
-              <el-icon><ArrowLeft /></el-icon> Volver al inicio de sesión
+              <i class="el-icon-arrow-left" /> Volver al inicio de sesión
             </a>
           </p>
         </div>
@@ -211,172 +208,174 @@
   </div>
 </template>
 
-<script setup>
-import { ref, reactive, computed } from 'vue'
-import { useRouter } from 'vue-router'
+<script>
 import { obtenerPreguntasPorEmail, verificarSoloRespuestas, verificarYCambiarPassword } from '@/api/preguntasSeguridad'
-import { Message as MessageIcon, Warning, Check, Close, CircleCheck, ArrowLeft } from '@element-plus/icons-vue'
 
-const router = useRouter()
-
-const recoveryStep = ref(1)
-const loading = ref(false)
-const recoveryError = ref('')
-
-const stepDescriptions = {
-  1: 'Ingresa tu correo electrónico',
-  2: 'Responde tus preguntas de seguridad',
-  3: 'Crea tu nueva contraseña',
-  4: '¡Listo!'
-}
-
-const recoveryForm = reactive({
-  email: '',
-  usuario_id: null,
-  pregunta_id_1: null,
-  pregunta_id_2: null,
-  pregunta_id_3: null,
-  pregunta_1: '',
-  pregunta_2: '',
-  pregunta_3: '',
-  respuesta_1: '',
-  respuesta_2: '',
-  respuesta_3: '',
-  nueva_password: '',
-  confirmar_password: ''
-})
-
-const passwordChecks = reactive({
-  length: false,
-  uppercase: false,
-  lowercase: false,
-  number: false,
-  special: false
-})
-
-const isPasswordValid = computed(() => {
-  return passwordChecks.length && passwordChecks.uppercase && passwordChecks.lowercase && passwordChecks.number && passwordChecks.special
-})
-
-const passwordStrength = computed(() => {
-  const count = Object.values(passwordChecks).filter(v => v).length
-  if (count <= 2) return 'weak'
-  if (count <= 4) return 'medium'
-  return 'strong'
-})
-
-const passwordStrengthLabel = computed(() => {
-  const labels = { weak: 'Débil', medium: 'Media', strong: 'Fuerte' }
-  return labels[passwordStrength.value]
-})
-
-const passwordStrengthPercent = computed(() => {
-  const count = Object.values(passwordChecks).filter(v => v).length
-  return (count / 5) * 100
-})
-
-const checkPasswordStrength = () => {
-  const password = recoveryForm.nueva_password || ''
-  passwordChecks.length = password.length >= 12
-  passwordChecks.uppercase = /[A-Z]/.test(password)
-  passwordChecks.lowercase = /[a-z]/.test(password)
-  passwordChecks.number = /[0-9]/.test(password)
-  passwordChecks.special = /[!@#$%^&*(),.?":{}|<>]/.test(password)
-}
-
-const verifyEmail = async () => {
-  if (!recoveryForm.email) {
-    recoveryError.value = 'Ingresa tu correo electrónico'
-    return
-  }
-  loading.value = true
-  recoveryError.value = ''
-  try {
-    const response = await obtenerPreguntasPorEmail(recoveryForm.email)
-    recoveryForm.usuario_id = response.usuario_id
-    if (response.preguntas && response.preguntas.length >= 2) {
-      recoveryForm.pregunta_id_1 = response.preguntas[0].id
-      recoveryForm.pregunta_1 = response.preguntas[0].pregunta
-      recoveryForm.pregunta_id_2 = response.preguntas[1].id
-      recoveryForm.pregunta_2 = response.preguntas[1].pregunta
-      if (response.preguntas[2]) {
-        recoveryForm.pregunta_id_3 = response.preguntas[2].id
-        recoveryForm.pregunta_3 = response.preguntas[2].pregunta
+export default {
+  name: 'RecuperarPassword',
+  data() {
+    return {
+      recoveryStep: 1,
+      loading: false,
+      recoveryError: '',
+      stepDescriptions: {
+        1: 'Ingresa tu correo electrónico',
+        2: 'Responde tus preguntas de seguridad',
+        3: 'Crea tu nueva contraseña',
+        4: '¡Listo!'
+      },
+      recoveryForm: {
+        email: '',
+        usuario_id: null,
+        pregunta_id_1: null,
+        pregunta_id_2: null,
+        pregunta_id_3: null,
+        pregunta_1: '',
+        pregunta_2: '',
+        pregunta_3: '',
+        respuesta_1: '',
+        respuesta_2: '',
+        respuesta_3: '',
+        nueva_password: '',
+        confirmar_password: ''
+      },
+      passwordChecks: {
+        length: false,
+        uppercase: false,
+        lowercase: false,
+        number: false,
+        special: false
       }
     }
-    recoveryStep.value = 2
-  } catch (error) {
-    recoveryError.value = error.response?.data?.error || 'No se encontró el usuario o no tiene preguntas de seguridad'
-  } finally {
-    loading.value = false
-  }
-}
-
-const verifyAnswers = async () => {
-  if (!recoveryForm.respuesta_1 || !recoveryForm.respuesta_2) {
-    recoveryError.value = 'Debes responder todas las preguntas'
-    return
-  }
-  if (recoveryForm.pregunta_3 && !recoveryForm.respuesta_3) {
-    recoveryError.value = 'Debes responder todas las preguntas'
-    return
-  }
-  loading.value = true
-  recoveryError.value = ''
-  try {
-    const respuestas = {}
-    respuestas[recoveryForm.pregunta_id_1] = recoveryForm.respuesta_1
-    respuestas[recoveryForm.pregunta_id_2] = recoveryForm.respuesta_2
-    if (recoveryForm.pregunta_id_3 && recoveryForm.respuesta_3) {
-      respuestas[recoveryForm.pregunta_id_3] = recoveryForm.respuesta_3
+  },
+  computed: {
+    isPasswordValid() {
+      const checks = this.passwordChecks
+      return checks.length && checks.uppercase && checks.lowercase && checks.number && checks.special
+    },
+    passwordStrength() {
+      const count = Object.values(this.passwordChecks).filter(v => v).length
+      if (count <= 2) return 'weak'
+      if (count <= 4) return 'medium'
+      return 'strong'
+    },
+    passwordStrengthLabel() {
+      const labels = { weak: 'Débil', medium: 'Media', strong: 'Fuerte' }
+      return labels[this.passwordStrength]
+    },
+    passwordStrengthPercent() {
+      const count = Object.values(this.passwordChecks).filter(v => v).length
+      return (count / 5) * 100
     }
+  },
+  methods: {
+    checkPasswordStrength() {
+      const password = this.recoveryForm.nueva_password || ''
+      this.passwordChecks = {
+        length: password.length >= 12,
+        uppercase: /[A-Z]/.test(password),
+        lowercase: /[a-z]/.test(password),
+        number: /[0-9]/.test(password),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+      }
+    },
+    async verifyEmail() {
+      if (!this.recoveryForm.email) {
+        this.recoveryError = 'Ingresa tu correo electrónico'
+        return
+      }
+      this.loading = true
+      this.recoveryError = ''
+      try {
+        const response = await obtenerPreguntasPorEmail(this.recoveryForm.email)
+        // El backend devuelve { usuario_id, preguntas: [{ id, pregunta }, ...] }
+        this.recoveryForm.usuario_id = response.usuario_id
+        if (response.preguntas && response.preguntas.length >= 2) {
+          this.recoveryForm.pregunta_id_1 = response.preguntas[0].id
+          this.recoveryForm.pregunta_1 = response.preguntas[0].pregunta
+          this.recoveryForm.pregunta_id_2 = response.preguntas[1].id
+          this.recoveryForm.pregunta_2 = response.preguntas[1].pregunta
+          // Si hay una tercera pregunta
+          if (response.preguntas[2]) {
+            this.recoveryForm.pregunta_id_3 = response.preguntas[2].id
+            this.recoveryForm.pregunta_3 = response.preguntas[2].pregunta
+          }
+        }
+        this.recoveryStep = 2
+      } catch (error) {
+        this.recoveryError = error.response?.data?.error || 'No se encontró el usuario o no tiene preguntas de seguridad'
+      } finally {
+        this.loading = false
+      }
+    },
+    async verifyAnswers() {
+      // Validar que todas las preguntas tengan respuesta
+      if (!this.recoveryForm.respuesta_1 || !this.recoveryForm.respuesta_2) {
+        this.recoveryError = 'Debes responder todas las preguntas'
+        return
+      }
+      if (this.recoveryForm.pregunta_3 && !this.recoveryForm.respuesta_3) {
+        this.recoveryError = 'Debes responder todas las preguntas'
+        return
+      }
+      this.loading = true
+      this.recoveryError = ''
+      try {
+        // Construir objeto de respuestas { pregunta_id: respuesta }
+        const respuestas = {}
+        respuestas[this.recoveryForm.pregunta_id_1] = this.recoveryForm.respuesta_1
+        respuestas[this.recoveryForm.pregunta_id_2] = this.recoveryForm.respuesta_2
+        if (this.recoveryForm.pregunta_id_3 && this.recoveryForm.respuesta_3) {
+          respuestas[this.recoveryForm.pregunta_id_3] = this.recoveryForm.respuesta_3
+        }
 
-    await verificarSoloRespuestas({
-      usuario_id: recoveryForm.usuario_id,
-      respuestas: respuestas
-    })
-    recoveryStep.value = 3
-  } catch (error) {
-    recoveryError.value = error.response?.data?.error || 'Las respuestas no son correctas'
-  } finally {
-    loading.value = false
-  }
-}
+        await verificarSoloRespuestas({
+          usuario_id: this.recoveryForm.usuario_id,
+          respuestas: respuestas
+        })
+        this.recoveryStep = 3
+      } catch (error) {
+        this.recoveryError = error.response?.data?.error || 'Las respuestas no son correctas'
+      } finally {
+        this.loading = false
+      }
+    },
+    async changePassword() {
+      if (!this.isPasswordValid) {
+        this.recoveryError = 'La contraseña no cumple todos los requisitos'
+        return
+      }
+      if (this.recoveryForm.nueva_password !== this.recoveryForm.confirmar_password) {
+        this.recoveryError = 'Las contraseñas no coinciden'
+        return
+      }
+      this.loading = true
+      this.recoveryError = ''
+      try {
+        // Construir objeto de respuestas { pregunta_id: respuesta }
+        const respuestas = {}
+        respuestas[this.recoveryForm.pregunta_id_1] = this.recoveryForm.respuesta_1
+        respuestas[this.recoveryForm.pregunta_id_2] = this.recoveryForm.respuesta_2
+        if (this.recoveryForm.pregunta_id_3 && this.recoveryForm.respuesta_3) {
+          respuestas[this.recoveryForm.pregunta_id_3] = this.recoveryForm.respuesta_3
+        }
 
-const changePassword = async () => {
-  if (!isPasswordValid.value) {
-    recoveryError.value = 'La contraseña no cumple todos los requisitos'
-    return
-  }
-  if (recoveryForm.nueva_password !== recoveryForm.confirmar_password) {
-    recoveryError.value = 'Las contraseñas no coinciden'
-    return
-  }
-  loading.value = true
-  recoveryError.value = ''
-  try {
-    const respuestas = {}
-    respuestas[recoveryForm.pregunta_id_1] = recoveryForm.respuesta_1
-    respuestas[recoveryForm.pregunta_id_2] = recoveryForm.respuesta_2
-    if (recoveryForm.pregunta_id_3 && recoveryForm.respuesta_3) {
-      respuestas[recoveryForm.pregunta_id_3] = recoveryForm.respuesta_3
+        await verificarYCambiarPassword({
+          usuario_id: this.recoveryForm.usuario_id,
+          respuestas: respuestas,
+          newPassword: this.recoveryForm.nueva_password
+        })
+        this.recoveryStep = 4
+      } catch (error) {
+        this.recoveryError = error.response?.data?.error || 'Las respuestas no son correctas'
+      } finally {
+        this.loading = false
+      }
+    },
+    goToLogin() {
+      this.$router.push('/login')
     }
-
-    await verificarYCambiarPassword({
-      usuario_id: recoveryForm.usuario_id,
-      respuestas: respuestas,
-      newPassword: recoveryForm.nueva_password
-    })
-    recoveryStep.value = 4
-  } catch (error) {
-    recoveryError.value = error.response?.data?.error || 'Las respuestas no son correctas'
-  } finally {
-    loading.value = false
   }
-}
-
-const goToLogin = () => {
-  router.push('/login')
 }
 </script>
 
@@ -462,7 +461,7 @@ const goToLogin = () => {
 
 .logo-text h1 {
   font-size: 1.2rem;
-  color: var(--color-primary);
+  color: #E51D22;
   margin: 0;
   font-weight: 700;
 }
@@ -480,7 +479,7 @@ const goToLogin = () => {
 }
 
 .welcome-section p {
-  color: var(--color-text-muted);
+  color: #64748b;
   margin: 0;
   font-size: 0.9rem;
 }
@@ -497,24 +496,24 @@ const goToLogin = () => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--color-border);
+  background: #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--color-border);
+  color: #94a3b8;
   transition: all 0.3s;
   position: relative;
 }
 
 .step-dot.active {
-  background: var(--color-primary);
+  background: #E51D22;
   color: white;
 }
 
 .step-dot.current {
-  box-shadow: 0 0 0 4px rgba(30, 41, 59, 0.2);
+  box-shadow: 0 0 0 4px rgba(229, 29, 34, 0.2);
 }
 
 .step-dot:not(:last-child)::after {
@@ -524,12 +523,12 @@ const goToLogin = () => {
   top: 50%;
   width: 30px;
   height: 2px;
-  background: var(--color-border);
+  background: #e2e8f0;
   transform: translateY(-50%);
 }
 
 .step-dot.active:not(:last-child)::after {
-  background: var(--color-primary);
+  background: #E51D22;
 }
 
 /* Form styles */
@@ -563,8 +562,8 @@ const goToLogin = () => {
 
 .recovery-button {
   width: 100%;
-  background: var(--color-primary) !important;
-  border-color: var(--color-primary) !important;
+  background: #E51D22 !important;
+  border-color: #E51D22 !important;
   border-radius: 10px;
   font-weight: 600;
   font-size: 1rem;
@@ -573,22 +572,22 @@ const goToLogin = () => {
 }
 
 .recovery-button:hover {
-  background: var(--color-primary-hover) !important;
-  border-color: var(--color-primary-hover) !important;
+  background: #c41a1d !important;
+  border-color: #c41a1d !important;
 }
 
 .recovery-button:disabled {
-  background: var(--color-border) !important;
-  border-color: var(--color-border) !important;
+  background: #94a3b8 !important;
+  border-color: #94a3b8 !important;
 }
 
 /* Password Checklist */
 .password-checklist {
   margin-bottom: 15px;
   padding: 12px;
-  background: var(--color-bg-card);
+  background: #f8fafc;
   border-radius: 8px;
-  border: 1px solid var(--color-border);
+  border: 1px solid #e2e8f0;
 }
 
 .checklist-title {
@@ -603,7 +602,7 @@ const goToLogin = () => {
   align-items: center;
   gap: 8px;
   font-size: 0.8rem;
-  color: var(--color-border);
+  color: #94a3b8;
   padding: 3px 0;
   transition: color 0.2s;
 }
@@ -615,18 +614,18 @@ const goToLogin = () => {
 .strength-bar {
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid #e2e8f0;
 }
 
 .strength-label {
   font-size: 0.8rem;
-  color: var(--color-text-muted);
+  color: #64748b;
   margin-bottom: 5px;
 }
 
 .strength-track {
   height: 5px;
-  background: var(--color-border);
+  background: #e2e8f0;
   border-radius: 3px;
   overflow: hidden;
 }
@@ -662,7 +661,7 @@ const goToLogin = () => {
 }
 
 .success-step p {
-  color: var(--color-text-muted);
+  color: #64748b;
   margin-bottom: 20px;
 }
 
@@ -671,17 +670,17 @@ const goToLogin = () => {
   text-align: center;
   margin-top: 1.5rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid #e2e8f0;
 }
 
 .recovery-footer p {
   margin: 0;
-  color: var(--color-text-muted);
+  color: #64748b;
   font-size: 0.9rem;
 }
 
 .back-link {
-  color: var(--color-primary);
+  color: #E51D22;
   text-decoration: none;
   font-weight: 500;
   display: inline-flex;

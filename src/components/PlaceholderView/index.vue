@@ -46,21 +46,21 @@ export default {
 }
 
 .placeholder-card {
-  background: var(--color-bg-card);
+  background: white;
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(30, 41, 59, 0.1);
+  box-shadow: 0 4px 20px rgba(229, 29, 34, 0.1);
   padding: 60px 80px;
   text-align: center;
   max-width: 600px;
   width: 100%;
-  border-top: 4px solid var(--color-primary);
+  border-top: 4px solid #E51D22;
 
   .icon-wrapper {
     margin-bottom: 24px;
 
     i {
       font-size: 64px;
-      color: var(--color-primary);
+      color: #E51D22;
       opacity: 0.8;
     }
   }
@@ -81,13 +81,13 @@ export default {
 
   .info-box {
     background: rgba(229, 29, 34, 0.05);
-    border: 1px solid rgba(30, 41, 59, 0.2);
+    border: 1px solid rgba(229, 29, 34, 0.2);
     border-radius: 8px;
     padding: 16px 24px;
     display: inline-flex;
     align-items: center;
     gap: 12px;
-    color: var(--color-primary);
+    color: #E51D22;
     font-size: 14px;
     font-weight: 500;
 

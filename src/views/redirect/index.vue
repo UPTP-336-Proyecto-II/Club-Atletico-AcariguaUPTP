@@ -1,16 +1,12 @@
 <script>
-import { useRoute, useRouter } from 'vue-router'
-
 export default {
-  setup() {
-    const route = useRoute()
-    const router = useRouter()
-    const { params, query } = route
+  created() {
+    const { params, query } = this.$route
     const { path } = params
-    router.replace({ path: '/' + path, query })
+    this.$router.replace({ path: '/' + path, query })
   },
-  render() {
-    return null
+  render: function(h) {
+    return h() // avoid warning message
   }
 }
 </script>

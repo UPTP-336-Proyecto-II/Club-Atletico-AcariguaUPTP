@@ -12,58 +12,42 @@
         :collapse-transition="false"
         mode="vertical"
       >
-        <sidebar-item v-for="route in permissionRoutes" :key="route.path" :item="route" :base-path="route.path" />
+        <sidebar-item v-for="route in permission_routes" :key="route.path" :item="route" :base-path="route.path" />
       </el-menu>
     </el-scrollbar>
   </div>
 </template>
 
 <script>
-import { computed } from 'vue'
-import { useStore } from 'vuex'
-import { useRoute } from 'vue-router'
-import Logo from './Logo.vue'
-import SidebarItem from './SidebarItem.vue'
-
-// Variables exported as JS constants since :export was removed
-const variables = {
-  menuText: 'rgba(255, 255, 255, 0.9)',
-  menuActiveText: '#ffffff',
-  subMenuActiveText: 'rgba(255, 255, 255, 0.9)',
-  menuBg: 'var(--color-text-main)',
-  menuHover: 'rgba(0, 0, 0, 0.15)',
-  subMenuBg: 'rgba(0, 0, 0, 0.1)',
-  subMenuHover: 'rgba(0, 0, 0, 0.2)',
-  sideBarWidth: '260px'
-}
+import { mapGetters } from 'vuex'
+import Logo from './Logo'
+import SidebarItem from './SidebarItem'
+import variables from '@/styles/variables.scss'
 
 export default {
   components: { SidebarItem, Logo },
-  setup() {
-    const store = useStore()
-    const route = useRoute()
-
-    const permissionRoutes = computed(() => store.getters.permission_routes)
-    const sidebar = computed(() => store.getters.sidebar)
-
-    const activeMenu = computed(() => {
+  computed: {
+    ...mapGetters([
+      'permission_routes',
+      'sidebar'
+    ]),
+    activeMenu() {
+      const route = this.$route
       const { meta, path } = route
+      // if set path, the sidebar will highlight the path you set
       if (meta.activeMenu) {
         return meta.activeMenu
       }
       return path
-    })
-
-    const showLogo = computed(() => store.state.settings.sidebarLogo)
-    const isCollapse = computed(() => !sidebar.value.opened)
-
-    return {
-      permissionRoutes,
-      sidebar,
-      activeMenu,
-      showLogo,
-      variables,
-      isCollapse
+    },
+    showLogo() {
+      return this.$store.state.settings.sidebarLogo
+    },
+    variables() {
+      return variables
+    },
+    isCollapse() {
+      return !this.sidebar.opened
     }
   }
 }

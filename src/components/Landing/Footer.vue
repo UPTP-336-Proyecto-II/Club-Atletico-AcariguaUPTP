@@ -354,7 +354,7 @@ export default {
 }
 
 .license-content h3 {
-  color: var(--color-primary);
+  color: #E51D22;
   margin-bottom: 1rem;
 }
 

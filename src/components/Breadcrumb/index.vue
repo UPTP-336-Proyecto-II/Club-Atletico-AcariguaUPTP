@@ -10,51 +10,59 @@
 </template>
 
 <script>
-import { ref, watch, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import pathToRegexp from 'path-to-regexp'
 
 export default {
-  setup() {
-    const route = useRoute()
-    const router = useRouter()
-    const levelList = ref(null)
-
-    function getBreadcrumb() {
-      let matched = route.matched.filter(item => item.meta && item.meta.title)
-      const first = matched[0]
-
-      if (!isInicio(first)) {
-        matched = [{ path: '/dashboard', meta: { title: 'Inicio' } }].concat(matched)
-      }
-
-      levelList.value = matched.filter(item => item.meta && item.meta.title && item.meta.breadcrumb !== false)
+  data() {
+    return {
+      levelList: null
     }
-
-    function isInicio(r) {
-      const name = r && r.name
-      if (!name) return false
-      return name.toString().trim().toLowerCase() === 'inicio'
-    }
-
-    function handleLink(item) {
-      const { redirect, path } = item
-      if (redirect) {
-        router.push(redirect)
+  },
+  watch: {
+    $route(route) {
+      // if you go to the redirect page, do not update the breadcrumbs
+      if (route.path.startsWith('/redirect/')) {
         return
       }
-      router.push(path)
+      this.getBreadcrumb()
     }
+  },
+  created() {
+    this.getBreadcrumb()
+  },
+  methods: {
+    getBreadcrumb() {
+      // only show routes with meta.title
+      let matched = this.$route.matched.filter(item => item.meta && item.meta.title)
+      const first = matched[0]
 
-    watch(() => route.path, () => {
-      if (route.path.startsWith('/redirect/')) return
-      getBreadcrumb()
-    })
+      if (!this.isInicio(first)) {
+        matched = [{ path: '/dashboard', meta: { title: 'Inicio' }}].concat(matched)
+      }
 
-    onMounted(() => {
-      getBreadcrumb()
-    })
-
-    return { levelList, handleLink }
+      this.levelList = matched.filter(item => item.meta && item.meta.title && item.meta.breadcrumb !== false)
+    },
+    isInicio(route) {
+      const name = route && route.name
+      if (!name) {
+        return false
+      }
+      return name.trim().toLocaleLowerCase() === 'Inicio'.toLocaleLowerCase()
+    },
+    pathCompile(path) {
+      // To solve this problem https://github.com/PanJiaChen/vue-element-admin/issues/561
+      const { params } = this.$route
+      var toPath = pathToRegexp.compile(path)
+      return toPath(params)
+    },
+    handleLink(item) {
+      const { redirect, path } = item
+      if (redirect) {
+        this.$router.push(redirect)
+        return
+      }
+      this.$router.push(this.pathCompile(path))
+    }
   }
 }
 </script>
@@ -66,36 +74,38 @@ export default {
   line-height: 60px;
   margin-left: 8px;
 
-  :deep(.el-breadcrumb__item) {
-    .el-breadcrumb__inner {
-      color: rgba(255, 255, 255, 0.7);
-      font-weight: 400;
-      transition: color 0.3s ease;
+  ::v-deep {
+    .el-breadcrumb__item {
+      .el-breadcrumb__inner {
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 400;
+        transition: color 0.3s ease;
 
-      a {
-        color: rgba(255, 255, 255, 0.9);
-        text-decoration: none;
+        a {
+          color: rgba(255, 255, 255, 0.9);
+          text-decoration: none;
 
-        &:hover {
-          color: #ffffff;
-          text-decoration: underline;
+          &:hover {
+            color: #ffffff;
+            text-decoration: underline;
+          }
+        }
+
+        &.no-redirect {
+          color: rgba(255, 255, 255, 0.5);
+          font-weight: 500;
+          cursor: default;
         }
       }
 
-      &.no-redirect {
-        color: rgba(255, 255, 255, 0.5);
-        font-weight: 500;
-        cursor: default;
+      &:last-child .el-breadcrumb__inner {
+        color: #ffffff;
+        font-weight: 600;
       }
-    }
 
-    &:last-child .el-breadcrumb__inner {
-      color: #ffffff;
-      font-weight: 600;
-    }
-
-    .el-breadcrumb__separator {
-      color: rgba(255, 255, 255, 0.5);
+      .el-breadcrumb__separator {
+        color: rgba(255, 255, 255, 0.5);
+      }
     }
   }
 }

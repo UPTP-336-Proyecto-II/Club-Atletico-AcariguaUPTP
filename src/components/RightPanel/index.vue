@@ -13,8 +13,7 @@
 </template>
 
 <script>
-import { ref, computed, watch, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue'
-import { useStore } from 'vuex'
+import { addClass, removeClass } from '@/utils'
 
 export default {
   name: 'RightPanel',
@@ -28,51 +27,51 @@ export default {
       type: Number
     }
   },
-  setup(props) {
-    const store = useStore()
-    const rightPanel = ref(null)
-    const show = ref(false)
-
-    const theme = computed(() => store.state.settings.theme)
-
-    function closeSidebar(evt) {
-      const parent = evt.target.closest('.rightPanel')
-      if (!parent) {
-        show.value = false
-        window.removeEventListener('click', closeSidebar)
-      }
+  data() {
+    return {
+      show: false
     }
-
-    function addEventClick() {
-      window.addEventListener('click', closeSidebar)
+  },
+  computed: {
+    theme() {
+      return this.$store.state.settings.theme
     }
-
-    watch(show, (value) => {
-      if (value && !props.clickNotClose) {
-        addEventClick()
+  },
+  watch: {
+    show(value) {
+      if (value && !this.clickNotClose) {
+        this.addEventClick()
       }
       if (value) {
-        document.body.classList.add('showRightPanel')
+        addClass(document.body, 'showRightPanel')
       } else {
-        document.body.classList.remove('showRightPanel')
+        removeClass(document.body, 'showRightPanel')
       }
-    })
-
-    onMounted(() => {
-      const el = rightPanel.value
-      if (el) {
-        document.body.insertBefore(el, document.body.firstChild)
+    }
+  },
+  mounted() {
+    this.insertToBody()
+  },
+  beforeDestroy() {
+    const elx = this.$refs.rightPanel
+    elx.remove()
+  },
+  methods: {
+    addEventClick() {
+      window.addEventListener('click', this.closeSidebar)
+    },
+    closeSidebar(evt) {
+      const parent = evt.target.closest('.rightPanel')
+      if (!parent) {
+        this.show = false
+        window.removeEventListener('click', this.closeSidebar)
       }
-    })
-
-    onBeforeUnmount(() => {
-      const el = rightPanel.value
-      if (el) {
-        el.remove()
-      }
-    })
-
-    return { rightPanel, show, theme }
+    },
+    insertToBody() {
+      const elx = this.$refs.rightPanel
+      const body = document.querySelector('body')
+      body.insertBefore(elx, body.firstChild)
+    }
   }
 }
 </script>
@@ -106,7 +105,7 @@ export default {
   box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, .05);
   transition: all .25s cubic-bezier(.7, .3, .1, 1);
   transform: translate(100%);
-  background: var(--color-bg-card);
+  background: #fff;
   z-index: 40000;
 }
 

@@ -2,10 +2,11 @@
   <placeholder-view title="Reportes de Lesiones" icon="el-icon-warning" />
 </template>
 
-<script setup>
-import PlaceholderView from '@/components/PlaceholderView.vue'
+<script>
+import PlaceholderView from '@/components/PlaceholderView'
 
-defineOptions({
-  name: 'ReportesLesiones'
-})
+export default {
+  name: 'ReportesLesiones',
+  components: { PlaceholderView }
+}
 </script>

@@ -1,7 +1,6 @@
 @import './variables.scss';
 @import './mixin.scss';
 @import './transition.scss';
-@import './element-variables.scss';
 @import './element-ui.scss';
 @import './sidebar.scss';
 @import './btn.scss';
@@ -14,8 +13,7 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-family: 'Figtree', Helvetica Neue, Helvetica, Arial, sans-serif;
-  background-color: var(--color-bg-body);
-  color: var(--color-text-main);
+  background-color: #f0f2f5;
 }
 
 label {
@@ -29,52 +27,6 @@ html {
 
 #app {
   height: 100%;
-}
-
-/* Base Dark Mode Support for Containers */
-[data-theme='dark'] {
-  .app-container,
-  .padding-content,
-  .components-container,
-  .table-container {
-    background-color: var(--color-bg-body) !important;
-    color: var(--color-text-main) !important;
-  }
-
-  .el-card,
-  aside {
-    background-color: var(--color-bg-card) !important;
-    color: var(--color-text-main) !important;
-    border-color: var(--color-border) !important;
-  }
-
-  .el-table {
-    background-color: var(--color-bg-card) !important;
-    color: var(--color-text-main) !important;
-    
-    tr, th.el-table__cell {
-       background-color: var(--color-bg-card) !important;
-       color: var(--color-text-main) !important;
-       border-bottom-color: var(--color-border) !important;
-    }
-  }
-
-  /* Dark mode placeholders */
-  ::placeholder {
-    color: var(--color-text-placeholder) !important;
-    opacity: 1;
-  }
-}
-
-/* Global placeholders for light mode or fallback */
-::placeholder {
-  color: var(--color-text-placeholder);
-  opacity: 1;
-}
-
-.el-input__inner::placeholder,
-.el-range-input::placeholder {
-  color: var(--color-text-placeholder) !important;
 }
 
 *,
