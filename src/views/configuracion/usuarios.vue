@@ -18,7 +18,8 @@
       <!-- Sidebar con lista de usuarios -->
       <aside class="sidebar">
         <el-card shadow="hover">
-          <div slot="header" class="sidebar-header">
+          <template #header>
+            <div class="sidebar-header">
             <span><i class="el-icon-user" /> Lista de Usuarios</span>
             <el-popover
               placement="bottom-end"
@@ -56,9 +57,10 @@
                   </el-select>
                 </div>
               </div>
-              <el-button slot="reference" type="text" icon="el-icon-s-operation" class="filter-btn" />
+              <template #reference><el-button type="text" icon="el-icon-s-operation" class="filter-btn" /></template>
             </el-popover>
-          </div>
+            </div>
+          </template>
           <div class="search-container">
             <el-input
               v-model="searchQuery"
@@ -176,12 +178,12 @@
     <!-- Modal Usuario -->
     <el-dialog
       :title="isEditing ? 'Editar Usuario' : 'Agregar Nuevo Usuario'"
-      :visible.sync="showUsuarioModal"
+      v-model="showUsuarioModal"
       width="700px"
       :close-on-click-modal="false"
       custom-class="usuario-modal"
     >
-      <el-form ref="usuarioForm" :model="usuarioForm" :rules="usuarioRules" label-position="top">
+      <el-form ref="usuarioFormRef" :model="usuarioForm" :rules="usuarioRules" label-position="top">
         <el-form-item label="Email" prop="email">
           <el-input
             v-model="usuarioForm.email"
@@ -206,6 +208,18 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="Confirmar Contraseña" prop="confirmPassword">
+              <el-input
+                v-model="usuarioForm.confirmPassword"
+                type="password"
+                placeholder="Repite la contraseña"
+                show-password
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="24">
             <!-- Password Requirements Checklist -->
             <div v-if="!isEditing || usuarioForm.password" class="password-checklist">
               <div class="checklist-title">Tu contraseña debe tener:</div>
@@ -309,426 +323,451 @@
           </el-form-item>
         </div>
       </el-form>
-      <span slot="footer">
-        <el-button @click="showUsuarioModal = false">Cancelar</el-button>
-        <el-button type="primary" :loading="loading" @click="saveUsuario">
-          {{ isEditing ? 'Actualizar' : 'Guardar' }}
-        </el-button>
-      </span>
+      <template #footer>
+        <span>
+          <el-button @click="showUsuarioModal = false">Cancelar</el-button>
+          <el-button type="primary" :loading="loading" @click="saveUsuario">
+            {{ isEditing ? 'Actualizar' : 'Guardar' }}
+          </el-button>
+        </span>
+      </template>
     </el-dialog>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, watch, onMounted } from 'vue'
 import { getUsuarios, getUsuarioById, createUsuario, updateUsuario, deleteUsuario } from '@/api/usuarios'
-
 import { getRoles } from '@/api/roles'
 import { getPlantel } from '@/api/plantel'
 import { getPreguntasDisponibles, guardarPreguntas, obtenerPreguntasRespuestasUsuario } from '@/api/preguntasSeguridad'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
-export default {
-  name: 'UsuariosSistema',
-  data() {
-    const validatePassword = (rule, value, callback) => {
-      if (!this.isEditing && !value) {
-        callback(new Error('La contraseña es requerida'))
-      } else if (value && !this.isPasswordValid) {
-        callback(new Error('La contraseña no cumple todos los requisitos'))
+const usuarioFormRef = ref(null)
+
+const usuarios = ref([])
+const roles = ref([])
+const plantelList = ref([])
+const currentUsuarioId = ref(null)
+const currentUsuario = ref({})
+const loading = ref(false)
+const searchQuery = ref('')
+const filterEstatus = ref('Activo')
+const filterRol = ref('')
+const filterSort = ref('reciente')
+const showUsuarioModal = ref(false)
+const isEditing = ref(false)
+const emailSuggestion = ref('')
+
+const passwordChecks = ref({
+  length: false,
+  uppercase: false,
+  lowercase: false,
+  number: false,
+  special: false
+})
+
+const preguntasDisponibles = ref([])
+
+const usuarioForm = ref({
+  email: '',
+  password: '',
+  confirmPassword: '',
+  rol: null,
+  estatus: 'Activo',
+  plantel_id: null,
+  pregunta_1: '',
+  respuesta_1: '',
+  pregunta_2: '',
+  respuesta_2: ''
+})
+
+const isPasswordValid = computed(() => {
+  const checks = passwordChecks.value
+  return checks.length && checks.uppercase && checks.lowercase && checks.number && checks.special
+})
+
+const validatePassword = (rule, value, callback) => {
+  if (!isEditing.value && !value) {
+    callback(new Error('La contraseña es requerida'))
+  } else if (value && !isPasswordValid.value) {
+    callback(new Error('La contraseña no cumple todos los requisitos'))
+  } else {
+    // Si la contraseña cambia, revalidar la confirmación
+    if (usuarioFormRef.value) {
+      usuarioFormRef.value.validateField('confirmPassword')
+    }
+    callback()
+  }
+}
+
+const validateConfirmPassword = (rule, value, callback) => {
+  if (usuarioForm.value.password && !value) {
+    callback(new Error('Debe confirmar su contraseña'))
+  } else if (value !== usuarioForm.value.password) {
+    callback(new Error('Las contraseñas no coinciden'))
+  } else {
+    callback()
+  }
+}
+
+const usuarioRules = {
+  email: [
+    { required: true, message: 'El email es requerido', trigger: 'blur' },
+    { type: 'email', message: 'Ingrese un email válido', trigger: 'blur' }
+  ],
+  password: [{ required: !isEditing.value, trigger: 'blur', validator: validatePassword }],
+  confirmPassword: [{ required: !isEditing.value, trigger: 'blur', validator: validateConfirmPassword }],
+  rol: [{ required: true, message: 'El rol es requerido', trigger: 'change' }],
+  pregunta_1: [{ required: true, message: 'Selecciona una pregunta', trigger: 'change' }],
+  respuesta_1: [{ required: true, message: 'Ingresa tu respuesta', trigger: 'blur' }],
+  pregunta_2: [{ required: true, message: 'Selecciona una pregunta', trigger: 'change' }],
+  respuesta_2: [{ required: true, message: 'Ingresa tu respuesta', trigger: 'blur' }]
+}
+
+const filteredUsuarios = computed(() => {
+  let filtered = usuarios.value
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(u => u.email.toLowerCase().includes(query))
+  }
+  return filtered
+})
+
+const passwordStrength = computed(() => {
+  const count = Object.values(passwordChecks.value).filter(v => v).length
+  if (count <= 2) return 'weak'
+  if (count <= 4) return 'medium'
+  return 'strong'
+})
+
+const passwordStrengthLabel = computed(() => {
+  const labels = { weak: 'Débil', medium: 'Media', strong: 'Fuerte' }
+  return labels[passwordStrength.value]
+})
+
+const passwordStrengthPercent = computed(() => {
+  const count = Object.values(passwordChecks.value).filter(v => v).length
+  return (count / 5) * 100
+})
+
+watch([filterEstatus, filterRol, filterSort], () => {
+  loadUsuarios()
+})
+
+const checkPasswordStrength = () => {
+  const password = usuarioForm.value.password || ''
+  passwordChecks.value = {
+    length: password.length >= 12,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+  }
+}
+
+const checkEmailTypo = () => {
+  const email = usuarioForm.value.email || ''
+  const domain = email.split('@')[1]?.toLowerCase()
+
+  const typoMap = {
+    'gmal.com': 'gmail.com',
+    'gmial.com': 'gmail.com',
+    'gamil.com': 'gmail.com',
+    'gnail.com': 'gmail.com',
+    'hotmal.com': 'hotmail.com',
+    'hotamil.com': 'hotmail.com',
+    'outloo.com': 'outlook.com',
+    'outlok.com': 'outlook.com',
+    'yaho.com': 'yahoo.com',
+    'yahooo.com': 'yahoo.com'
+  }
+
+  if (domain && typoMap[domain]) {
+    emailSuggestion.value = email.split('@')[0] + '@' + typoMap[domain]
+  } else {
+    emailSuggestion.value = ''
+  }
+}
+
+const applyEmailSuggestion = () => {
+  if (emailSuggestion.value) {
+    usuarioForm.value.email = emailSuggestion.value
+    emailSuggestion.value = ''
+  }
+}
+
+const loadUsuarios = async () => {
+  try {
+    const params = {}
+    if (filterEstatus.value) {
+      params.estatus = filterEstatus.value
+    }
+    if (filterRol.value) {
+      params.rol = filterRol.value
+    }
+    params.sort = filterSort.value
+
+    const response = await getUsuarios(params)
+    usuarios.value = Array.isArray(response) ? response : []
+
+    if (currentUsuarioId.value) {
+      const exists = usuarios.value.find(u => u.usuario_id === currentUsuarioId.value)
+      if (!exists) {
+        currentUsuarioId.value = null
+        currentUsuario.value = {}
+      }
+    }
+  } catch (error) {
+    console.error('Error cargando usuarios:', error)
+    ElMessage.error('Error al cargar usuarios')
+  }
+}
+
+const loadRoles = async () => {
+  try {
+    const response = await getRoles()
+    roles.value = Array.isArray(response) ? response : []
+  } catch (error) {
+    console.error('Error cargando roles:', error)
+  }
+}
+
+const loadPlantel = async () => {
+  try {
+    const response = await getPlantel()
+    plantelList.value = response.data || response || []
+  } catch (error) {
+    console.error('Error cargando plantel:', error)
+  }
+}
+
+const loadPreguntasDisponibles = async () => {
+  try {
+    const response = await getPreguntasDisponibles()
+    const data = response.data || response
+    preguntasDisponibles.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('Error cargando preguntas:', error)
+  }
+}
+
+const loadData = async () => {
+  await Promise.all([
+    loadUsuarios(),
+    loadRoles(),
+    loadPlantel(),
+    loadPreguntasDisponibles()
+  ])
+}
+
+const selectUsuario = async (id) => {
+  currentUsuarioId.value = id
+  try {
+    const response = await getUsuarioById(id)
+    currentUsuario.value = response
+  } catch (error) {
+    console.error('Error cargando usuario:', error)
+    ElMessage.error('Error al cargar datos del usuario')
+  }
+}
+
+const resetForm = () => {
+  usuarioForm.value = {
+    email: '',
+    password: '',
+    confirmPassword: '',
+    rol: null,
+    estatus: 'Activo',
+    plantel_id: null,
+    pregunta_1: '',
+    respuesta_1: '',
+    pregunta_2: '',
+    respuesta_2: ''
+  }
+  passwordChecks.value = {
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    special: false
+  }
+  emailSuggestion.value = ''
+  if (usuarioFormRef.value) {
+    usuarioFormRef.value.resetFields()
+  }
+}
+
+const openUsuarioModal = async (isEditMode) => {
+  isEditing.value = isEditMode
+  if (!isEditMode) {
+    resetForm()
+  } else {
+    if (!currentUsuarioId.value) return
+
+    usuarioForm.value = {
+      email: currentUsuario.value.email,
+      password: '',
+      confirmPassword: '',
+      rol: currentUsuario.value.rol,
+      estatus: currentUsuario.value.estatus,
+      plantel_id: currentUsuario.value.plantel_id || null,
+      pregunta_1: '',
+      respuesta_1: '',
+      pregunta_2: '',
+      respuesta_2: ''
+    }
+
+    try {
+      const res = await obtenerPreguntasRespuestasUsuario(currentUsuarioId.value)
+      if (res && res.tiene_preguntas) {
+        usuarioForm.value.pregunta_1 = res.pregunta_1
+        usuarioForm.value.respuesta_1 = res.respuesta_1
+        usuarioForm.value.pregunta_2 = res.pregunta_2
+        usuarioForm.value.respuesta_2 = res.respuesta_2
+      }
+    } catch (error) {
+      console.error('Error al cargar preguntas:', error)
+    }
+  }
+
+  showUsuarioModal.value = true
+  await Promise.all([
+    loadRoles(),
+    loadPlantel()
+  ])
+}
+
+const handleEdit = () => {
+  openUsuarioModal(true)
+}
+
+const saveUsuario = () => {
+  usuarioFormRef.value.validate(async (valid) => {
+    if (!valid) return
+
+    loading.value = true
+    try {
+      if (isEditing.value) {
+        const dataToUpdate = {
+          email: usuarioForm.value.email,
+          rol: usuarioForm.value.rol,
+          estatus: usuarioForm.value.estatus,
+          plantel_id: usuarioForm.value.plantel_id
+        }
+        if (usuarioForm.value.password) {
+          dataToUpdate.password = usuarioForm.value.password
+        }
+        await updateUsuario(currentUsuarioId.value, dataToUpdate)
+
+        if (usuarioForm.value.pregunta_1 && usuarioForm.value.respuesta_1 &&
+            usuarioForm.value.pregunta_2 && usuarioForm.value.respuesta_2) {
+          await guardarPreguntas({
+            preguntas: [
+              { pregunta_id: usuarioForm.value.pregunta_1, respuesta: usuarioForm.value.respuesta_1 },
+              { pregunta_id: usuarioForm.value.pregunta_2, respuesta: usuarioForm.value.respuesta_2 }
+            ]
+          })
+        }
+
+        ElMessage.success('Usuario actualizado exitosamente')
       } else {
-        callback()
-      }
-    }
-    return {
-      usuarios: [],
-      roles: [],
-      plantelList: [],
-      currentUsuarioId: null,
-      currentUsuario: {},
-      loading: false,
-      searchQuery: '',
-      filterEstatus: 'Activo',
-      filterRol: '',
-      filterSort: 'reciente',
-      showUsuarioModal: false,
-      isEditing: false,
-      emailSuggestion: '',
-      passwordChecks: {
-        length: false,
-        uppercase: false,
-        lowercase: false,
-        number: false,
-        special: false
-      },
-      preguntasDisponibles: [],
-      usuarioForm: {
-        email: '',
-        password: '',
-        rol: null,
-        estatus: 'Activo',
-        plantel_id: null,
-        pregunta_1: '',
-        respuesta_1: '',
-        pregunta_2: '',
-        respuesta_2: ''
-      },
-      usuarioRules: {
-        email: [
-          { required: true, message: 'El email es requerido', trigger: 'blur' },
-          { type: 'email', message: 'Ingrese un email válido', trigger: 'blur' }
-        ],
-        password: [{ required: true, trigger: 'blur', validator: validatePassword }],
-        rol: [{ required: true, message: 'El rol es requerido', trigger: 'change' }],
-        pregunta_1: [{ required: true, message: 'Selecciona una pregunta', trigger: 'change' }],
-        respuesta_1: [{ required: true, message: 'Ingresa tu respuesta', trigger: 'blur' }],
-        pregunta_2: [{ required: true, message: 'Selecciona una pregunta', trigger: 'change' }],
-        respuesta_2: [{ required: true, message: 'Ingresa tu respuesta', trigger: 'blur' }]
-      }
-    }
-  },
-  computed: {
-    filteredUsuarios() {
-      let filtered = this.usuarios
-      if (this.searchQuery) {
-        const query = this.searchQuery.toLowerCase()
-        filtered = filtered.filter(u => u.email.toLowerCase().includes(query))
-      }
-      return filtered
-    },
-    isPasswordValid() {
-      const checks = this.passwordChecks
-      return checks.length && checks.uppercase && checks.lowercase && checks.number && checks.special
-    },
-    passwordStrength() {
-      const count = Object.values(this.passwordChecks).filter(v => v).length
-      if (count <= 2) return 'weak'
-      if (count <= 4) return 'medium'
-      return 'strong'
-    },
-    passwordStrengthLabel() {
-      const labels = { weak: 'Débil', medium: 'Media', strong: 'Fuerte' }
-      return labels[this.passwordStrength]
-    },
-    passwordStrengthPercent() {
-      const count = Object.values(this.passwordChecks).filter(v => v).length
-      return (count / 5) * 100
-    }
-  },
-  watch: {
-    filterEstatus() {
-      this.loadUsuarios()
-    },
-    filterRol() {
-      this.loadUsuarios()
-    },
-    filterSort() {
-      this.loadUsuarios()
-    }
-  },
-  created() {
-    this.loadData()
-  },
-  methods: {
-    checkPasswordStrength() {
-      const password = this.usuarioForm.password || ''
-      this.passwordChecks = {
-        length: password.length >= 12,
-        uppercase: /[A-Z]/.test(password),
-        lowercase: /[a-z]/.test(password),
-        number: /[0-9]/.test(password),
-        special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
-      }
-    },
-    checkEmailTypo() {
-      const email = this.usuarioForm.email || ''
-      const domain = email.split('@')[1]?.toLowerCase()
-
-      const typoMap = {
-        'gmal.com': 'gmail.com',
-        'gmial.com': 'gmail.com',
-        'gamil.com': 'gmail.com',
-        'gnail.com': 'gmail.com',
-        'hotmal.com': 'hotmail.com',
-        'hotamil.com': 'hotmail.com',
-        'outloo.com': 'outlook.com',
-        'outlok.com': 'outlook.com',
-        'yaho.com': 'yahoo.com',
-        'yahooo.com': 'yahoo.com'
-      }
-
-      if (domain && typoMap[domain]) {
-        this.emailSuggestion = email.split('@')[0] + '@' + typoMap[domain]
-      } else {
-        this.emailSuggestion = ''
-      }
-    },
-    applyEmailSuggestion() {
-      if (this.emailSuggestion) {
-        this.usuarioForm.email = this.emailSuggestion
-        this.emailSuggestion = ''
-      }
-    },
-    async loadData() {
-      await Promise.all([
-        this.loadUsuarios(),
-        this.loadRoles(),
-        this.loadPlantel(),
-        this.loadPreguntasDisponibles()
-      ])
-    },
-    async loadPlantel() {
-      try {
-        const response = await getPlantel()
-        this.plantelList = response.data || response || []
-      } catch (error) {
-        console.error('Error cargando plantel:', error)
-      }
-    },
-    async loadPreguntasDisponibles() {
-      try {
-        const response = await getPreguntasDisponibles()
-        // publicService devuelve la respuesta cruda de axios, así que accedemos a .data
-        const data = response.data || response
-        this.preguntasDisponibles = Array.isArray(data) ? data : []
-      } catch (error) {
-        console.error('Error cargando preguntas:', error)
-      }
-    },
-    async loadUsuarios() {
-      try {
-        const params = {}
-        if (this.filterEstatus) {
-          params.estatus = this.filterEstatus
-        }
-        if (this.filterRol) {
-          params.rol = this.filterRol
-        }
-        params.sort = this.filterSort
-
-        const response = await getUsuarios(params)
-        this.usuarios = Array.isArray(response) ? response : []
-
-        // Validar si el usuario seleccionado sigue en la lista
-        if (this.currentUsuarioId) {
-          const exists = this.usuarios.find(u => u.usuario_id === this.currentUsuarioId)
-          if (!exists) {
-            this.currentUsuarioId = null
-            this.currentUsuario = {}
-          }
-        }
-      } catch (error) {
-        console.error('Error cargando usuarios:', error)
-        this.$message.error('Error al cargar usuarios')
-      }
-    },
-    async loadRoles() {
-      try {
-        const response = await getRoles()
-        this.roles = Array.isArray(response) ? response : []
-      } catch (error) {
-        console.error('Error cargando roles:', error)
-      }
-    },
-    async selectUsuario(id) {
-      this.currentUsuarioId = id
-      try {
-        const response = await getUsuarioById(id)
-        this.currentUsuario = response
-      } catch (error) {
-        console.error('Error cargando usuario:', error)
-        this.$message.error('Error al cargar datos del usuario')
-      }
-    },
-    async openUsuarioModal(isEdit) {
-      this.isEditing = isEdit
-      if (!isEdit) {
-        this.resetForm()
-      } else {
-        if (!this.currentUsuarioId) return
-
-        // Cargar datos básicos del usuario
-        this.usuarioForm = {
-          email: this.currentUsuario.email,
-          password: '',
-          rol: this.currentUsuario.rol,
-          estatus: this.currentUsuario.estatus,
-          plantel_id: this.currentUsuario.plantel_id || null,
-          // Inicializar preguntas vacías, se cargarán desde la API
-          pregunta_1: '',
-          respuesta_1: '',
-          pregunta_2: '',
-          respuesta_2: ''
-        }
-
-        // Cargar preguntas de seguridad del usuario
-        try {
-          const res = await obtenerPreguntasRespuestasUsuario(this.currentUsuarioId)
-          if (res && res.tiene_preguntas) {
-            this.usuarioForm.pregunta_1 = res.pregunta_1
-            this.usuarioForm.respuesta_1 = res.respuesta_1
-            this.usuarioForm.pregunta_2 = res.pregunta_2
-            this.usuarioForm.respuesta_2 = res.respuesta_2
-          }
-        } catch (error) {
-          console.error('Error al cargar preguntas:', error)
-        }
-      }
-
-      this.showUsuarioModal = true
-      // Refrescar roles y plantel para asegurar datos frescos
-      await Promise.all([
-        this.loadRoles(),
-        this.loadPlantel()
-      ])
-    },
-    handleEdit() {
-      this.openUsuarioModal(true)
-    },
-    async saveUsuario() {
-      this.$refs.usuarioForm.validate(async(valid) => {
-        if (!valid) return
-
-        this.loading = true
-        try {
-          if (this.isEditing) {
-            const dataToUpdate = {
-              email: this.usuarioForm.email,
-              rol: this.usuarioForm.rol,
-              estatus: this.usuarioForm.estatus,
-              plantel_id: this.usuarioForm.plantel_id
-            }
-            if (this.usuarioForm.password) {
-              dataToUpdate.password = this.usuarioForm.password
-            }
-            await updateUsuario(this.currentUsuarioId, dataToUpdate)
-
-            // Actualizar preguntas de seguridad si se llenaron
-            if (this.usuarioForm.pregunta_1 && this.usuarioForm.respuesta_1 &&
-                this.usuarioForm.pregunta_2 && this.usuarioForm.respuesta_2) {
-              await guardarPreguntas({
-                preguntas: [
-                  { pregunta_id: this.usuarioForm.pregunta_1, respuesta: this.usuarioForm.respuesta_1 },
-                  { pregunta_id: this.usuarioForm.pregunta_2, respuesta: this.usuarioForm.respuesta_2 }
-                ]
-              })
-            }
-
-            this.$message.success('Usuario actualizado exitosamente')
-          } else {
-            // Crear usuario
-            const createResponse = await createUsuario({
-              email: this.usuarioForm.email,
-              password: this.usuarioForm.password,
-              rol: this.usuarioForm.rol,
-              plantel_id: this.usuarioForm.plantel_id
-            })
-
-            // Guardar preguntas de seguridad
-            const nuevoUsuarioId = createResponse.usuario_id
-            if (nuevoUsuarioId) {
-              await guardarPreguntas({
-                preguntas: [
-                  { pregunta_id: this.usuarioForm.pregunta_1, respuesta: this.usuarioForm.respuesta_1 },
-                  { pregunta_id: this.usuarioForm.pregunta_2, respuesta: this.usuarioForm.respuesta_2 }
-                ]
-              })
-            }
-
-            this.$message.success('Usuario creado exitosamente')
-          }
-
-          this.showUsuarioModal = false
-          await this.loadUsuarios()
-          if (this.isEditing) {
-            await this.selectUsuario(this.currentUsuarioId)
-          }
-        } catch (error) {
-          console.error('Error guardando usuario:', error)
-          this.$message.error(error.response?.data?.error || 'Error al guardar usuario')
-        } finally {
-          this.loading = false
-        }
-      })
-    },
-    async toggleEstatus() {
-      const newEstatus = this.currentUsuario.estatus === 'Activo' ? 'Inactivo' : 'Activo'
-      const action = newEstatus === 'Activo' ? 'activar' : 'desactivar'
-
-      try {
-        await this.$confirm(`¿Está seguro de ${action} este usuario?`, 'Confirmar', {
-          confirmButtonText: 'Sí',
-          cancelButtonText: 'No',
-          type: 'warning'
+        const createResponse = await createUsuario({
+          email: usuarioForm.value.email,
+          password: usuarioForm.value.password,
+          rol: usuarioForm.value.rol,
+          plantel_id: usuarioForm.value.plantel_id
         })
 
-        await updateUsuario(this.currentUsuarioId, { estatus: newEstatus })
-        this.$message.success(`Usuario ${newEstatus === 'Activo' ? 'activado' : 'desactivado'} exitosamente`)
-        await this.loadUsuarios()
-
-        // Solo intentar seleccionar si el usuario sigue visible en la lista
-        if (this.currentUsuarioId) {
-          await this.selectUsuario(this.currentUsuarioId)
+        const nuevoUsuarioId = createResponse.usuario_id
+        if (nuevoUsuarioId) {
+          await guardarPreguntas({
+            preguntas: [
+              { pregunta_id: usuarioForm.value.pregunta_1, respuesta: usuarioForm.value.respuesta_1 },
+              { pregunta_id: usuarioForm.value.pregunta_2, respuesta: usuarioForm.value.respuesta_2 }
+            ]
+          })
         }
-      } catch (error) {
-        if (error !== 'cancel') {
-          console.error('Error cambiando estatus:', error)
-          this.$message.error('Error al cambiar estatus')
-        }
-      }
-    },
-    async handleDeleteUsuario() {
-      if (!this.currentUsuario) return
 
-      try {
-        await this.$confirm(
-          `¿Está seguro de eliminar permanentemente al usuario "${this.currentUsuario.email}"? Esta acción no se puede deshacer.`,
-          'Confirmar Eliminación',
-          {
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar',
-            type: 'warning'
-          }
-        )
+        ElMessage.success('Usuario creado exitosamente')
+      }
 
-        await deleteUsuario(this.currentUsuarioId)
-        this.$message.success('Usuario eliminado exitosamente')
-        this.currentUsuarioId = null
-        this.currentUsuario = {}
-        await this.loadUsuarios()
-      } catch (error) {
-        if (error !== 'cancel') {
-          console.error('Error eliminando usuario:', error)
-          this.$message.error(error.response?.data?.error || 'Error al eliminar usuario')
-        }
+      showUsuarioModal.value = false
+      await loadUsuarios()
+      if (isEditing.value) {
+        await selectUsuario(currentUsuarioId.value)
       }
-    },
-    resetForm() {
-      this.usuarioForm = {
-        email: '',
-        password: '',
-        rol: null,
-        estatus: 'Activo',
-        plantel_id: null,
-        pregunta_1: '',
-        respuesta_1: '',
-        pregunta_2: '',
-        respuesta_2: ''
-      }
-      this.passwordChecks = {
-        length: false,
-        uppercase: false,
-        lowercase: false,
-        number: false,
-        special: false
-      }
-      this.emailSuggestion = ''
-    },
-    formatDate(dateString) {
-      if (!dateString) return 'Nunca'
-      const date = new Date(dateString)
-      return date.toLocaleString('es-ES')
+    } catch (error) {
+      console.error('Error guardando usuario:', error)
+      ElMessage.error(error.response?.data?.error || 'Error al guardar usuario')
+    } finally {
+      loading.value = false
+    }
+  })
+}
+
+const toggleEstatus = async () => {
+  const newEstatus = currentUsuario.value.estatus === 'Activo' || currentUsuario.value.estatus === 'ACTIVO' ? 'Inactivo' : 'Activo'
+  const action = newEstatus === 'Activo' ? 'activar' : 'desactivar'
+
+  try {
+    await ElMessageBox.confirm(`¿Está seguro de ${action} este usuario?`, 'Confirmar', {
+      confirmButtonText: 'Sí',
+      cancelButtonText: 'No',
+      type: 'warning'
+    })
+
+    await updateUsuario(currentUsuarioId.value, { estatus: newEstatus })
+    ElMessage.success(`Usuario ${newEstatus === 'Activo' ? 'activado' : 'desactivado'} exitosamente`)
+    await loadUsuarios()
+
+    if (currentUsuarioId.value) {
+      await selectUsuario(currentUsuarioId.value)
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Error cambiando estatus:', error)
+      ElMessage.error('Error al cambiar estatus')
     }
   }
 }
+
+const handleDeleteUsuario = async () => {
+  if (!currentUsuario.value) return
+
+  try {
+    await ElMessageBox.confirm(
+      `¿Está seguro de eliminar permanentemente al usuario "${currentUsuario.value.email}"? Esta acción no se puede deshacer.`,
+      'Confirmar Eliminación',
+      {
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        type: 'warning'
+      }
+    )
+
+    await deleteUsuario(currentUsuarioId.value)
+    ElMessage.success('Usuario eliminado exitosamente')
+    currentUsuarioId.value = null
+    currentUsuario.value = {}
+    await loadUsuarios()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Error eliminando usuario:', error)
+      ElMessage.error(error.response?.data?.error || 'Error al eliminar usuario')
+    }
+  }
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'Nunca'
+  const date = new Date(dateString)
+  return date.toLocaleString('es-ES')
+}
+
+onMounted(() => {
+  loadData()
+})
 </script>
 
 <style scoped>
@@ -738,12 +777,12 @@ export default {
 }
 
 .page-header {
-  background: linear-gradient(135deg, #E51D22, #c41a1d);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   color: white;
   padding: 20px;
   border-radius: 10px;
   margin-bottom: 30px;
-  box-shadow: 0 4px 12px rgba(229, 29, 34, 0.2);
+  box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
 }
 
 .header-content {
@@ -765,7 +804,7 @@ export default {
 }
 
 /* Header Button - Modern Executive Style */
-.header-content ::v-deep > .el-button--primary {
+.header-content :deep(> .el-button--primary) {
   background: rgba(255, 255, 255, 0.15) !important;
   border: 2px solid rgba(255, 255, 255, 0.3) !important;
   color: #fff !important;
@@ -778,14 +817,14 @@ export default {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-.header-content ::v-deep > .el-button--primary:hover {
+.header-content :deep(> .el-button--primary:hover) {
   background: rgba(255, 255, 255, 0.25) !important;
   border-color: rgba(255, 255, 255, 0.5) !important;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   transform: translateY(-2px);
 }
 
-.header-content ::v-deep > .el-button--primary:active {
+.header-content :deep(> .el-button--primary:active) {
   transform: translateY(0);
 }
 
@@ -806,7 +845,7 @@ aside.sidebar {
   overflow: hidden;
 }
 
-.sidebar ::v-deep .el-card__body {
+.sidebar :deep(.el-card__body) {
   padding: 0;
 }
 
@@ -823,37 +862,37 @@ aside.sidebar {
 
 .search-container {
   padding: 15px;
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-  border-bottom: 2px solid #e2e8f0;
+  background: linear-gradient(135deg, var(--color-bg-card), var(--color-bg-body));
+  border-bottom: 2px solid var(--color-border);
 }
 
-.search-container ::v-deep .el-input__inner {
-  background: #fff !important;
+.search-container :deep(.el-input__inner) {
+  background: var(--color-bg-card) !important;
   border: 2px solid #64748b !important;
   border-radius: 10px;
   padding: 10px 14px;
   font-size: 0.9rem;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--color-text-main);
   transition: all 0.3s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
-.search-container ::v-deep .el-input__inner:hover {
-  border-color: #E51D22 !important;
+.search-container :deep(.el-input__inner:hover) {
+  border-color: var(--color-primary) !important;
 }
 
-.search-container ::v-deep .el-input__inner:focus {
-  border-color: #E51D22 !important;
-  box-shadow: 0 0 0 3px rgba(229, 29, 34, 0.12);
+.search-container :deep(.el-input__inner:focus) {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.12);
 }
 
-.search-container ::v-deep .el-input__inner::placeholder {
-  color: #64748b !important;
+.search-container :deep(.el-input__inner::placeholder) {
+  color: var(--color-text-placeholder) !important;
   font-weight: 500;
 }
 
-.search-container ::v-deep .el-input__prefix {
+.search-container :deep(.el-input__prefix) {
   display: none;
 }
 
@@ -865,8 +904,8 @@ aside.sidebar {
   margin: 0 0 18px 0;
   font-size: 1rem;
   font-weight: 700;
-  color: #E51D22;
-  border-bottom: 2px solid #E51D22;
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
   padding-bottom: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -880,39 +919,39 @@ aside.sidebar {
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-text-main);
   margin-bottom: 8px;
   text-transform: uppercase;
 }
 
-.filter-item ::v-deep .el-select .el-input__inner {
-  background: #fff !important;
+.filter-item :deep(.el-select .el-input__inner) {
+  background: var(--color-bg-card) !important;
   border: 2px solid #64748b !important;
   border-radius: 10px;
   font-size: 0.9rem;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--color-text-main);
   transition: all 0.3s ease;
 }
 
-.filter-item ::v-deep .el-select .el-input__inner:hover {
-  border-color: #E51D22 !important;
+.filter-item :deep(.el-select .el-input__inner:hover) {
+  border-color: var(--color-primary) !important;
 }
 
-.filter-item ::v-deep .el-select .el-input.is-focus .el-input__inner {
-  border-color: #E51D22 !important;
-  box-shadow: 0 0 0 3px rgba(229, 29, 34, 0.12);
+.filter-item :deep(.el-select .el-input.is-focus .el-input__inner) {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.12);
 }
 
 .filter-btn {
   font-size: 1.3rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   padding: 5px;
   transition: all 0.3s ease;
 }
 
 .filter-btn:hover {
-  color: #E51D22;
+  color: var(--color-primary);
   transform: rotate(90deg);
 }
 
@@ -932,21 +971,21 @@ aside.sidebar {
   display: flex;
   align-items: center;
   gap: 14px;
-  background: #fff;
+  background: var(--color-bg-card);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 .user-item:hover {
-  border-color: #E51D22;
-  background: linear-gradient(135deg, #fff5f5, #fff);
-  box-shadow: 0 4px 12px rgba(229, 29, 34, 0.12);
+  border-color: var(--color-primary);
+  background: var(--color-bg-hover);
+  box-shadow: 0 4px 12px rgba(30, 41, 59, 0.12);
   transform: translateX(4px);
 }
 
 .user-item.active {
-  background: linear-gradient(135deg, #fee2e2, #fff);
-  border: 2px solid #E51D22;
-  box-shadow: 0 4px 16px rgba(229, 29, 34, 0.2);
+  background: var(--color-bg-hover);
+  border: 2px solid var(--color-primary);
+  box-shadow: 0 4px 16px rgba(30, 41, 59, 0.2);
 }
 
 .user-avatar {
@@ -956,13 +995,13 @@ aside.sidebar {
   min-height: 48px;
   flex-shrink: 0;
   border-radius: 12px;
-  background: linear-gradient(135deg, #E51D22, #c41a1d);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 22px;
-  box-shadow: 0 3px 8px rgba(229, 29, 34, 0.3);
+  box-shadow: 0 3px 8px rgba(30, 41, 59, 0.3);
 }
 
 .user-info {
@@ -975,7 +1014,7 @@ aside.sidebar {
   font-size: 0.95rem;
   font-weight: 700;
   margin: 0 0 6px 0;
-  color: #1e293b;
+  color: var(--color-text-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -983,7 +1022,7 @@ aside.sidebar {
 
 .user-info p {
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   margin: 3px 0;
   font-weight: 500;
 }
@@ -994,14 +1033,14 @@ aside.sidebar {
   gap: 20px;
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid var(--color-border);
 }
 
 .user-details-avatar {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background-color: #E51D22;
+  background-color: var(--color-primary);
   color: white;
   display: flex;
   align-items: center;
@@ -1028,7 +1067,7 @@ aside.sidebar {
 }
 
 .user-details-info p {
-  color: #64748b;
+  color: var(--color-text-muted);
   margin: 4px 0;
   font-size: 0.95rem;
 }
@@ -1054,7 +1093,7 @@ aside.sidebar {
 }
 
 .form-item p {
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 1rem;
   margin: 0;
 }
@@ -1062,18 +1101,18 @@ aside.sidebar {
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  color: #94a3b8;
+  color: var(--color-border);
 }
 
-::v-deep .el-button--primary {
-  background-color: #E51D22;
-  border-color: #E51D22;
+:deep(.el-button--primary) {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
-::v-deep .el-button--primary:hover,
-::v-deep .el-button--primary:focus {
-  background-color: #c41a1d;
-  border-color: #c41a1d;
+:deep(.el-button--primary:hover),
+:deep(.el-button--primary:focus) {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
 }
 
 @media (max-width: 1200px) {
@@ -1088,7 +1127,7 @@ aside.sidebar {
 
 @media (max-width: 768px) {
   /* Lista de usuarios más grande y cómoda */
-  .sidebar ::v-deep .el-card {
+  .sidebar :deep(.el-card) {
     min-height: 70vh;
   }
 
@@ -1149,14 +1188,14 @@ aside.sidebar {
   }
 
   /* Search input más grande */
-  .search-container ::v-deep .el-input__inner {
+  .search-container :deep(.el-input__inner) {
     height: 48px;
     font-size: 1rem;
     padding: 12px 16px;
     border-radius: 12px;
   }
 
-  .search-container ::v-deep .el-input__prefix {
+  .search-container :deep(.el-input__prefix) {
     left: 12px;
     font-size: 1.1rem;
   }
@@ -1176,9 +1215,9 @@ aside.sidebar {
 .password-checklist {
   margin-top: 10px;
   padding: 12px;
-  background: #f8fafc;
+  background: var(--color-bg-card);
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
 }
 
 .checklist-title {
@@ -1193,7 +1232,7 @@ aside.sidebar {
   align-items: center;
   gap: 8px;
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--color-border);
   padding: 4px 0;
   transition: color 0.2s;
 }
@@ -1214,18 +1253,18 @@ aside.sidebar {
 .strength-bar {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-border);
 }
 
 .strength-label {
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   margin-bottom: 6px;
 }
 
 .strength-track {
   height: 6px;
-  background: #e2e8f0;
+  background: var(--color-border);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -1297,17 +1336,17 @@ aside.sidebar {
 }
 
 .security-questions-section .el-divider__text {
-  color: #E51D22;
+  color: var(--color-primary);
   font-weight: 600;
 }
 
 .security-hint {
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   margin: 0 0 15px 0;
-  background: #f8fafc;
+  background: var(--color-bg-card);
   padding: 10px;
   border-radius: 6px;
-  border-left: 3px solid #E51D22;
+  border-left: 3px solid var(--color-primary);
 }
 </style>

@@ -50,8 +50,8 @@ const actions = {
   generateRoutes({ commit }, roles) {
     return new Promise(resolve => {
       const accessedRoutes = filterAsyncRoutes(asyncRoutes, roles)
-      // 404 page must be placed at the end !!!
-      accessedRoutes.push({ path: '*', redirect: '/404', hidden: true })
+      // Vue Router 4: catch-all route syntax changed
+      accessedRoutes.push({ path: '/:pathMatch(.*)*', redirect: '/404', hidden: true })
       commit('SET_ROUTES', accessedRoutes)
       resolve(accessedRoutes)
     })

@@ -30,18 +30,18 @@
 
         <!-- Formulario -->
         <el-form
-          ref="loginForm"
+          ref="loginFormRef"
           :model="loginForm"
           :rules="loginRules"
           class="login-form"
-          @submit.native.prevent="handleLogin"
+          @submit.prevent="handleLogin"
         >
-          <el-form-item prop="username" class="form-item-custom">
+          <el-form-item label="Usuario" prop="username" class="form-item-custom">
             <div class="input-group">
               <el-input
-                ref="username"
+                ref="usernameRef"
                 v-model="loginForm.username"
-                placeholder="Usuario"
+                placeholder="Ingresa tu usuario"
                 size="large"
                 class="mobile-input"
                 @input="handleInput"
@@ -49,20 +49,20 @@
             </div>
           </el-form-item>
 
-          <el-form-item prop="password" class="form-item-custom">
+          <el-form-item label="Contraseña" prop="password" class="form-item-custom">
             <div class="input-group">
               <el-input
-                ref="password"
+                ref="passwordRef"
                 v-model="loginForm.password"
                 :type="passwordType"
-                placeholder="Contraseña"
+                placeholder="Ingresa tu contraseña"
                 size="large"
                 class="mobile-input"
-                @keyup.enter.native="handleLogin"
+                @keyup.enter="handleLogin"
                 @input="handleInput"
               />
               <button type="button" class="password-toggle" aria-label="Mostrar u ocultar contraseña" @click="showPwd">
-                <i class="el-icon-view" />
+                <el-icon><View /></el-icon>
               </button>
             </div>
             <!-- Forgot password link -->
@@ -94,9 +94,9 @@
     <!-- Modal de Contacto -->
     <el-dialog
       title="Información de Contacto"
-      :visible.sync="showContactModal"
+      v-model="showContactModal"
       width="400px"
-      custom-class="contact-modal"
+      class="contact-modal"
       :top="'0'"
     >
       <div class="contact-modal-content">
@@ -155,94 +155,109 @@
         class="back-button mobile-back-button"
         @click="goToLanding"
       >
-        <i class="el-icon-arrow-left" />
+        <el-icon><ArrowLeft /></el-icon>
         <span>Volver al Inicio</span>
       </button>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'Login',
-  data() {
-    const validateUsername = (rule, value, callback) => {
-      if (!value || value.trim() === '') {
-        callback(new Error('Ingresa tu usuario'))
-      } else {
-        callback()
-      }
-    }
-    const validatePassword = (rule, value, callback) => {
-      if (!value || value.length < 6) {
-        callback(new Error('Mínimo 6 caracteres'))
-      } else {
-        callback()
-      }
-    }
-    return {
-      loginForm: {
-        username: '',
-        password: ''
-      },
-      loginRules: {
-        username: [{ required: true, trigger: 'blur', validator: validateUsername }],
-        password: [{ required: true, trigger: 'blur', validator: validatePassword }]
-      },
-      passwordType: 'password',
-      loading: false,
-      isMobile: false,
-      showContactModal: false
-    }
-  },
-  mounted() {
-    this.detectMobile()
-    this.$nextTick(() => {
-      this.$refs.username.focus()
-    })
+<script setup>
+import { ref, reactive, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useStore } from 'vuex'
+import { View, ArrowLeft } from '@element-plus/icons-vue'
 
-    window.addEventListener('resize', this.detectMobile)
-    window.addEventListener('orientationchange', this.detectMobile)
-  },
-  beforeDestroy() {
-    window.removeEventListener('resize', this.detectMobile)
-    window.removeEventListener('orientationchange', this.detectMobile)
-  },
-  methods: {
-    detectMobile() {
-      this.isMobile = window.innerWidth <= 768
-    },
-    showPwd() {
-      this.passwordType = this.passwordType === 'password' ? 'text' : 'password'
-      this.$nextTick(() => {
-        this.$refs.password.focus()
-      })
-    },
-    handleInput() {
-    },
-    handleLogin() {
-      this.$refs.loginForm.validate(valid => {
-        if (valid) {
-          this.loading = true
-          this.$store.dispatch('user/login', this.loginForm)
-            .then(() => {
-              this.$router.push({ path: this.$route.query.redirect || '/dashboard' })
-              this.loading = false
-            })
-            .catch(() => {
-              this.loading = false
-            })
-        }
-      })
-    },
-    goToLanding() {
-      this.$router.push('/')
-    },
-    forgotPassword() {
-      this.$router.push('/recuperar-password')
-    }
+const router = useRouter()
+const route = useRoute()
+const store = useStore()
+
+const loginForm = reactive({
+  username: '',
+  password: ''
+})
+
+const validateUsername = (rule, value, callback) => {
+  if (!value || value.trim() === '') {
+    callback(new Error('Ingresa tu usuario'))
+  } else {
+    callback()
   }
 }
+const validatePassword = (rule, value, callback) => {
+  if (!value || value.length < 6) {
+    callback(new Error('Mínimo 6 caracteres'))
+  } else {
+    callback()
+  }
+}
+
+const loginRules = {
+  username: [{ required: true, trigger: 'blur', validator: validateUsername }],
+  password: [{ required: true, trigger: 'blur', validator: validatePassword }]
+}
+
+const passwordType = ref('password')
+const loading = ref(false)
+const isMobile = ref(false)
+const showContactModal = ref(false)
+
+const loginFormRef = ref(null)
+const usernameRef = ref(null)
+const passwordRef = ref(null)
+
+const detectMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
+const showPwd = () => {
+  passwordType.value = passwordType.value === 'password' ? 'text' : 'password'
+  nextTick(() => {
+    passwordRef.value.focus()
+  })
+}
+
+const handleInput = () => {
+}
+
+const handleLogin = () => {
+  loginFormRef.value.validate(valid => {
+    if (valid) {
+      loading.value = true
+      store.dispatch('user/login', loginForm)
+        .then(() => {
+          router.push({ path: route.query.redirect || '/dashboard' })
+          loading.value = false
+        })
+        .catch(() => {
+          loading.value = false
+        })
+    }
+  })
+}
+
+const goToLanding = () => {
+  router.push('/')
+}
+
+const forgotPassword = () => {
+  router.push('/recuperar-password')
+}
+
+onMounted(() => {
+  detectMobile()
+  nextTick(() => {
+    usernameRef.value.focus()
+  })
+
+  window.addEventListener('resize', detectMobile)
+  window.addEventListener('orientationchange', detectMobile)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', detectMobile)
+  window.removeEventListener('orientationchange', detectMobile)
+})
 </script>
 
 <style lang="scss" scoped>
@@ -372,6 +387,13 @@ export default {
   margin-bottom: 1.5rem;
 }
 
+:deep(.form-item-custom .el-form-item__label) {
+  color: var(--color-text-dark) !important;
+  font-weight: 700 !important;
+  padding-bottom: 8px !important;
+  font-size: 0.9rem !important;
+}
+
 :deep(.form-item-custom .el-form-item__error) {
   padding-top: 4px !important;
   margin-top: 2px !important;
@@ -411,7 +433,7 @@ export default {
 
 .password-toggle:hover {
   color: var(--color-primary);
-  background: rgba(229, 29, 34, 0.1);
+  background: rgba(30, 41, 59, 0.1);
 }
 
 :deep(.mobile-input .el-input__inner) {
@@ -420,7 +442,7 @@ export default {
   height: 52px !important;
   border: 2px solid var(--color-text-light);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--color-bg-card)fff;
   font-size: 16px !important;
   font-weight: 500;
   transition: all 0.2s ease;
@@ -429,7 +451,7 @@ export default {
 }
 
 :deep(.mobile-input .el-input__inner::placeholder) {
-  color: var(--color-text-light);
+  color: var(--color-text-placeholder);
   opacity: 1;
   padding-left: 30px !important;
   transition: padding-left 0.3s ease;
@@ -445,7 +467,7 @@ export default {
 
 :deep(.mobile-input .el-input__inner:focus) {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(229, 29, 34, 0.1);
+  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1);
   padding-left: 16px !important;
 }
 
@@ -458,7 +480,7 @@ export default {
 
 .forgot-link {
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   text-decoration: none;
   transition: color 0.2s;
 }
@@ -477,7 +499,7 @@ export default {
   font-size: 1rem;
   font-weight: 600;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(229, 29, 34, 0.3);
+  box-shadow: 0 4px 12px rgba(30, 41, 59, 0.3);
   min-height: 52px;
 }
 
@@ -644,7 +666,7 @@ export default {
   width: 45px;
   height: 45px;
   border-radius: 50%;
-  background: white;
+  background: var(--color-bg-card);
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   display: flex;
   align-items: center;
@@ -663,18 +685,18 @@ export default {
 }
 
 /* Centrado del Modal */
-::v-deep .el-dialog__wrapper {
+:deep(.el-dialog__wrapper) {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-::v-deep .contact-modal {
+:deep(.contact-modal) {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
 }
 
-::v-deep .vertical-center-modal .el-dialog__body {
+:deep(.vertical-center-modal .el-dialog__body) {
     overflow-y: auto;
 }
 
@@ -711,7 +733,7 @@ export default {
   }
 
   /* Modal de contacto responsive */
-  ::v-deep .contact-modal {
+  :deep(.contact-modal) {
     width: 95% !important;
     max-width: 400px;
   }
@@ -760,7 +782,7 @@ export default {
   }
 
   /* Modal fullscreen en móvil pequeño */
-  ::v-deep .contact-modal {
+  :deep(.contact-modal) {
     width: 100% !important;
     margin: 0 !important;
   }
@@ -787,7 +809,7 @@ export default {
 }
 
 .step-description {
-  color: #64748b;
+  color: var(--color-text-muted);
   margin-bottom: 15px;
   font-size: 0.95rem;
 }
@@ -833,6 +855,6 @@ export default {
 }
 
 .success-step p {
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 </style>

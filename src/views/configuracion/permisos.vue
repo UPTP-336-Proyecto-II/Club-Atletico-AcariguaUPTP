@@ -26,7 +26,7 @@
       >
         <el-table-column prop="rol_id" label="ID" width="80" align="center" />
         <el-table-column prop="nombre_rol" label="Nombre del Rol" min-width="150">
-          <template slot-scope="{ row }">
+          <template #default="{ row }">
             <div class="rol-name">
               <i class="el-icon-s-custom" />
               <span>{{ row.nombre_rol }}</span>
@@ -34,12 +34,12 @@
           </template>
         </el-table-column>
         <el-table-column prop="descripcion" label="Descripción" min-width="300" show-overflow-tooltip>
-          <template slot-scope="{ row }">
+          <template #default="{ row }">
             <span>{{ row.descripcion || 'Sin descripción' }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="usuarios_count" label="Usuarios" width="180" align="center">
-          <template slot-scope="{ row }">
+          <template #default="{ row }">
             <div class="usuarios-stats">
               <el-tag :type="row.usuarios_count > 0 ? 'primary' : 'info'" size="small">
                 {{ row.usuarios_count }} Total
@@ -52,12 +52,12 @@
           </template>
         </el-table-column>
         <el-table-column prop="fecha_creacion" label="Fecha Creación" width="180" align="center">
-          <template slot-scope="{ row }">
+          <template #default="{ row }">
             {{ formatDate(row.fecha_creacion) }}
           </template>
         </el-table-column>
         <el-table-column label="Acciones" width="160" align="center">
-          <template slot-scope="{ row }">
+          <template #default="{ row }">
             <el-button
               type="primary"
               size="mini"
@@ -147,7 +147,7 @@
           :closable="false"
           show-icon
         >
-          <template slot="default">
+          <template #default>
             <p>Los roles con usuarios asignados no pueden ser eliminados. Primero debe reasignar los usuarios a otro rol.</p>
           </template>
         </el-alert>
@@ -157,11 +157,11 @@
     <!-- Modal Rol -->
     <el-dialog
       :title="isEditing ? 'Editar Rol' : 'Agregar Nuevo Rol'"
-      :visible.sync="showRolModal"
+      v-model="showRolModal"
       width="500px"
       :close-on-click-modal="false"
     >
-      <el-form ref="rolForm" :model="rolForm" :rules="rolRules" label-position="top">
+      <el-form ref="rolFormRef" :model="rolForm" :rules="rolRules" label-position="top">
         <el-form-item label="Nombre del Rol" prop="nombre_rol">
           <el-input v-model="rolForm.nombre_rol" placeholder="Ej: administrador, entrenador" />
         </el-form-item>
@@ -174,139 +174,149 @@
           />
         </el-form-item>
       </el-form>
-      <span slot="footer">
-        <el-button @click="showRolModal = false">Cancelar</el-button>
-        <el-button type="primary" :loading="saving" @click="saveRol">
-          {{ isEditing ? 'Actualizar' : 'Guardar' }}
-        </el-button>
-      </span>
+      <template #footer>
+        <span>
+          <el-button @click="showRolModal = false">Cancelar</el-button>
+          <el-button type="primary" :loading="saving" @click="saveRol">
+            {{ isEditing ? 'Actualizar' : 'Guardar' }}
+          </el-button>
+        </span>
+      </template>
     </el-dialog>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, onMounted } from 'vue'
 import { getRoles, createRol, updateRol, deleteRol } from '@/api/roles'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
-export default {
-  name: 'GestionRoles',
-  data() {
-    return {
-      roles: [],
-      loading: false,
-      saving: false,
-      showRolModal: false,
-      isEditing: false,
-      currentRolId: null,
-      rolForm: {
-        nombre_rol: '',
-        descripcion: ''
-      },
-      rolRules: {
-        nombre_rol: [
-          { required: true, message: 'El nombre del rol es requerido', trigger: 'blur' },
-          { min: 3, message: 'El nombre debe tener al menos 3 caracteres', trigger: 'blur' }
-        ],
-        descripcion: [
-          { required: true, message: 'La descripción del rol es requerida', trigger: 'blur' },
-          { min: 10, message: 'La descripción debe tener al menos 10 caracteres', trigger: 'blur' }
-        ]
-      }
-    }
-  },
-  created() {
-    this.loadRoles()
-  },
-  methods: {
-    async loadRoles() {
-      this.loading = true
-      try {
-        const response = await getRoles()
-        this.roles = Array.isArray(response) ? response : []
-      } catch (error) {
-        console.error('Error cargando roles:', error)
-        this.$message.error('Error al cargar roles')
-      } finally {
-        this.loading = false
-      }
-    },
-    openRolModal(isEdit) {
-      this.isEditing = isEdit
-      if (!isEdit) {
-        this.resetForm()
-      }
-      this.showRolModal = true
-    },
-    handleEdit(row) {
-      this.currentRolId = row.rol_id
-      this.rolForm = {
-        nombre_rol: row.nombre_rol,
-        descripcion: row.descripcion || ''
-      }
-      this.openRolModal(true)
-    },
-    async handleDelete(row) {
-      if (row.usuarios_count > 0) {
-        this.$message.warning('No se puede eliminar un rol con usuarios asignados')
-        return
-      }
+const rolFormRef = ref(null)
 
-      try {
-        await this.$confirm(
-          `¿Está seguro de eliminar el rol "${row.nombre_rol}"?`,
-          'Confirmar Eliminación',
-          {
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar',
-            type: 'warning'
-          }
-        )
+const roles = ref([])
+const loading = ref(false)
+const saving = ref(false)
+const showRolModal = ref(false)
+const isEditing = ref(false)
+const currentRolId = ref(null)
 
-        await deleteRol(row.rol_id)
-        this.$message.success('Rol eliminado exitosamente')
-        await this.loadRoles()
-      } catch (error) {
-        if (error !== 'cancel') {
-          console.error('Error eliminando rol:', error)
-        }
+const rolForm = ref({
+  nombre_rol: '',
+  descripcion: ''
+})
+
+const rolRules = {
+  nombre_rol: [
+    { required: true, message: 'El nombre del rol es requerido', trigger: 'blur' },
+    { min: 3, message: 'El nombre debe tener al menos 3 caracteres', trigger: 'blur' }
+  ],
+  descripcion: [
+    { required: true, message: 'La descripción del rol es requerida', trigger: 'blur' },
+    { min: 10, message: 'La descripción debe tener al menos 10 caracteres', trigger: 'blur' }
+  ]
+}
+
+const loadRoles = async () => {
+  loading.value = true
+  try {
+    const response = await getRoles()
+    roles.value = Array.isArray(response) ? response : []
+  } catch (error) {
+    console.error('Error cargando roles:', error)
+    ElMessage.error('Error al cargar roles')
+  } finally {
+    loading.value = false
+  }
+}
+
+const resetForm = () => {
+  rolForm.value = {
+    nombre_rol: '',
+    descripcion: ''
+  }
+  currentRolId.value = null
+  if (rolFormRef.value) {
+    rolFormRef.value.resetFields()
+  }
+}
+
+const openRolModal = (isEdit) => {
+  isEditing.value = isEdit
+  if (!isEdit) {
+    resetForm()
+  }
+  showRolModal.value = true
+}
+
+const handleEdit = (row) => {
+  currentRolId.value = row.rol_id
+  rolForm.value = {
+    nombre_rol: row.nombre_rol,
+    descripcion: row.descripcion || ''
+  }
+  openRolModal(true)
+}
+
+const handleDelete = async (row) => {
+  if (row.usuarios_count > 0) {
+    ElMessage.warning('No se puede eliminar un rol con usuarios asignados')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `¿Está seguro de eliminar el rol "${row.nombre_rol}"?`,
+      'Confirmar Eliminación',
+      {
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        type: 'warning'
       }
-    },
-    async saveRol() {
-      this.$refs.rolForm.validate(async(valid) => {
-        if (!valid) return
+    )
 
-        this.saving = true
-        try {
-          if (this.isEditing) {
-            await updateRol(this.currentRolId, this.rolForm)
-            this.$message.success('Rol actualizado exitosamente')
-          } else {
-            await createRol(this.rolForm)
-            this.$message.success('Rol creado exitosamente')
-          }
-
-          this.showRolModal = false
-          await this.loadRoles()
-        } catch (error) {
-          console.error('Error guardando rol:', error)
-        } finally {
-          this.saving = false
-        }
-      })
-    },
-    resetForm() {
-      this.rolForm = {
-        nombre_rol: '',
-        descripcion: ''
-      }
-      this.currentRolId = null
-    },
-    formatDate(dateString) {
-      if (!dateString) return '-'
-      const date = new Date(dateString)
-      return date.toLocaleDateString('es-ES')
+    await deleteRol(row.rol_id)
+    ElMessage.success('Rol eliminado exitosamente')
+    await loadRoles()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Error eliminando rol:', error)
     }
   }
 }
+
+const saveRol = () => {
+  rolFormRef.value.validate(async (valid) => {
+    if (!valid) return
+
+    saving.value = true
+    try {
+      if (isEditing.value) {
+        await updateRol(currentRolId.value, rolForm.value)
+        ElMessage.success('Rol actualizado exitosamente')
+      } else {
+        await createRol(rolForm.value)
+        ElMessage.success('Rol creado exitosamente')
+      }
+
+      showRolModal.value = false
+      await loadRoles()
+    } catch (error) {
+      console.error('Error guardando rol:', error)
+    } finally {
+      saving.value = false
+    }
+  })
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return '-'
+  const date = new Date(dateString)
+  return date.toLocaleDateString('es-ES')
+}
+
+onMounted(() => {
+  loadRoles()
+})
 </script>
 
 <style scoped>
@@ -318,12 +328,12 @@ export default {
 
 /* Page Header - Red Gradient */
 .page-header {
-  background: linear-gradient(135deg, #E51D22 0%, #a3161a 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   color: white;
   padding: 25px 20px;
   border-radius: 8px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 10px rgba(229, 29, 34, 0.2);
+  box-shadow: 0 4px 10px rgba(30, 41, 59, 0.2);
 }
 
 .header-content {
@@ -348,7 +358,7 @@ export default {
 }
 
 /* Header Button */
-.header-content ::v-deep > .el-button--primary {
+.header-content :deep(> .el-button--primary) {
   background: rgba(255, 255, 255, 0.15) !important;
   border: 2px solid rgba(255, 255, 255, 0.3) !important;
   color: #fff !important;
@@ -361,7 +371,7 @@ export default {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-.header-content ::v-deep > .el-button--primary:hover {
+.header-content :deep(> .el-button--primary:hover) {
   background: rgba(255, 255, 255, 0.25) !important;
   border-color: rgba(255, 255, 255, 0.5) !important;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
@@ -370,55 +380,55 @@ export default {
 
 /* Roles Card Container */
 .roles-card {
-  background: white;
+  background: var(--color-bg-card);
   padding: 24px;
   border-radius: 16px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); /* Card shadow */
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
 }
 
 /* Table Styles - Matching Athlete List */
-::v-deep .el-table {
+:deep(.el-table) {
   border-radius: 12px;
   overflow: hidden;
 }
 
 /* Table Header */
-::v-deep .el-table__header-wrapper th {
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9) !important;
-  color: #1e293b !important;
+:deep(.el-table__header-wrapper th) {
+  background: linear-gradient(135deg, var(--color-bg-card), var(--color-bg-body)) !important;
+  color: var(--color-text-main) !important;
   font-weight: 700 !important;
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  border-bottom: 3px solid #E51D22 !important; /* Red Underline */
+  border-bottom: 3px solid var(--color-primary) !important; /* Red Underline */
   padding: 16px 12px !important;
   white-space: nowrap;
 }
 
 /* Table Rows */
-::v-deep .el-table__body tr {
+:deep(.el-table__body tr) {
   transition: all 0.3s ease;
 }
 
-::v-deep .el-table__body tr td {
+:deep(.el-table__body tr td) {
   padding: 16px 12px !important;
-  border-bottom: 2px solid #94a3b8 !important; /* Visible borders */
-  color: #1e293b;
+  border-bottom: 2px solid var(--color-border) !important; /* Visible borders */
+  color: var(--color-text-main);
   font-weight: 500;
 }
 
 /* Hover Effect */
-::v-deep .el-table__body tr:hover > td {
-  background: linear-gradient(135deg, #fff5f5, #fff) !important;
-  border-bottom-color: #E51D22 !important;
+:deep(.el-table__body tr:hover > td) {
+  background: var(--color-bg-hover) !important;
+  border-bottom-color: var(--color-primary) !important;
 }
 
-::v-deep .el-table--striped .el-table__body tr.el-table__row--striped td {
-  background: #f8fafc !important;
+:deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  background: var(--color-bg-card) !important;
 }
 
-::v-deep .el-table--striped .el-table__body tr.el-table__row--striped:hover > td {
+:deep(.el-table--striped .el-table__body tr.el-table__row--striped:hover > td) {
   background: linear-gradient(135deg, #fff5f5, #fff) !important;
 }
 
@@ -430,9 +440,9 @@ export default {
 }
 
 .rol-name i {
-  color: #E51D22;
+  color: var(--color-primary);
   font-size: 1.2rem;
-  background: #fff1f0;
+  background: var(--color-bg-card)1f0;
   padding: 8px;
   border-radius: 8px;
 }
@@ -443,39 +453,39 @@ export default {
 }
 
 /* Tag Styles */
-::v-deep .el-tag--primary {
+:deep(.el-tag--primary) {
   background-color: #f0f9eb;
   border-color: #e1f3d8;
   color: #67C23A; /* Green for active/count */
   font-weight: 600;
 }
 
-::v-deep .el-tag--info {
+:deep(.el-tag--info) {
   background-color: #f4f4f5;
   border-color: #e9e9eb;
   color: #909399;
 }
 
 /* Action Buttons (Blue/Red Circles) */
-::v-deep .el-table .el-button--primary.is-circle {
+:deep(.el-table .el-button--primary.is-circle) {
   background-color: #409EFF;
   border-color: #409EFF;
   box-shadow: 0 2px 6px rgba(64, 158, 255, 0.3);
 }
 
-::v-deep .el-table .el-button--primary.is-circle:hover {
+:deep(.el-table .el-button--primary.is-circle:hover) {
   background-color: #66b1ff;
   border-color: #66b1ff;
   transform: translateY(-2px);
 }
 
-::v-deep .el-table .el-button--danger.is-circle {
+:deep(.el-table .el-button--danger.is-circle) {
   background-color: #F56C6C;
   border-color: #F56C6C;
   box-shadow: 0 2px 6px rgba(245, 108, 108, 0.3);
 }
 
-::v-deep .el-table .el-button--danger.is-circle:hover {
+:deep(.el-table .el-button--danger.is-circle:hover) {
   background-color: #f78989;
   border-color: #f78989;
   transform: translateY(-2px);
@@ -527,13 +537,13 @@ export default {
 }
 
 .role-card {
-  background: white;
+  background: var(--color-bg-card);
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 15px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e2e8f0;
-  border-left: 4px solid #E51D22;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
 }
 
 .card-header-section {
@@ -542,14 +552,14 @@ export default {
   gap: 14px;
   margin-bottom: 12px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--color-bg-body);
 }
 
 .role-icon-wrapper {
   width: 50px;
   height: 50px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #E51D22, #c41a1d);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -567,24 +577,24 @@ export default {
 .role-main-info .role-name {
   font-weight: 700;
   font-size: 1.1rem;
-  color: #1e293b;
+  color: var(--color-text-main);
 }
 
 .role-main-info .role-id {
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 .card-description {
   margin-bottom: 12px;
   padding: 10px;
-  background: #f8fafc;
+  background: var(--color-bg-card);
   border-radius: 8px;
 }
 
 .card-description .desc-label {
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   font-weight: 600;
 }
@@ -592,7 +602,7 @@ export default {
 .card-description .desc-text {
   margin: 6px 0 0 0;
   font-size: 0.9rem;
-  color: #1e293b;
+  color: var(--color-text-main);
   line-height: 1.4;
 }
 
@@ -614,14 +624,14 @@ export default {
 
 .card-info-section .info-label {
   font-size: 0.7rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   font-weight: 600;
 }
 
 .card-info-section .info-value {
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-text-main);
   font-size: 0.9rem;
 }
 
@@ -636,7 +646,7 @@ export default {
   display: flex;
   gap: 10px;
   padding-top: 12px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--color-bg-body);
 }
 
 .card-actions-section .el-button {
@@ -683,7 +693,7 @@ export default {
     text-align: center;
   }
 
-  .header-content ::v-deep > .el-button--primary {
+  .header-content :deep(> .el-button--primary) {
     width: 100%;
   }
 
@@ -696,7 +706,7 @@ export default {
     margin-top: 15px;
   }
 
-  .info-section ::v-deep .el-alert__content {
+  .info-section :deep(.el-alert__content) {
     font-size: 0.85rem;
   }
 }

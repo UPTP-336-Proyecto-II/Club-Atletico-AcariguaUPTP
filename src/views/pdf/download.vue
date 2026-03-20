@@ -62,7 +62,7 @@ export default {
   margin: 0 auto;
   display: block;
   width: 740px;
-  background: #fff;
+  background: var(--color-bg-card);
 }
 
 .article__heading {

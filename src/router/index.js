@@ -1,22 +1,13 @@
-import Vue from 'vue'
-import Router from 'vue-router'
-
-Vue.use(Router)
+import { createRouter, createWebHashHistory } from 'vue-router'
 
 /* Layout */
-import Layout from '@/layout'
-
-/* Router Modules */
-// Removed unused router modules: components, charts, table, nested
+import Layout from '@/layout/index.vue'
 
 /**
  * Note: sub-menu only appear when route children.length >= 1
- * Detail see: https://panjiachen.github.io/vue-element-admin-site/guide/essentials/router-and-nav.html
  *
  * hidden: true                   if set true, item will not show in the sidebar(default is false)
  * alwaysShow: true               if set true, will always show the root menu
- *                                if not set alwaysShow, when item has more than one children route,
- *                                it will becomes nested mode, otherwise not show the root menu
  * redirect: noRedirect           if set noRedirect will no redirect in the breadcrumb
  * name:'router-name'             the name is used by <keep-alive> (must set!!!)
  * meta : {
@@ -43,40 +34,40 @@ export const constantRoutes = [
     children: [
       {
         path: '/redirect/:path(.*)',
-        component: () => import('@/views/redirect/index')
+        component: () => import('@/views/redirect/index.vue')
       }
     ]
   },
   {
     path: '/login',
-    component: () => import('@/views/login/index'),
+    component: () => import('@/views/login/index.vue'),
     hidden: true
   },
   {
     path: '/recuperar-password',
-    component: () => import('@/views/login/recuperar'),
+    component: () => import('@/views/login/recuperar.vue'),
     hidden: true
   },
   {
     path: '/auth-redirect',
-    component: () => import('@/views/login/auth-redirect'),
+    component: () => import('@/views/login/auth-redirect.vue'),
     hidden: true
   },
   {
     path: '/404',
-    component: () => import('@/views/error-page/404'),
+    component: () => import('@/views/error-page/404.vue'),
     name: 'Page404',
     hidden: true
   },
   {
     path: '/401',
-    component: () => import('@/views/error-page/401'),
+    component: () => import('@/views/error-page/401.vue'),
     hidden: true
   },
   // Nueva landing page como ruta principal
   {
     path: '/',
-    component: () => import('@/views/landing/index'),
+    component: () => import('@/views/landing/index.vue'),
     hidden: true,
     meta: { title: 'Inicio' }
   },
@@ -87,7 +78,7 @@ export const constantRoutes = [
     children: [
       {
         path: 'index',
-        component: () => import('@/views/dashboard/index'),
+        component: () => import('@/views/dashboard/index.vue'),
         name: 'Inicio',
         meta: { title: 'Inicio', icon: 'dashboard', affix: true }
       }
@@ -101,7 +92,7 @@ export const constantRoutes = [
     children: [
       {
         path: 'index',
-        component: () => import('@/views/profile/index'),
+        component: () => import('@/views/profile/index.vue'),
         name: 'Profile',
         meta: { title: 'Profile', icon: 'user', noCache: true }
       }
@@ -122,7 +113,7 @@ export const asyncRoutes = [
     children: [
       {
         path: 'registro',
-        component: () => import('@/views/asistencia/registro'),
+        component: () => import('@/views/asistencia/registro.vue'),
         name: 'RegistroDiario',
         meta: { title: 'Asistencia', icon: 'el-icon-document', roles: ['super_user', 'administrador'] }
       }
@@ -137,7 +128,7 @@ export const asyncRoutes = [
     children: [
       {
         path: 'index',
-        component: () => import('@/views/atletas/index'),
+        component: () => import('@/views/atletas/index.vue'),
         name: 'Atletas',
         meta: { title: 'Atletas', icon: 'el-icon-user', roles: ['super_user', 'administrador', 'entrenador', 'medico'] }
       }
@@ -152,7 +143,7 @@ export const asyncRoutes = [
     children: [
       {
         path: 'index',
-        component: () => import('@/views/categorias/index'),
+        component: () => import('@/views/categorias/index.vue'),
         name: 'Categorias',
         meta: { title: 'Categorías', icon: 'el-icon-medal', roles: ['super_user', 'administrador', 'entrenador'] }
       }
@@ -167,7 +158,7 @@ export const asyncRoutes = [
     children: [
       {
         path: 'index',
-        component: () => import('@/views/plantel/index'),
+        component: () => import('@/views/plantel/index.vue'),
         name: 'Plantel',
         meta: { title: 'Plantel', icon: 'el-icon-s-custom', roles: ['super_user', 'administrador'] }
       }
@@ -188,26 +179,26 @@ export const asyncRoutes = [
     children: [
       {
         path: 'rendimiento',
-        component: () => import('@/views/reportes/rendimiento'),
+        component: () => import('@/views/reportes/rendimiento.vue'),
         name: 'EvolucionAtletas',
         meta: { title: 'Gráfica de Rendimiento', icon: 'el-icon-data-analysis', roles: ['super_user', 'administrador', 'entrenador'] }
       },
       {
         path: 'asistencia-atletas',
-        component: () => import('@/views/reportes/asistencia-atletas'),
+        component: () => import('@/views/reportes/asistencia-atletas.vue'),
         name: 'AsistenciaAtletas',
         meta: { title: 'Asistencia de Atletas', icon: 'el-icon-date', roles: ['super_user', 'administrador', 'entrenador'] }
       },
       {
         path: 'plantel-reporte',
-        component: () => import('@/views/reportes/plantel-reporte'),
+        component: () => import('@/views/reportes/plantel-reporte.vue'),
         name: 'ReportePlantel',
         hidden: true,
         meta: { title: 'Plantel', icon: 'el-icon-s-custom', roles: ['super_user', 'administrador'] }
       },
       {
         path: 'lista-atletas',
-        component: () => import('@/views/reportes/lista-atletas'),
+        component: () => import('@/views/reportes/lista-atletas.vue'),
         name: 'ListaAtletas',
         meta: { title: 'Lista de Atletas', icon: 'el-icon-files', roles: ['super_user', 'administrador', 'entrenador'] }
       }
@@ -228,13 +219,13 @@ export const asyncRoutes = [
     children: [
       {
         path: 'usuarios',
-        component: () => import('@/views/configuracion/usuarios'),
+        component: () => import('@/views/configuracion/usuarios.vue'),
         name: 'UsuariosSistema',
         meta: { title: 'Usuarios del Sistema', icon: 'el-icon-user', roles: ['super_user', 'administrador'] }
       },
       {
         path: 'permisos',
-        component: () => import('@/views/configuracion/permisos'),
+        component: () => import('@/views/configuracion/permisos.vue'),
         name: 'PermisosRoles',
         meta: { title: 'Gestión de Roles', icon: 'el-icon-lock', roles: ['super_user', 'administrador'] }
       }
@@ -242,18 +233,26 @@ export const asyncRoutes = [
   }
 ]
 
-const createRouter = () => new Router({
-  // mode: 'history', // require service support
-  scrollBehavior: () => ({ y: 0 }),
+const router = createRouter({
+  history: createWebHashHistory(),
+  scrollBehavior: () => ({ top: 0 }),
   routes: constantRoutes
 })
 
-const router = createRouter()
-
-// Detail see: https://github.com/vuejs/vue-router/issues/1234#issuecomment-357941465
 export function resetRouter() {
-  const newRouter = createRouter()
-  router.matcher = newRouter.matcher // reset router
+  const newRouter = createRouter({
+    history: createWebHashHistory(),
+    scrollBehavior: () => ({ top: 0 }),
+    routes: constantRoutes
+  })
+  // In Vue Router 4, we need to remove all routes and re-add constant routes
+  // Get all route names to remove
+  router.getRoutes().forEach(route => {
+    const name = route.name
+    if (name && !constantRoutes.some(r => r.name === name || (r.children && r.children.some(c => c.name === name)))) {
+      router.removeRoute(name)
+    }
+  })
 }
 
 export default router

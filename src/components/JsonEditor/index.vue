@@ -9,7 +9,7 @@ import CodeMirror from 'codemirror'
 import 'codemirror/addon/lint/lint.css'
 import 'codemirror/lib/codemirror.css'
 import 'codemirror/theme/rubyblue.css'
-require('script-loader!jsonlint')
+// require('script-loader!jsonlint') // Removido para compatibilidad con Vite
 import 'codemirror/mode/javascript/javascript'
 import 'codemirror/addon/lint/lint'
 import 'codemirror/addon/lint/json-lint'
@@ -59,7 +59,7 @@ export default {
   height: 100%;
   position: relative;
 
-  ::v-deep {
+  :deep() {
     .CodeMirror {
       height: auto;
       min-height: 300px;
