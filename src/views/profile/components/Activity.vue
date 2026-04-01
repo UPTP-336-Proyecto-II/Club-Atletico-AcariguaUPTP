@@ -113,7 +113,7 @@ export default {
 
     .username{
       font-size: 16px;
-      color: #000;
+      color: var(--color-text-main);
     }
 
     :after {
@@ -135,10 +135,10 @@ export default {
 
   .post {
     font-size: 14px;
-    border-bottom: 1px solid #d2d6de;
+    border-bottom: 1px solid var(--color-border);
     margin-bottom: 15px;
     padding-bottom: 15px;
-    color: #666;
+    color: var(--color-text-muted);
 
     .image {
       width: 100%;
@@ -180,6 +180,6 @@ export default {
 }
 
 .text-muted {
-  color: #777;
+  color: var(--color-text-muted);
 }
 </style>

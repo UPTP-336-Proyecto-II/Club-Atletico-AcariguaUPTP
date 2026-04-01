@@ -242,9 +242,9 @@ export default {
 .tags-view-container {
   height: 40px;
   width: 100%;
-  background: #f5f7fa;
-  border-bottom: 1px solid rgba(30, 41, 59, 0.1);
-  box-shadow: 0 2px 4px rgba(229, 29, 34, 0.05);
+  background: var(--color-bg-card);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 1px 3px 0 var(--color-shadow);
 
   .tags-view-wrapper {
     overflow-x: auto;
@@ -280,9 +280,9 @@ export default {
       }
 
       &:hover {
-        border-color: rgba(229, 29, 34, 0.4);
-        background: rgba(229, 29, 34, 0.02);
-        color: #333;
+        border-color: var(--color-primary);
+        background: var(--color-bg-hover);
+        color: var(--color-primary);
       }
 
       &.active {
@@ -298,30 +298,29 @@ export default {
         &::after {
           content: '';
           position: absolute;
-          top: -1px;
+          bottom: 0;
           left: 0;
           right: 0;
-          height: 2px;
-          background: rgba(255, 255, 255, 0.8);
-          border-radius: 2px 2px 0 0;
+          height: 3px;
+          background: #ffffff;
+          border-radius: 3px 3px 0 0;
         }
       }
     }
   }
 
   .contextmenu {
-    margin: 0;
     background: var(--color-bg-card);
     z-index: 3000;
     position: absolute;
     list-style-type: none;
     padding: 6px 0;
-    border-radius: 4px;
+    border-radius: 12px;
     font-size: 13px;
-    font-weight: 400;
-    color: #333;
-    border: 1px solid rgba(30, 41, 59, 0.1);
-    box-shadow: 0 4px 12px rgba(229, 29, 34, 0.15);
+    font-weight: 500;
+    color: var(--color-text-main);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 10px 25px -5px var(--color-shadow);
 
     li {
       margin: 0;
@@ -330,7 +329,7 @@ export default {
       transition: all 0.2s ease;
 
       &:hover {
-        background: rgba(229, 29, 34, 0.08);
+        background: var(--color-bg-hover);
         color: var(--color-primary);
       }
     }
@@ -344,6 +343,7 @@ export default {
     .el-icon-close {
       width: 14px;
       height: 14px;
+      line-height: 1;
       vertical-align: middle;
       border-radius: 50%;
       text-align: center;
@@ -352,7 +352,11 @@ export default {
       margin-left: 4px;
       color: #999;
       font-size: 12px;
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      top: -1px;
       cursor: pointer;
 
       &:hover {

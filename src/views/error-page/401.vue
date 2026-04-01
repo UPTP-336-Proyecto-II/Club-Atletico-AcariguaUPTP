@@ -5,24 +5,24 @@
     </el-button>
     <el-row>
       <el-col :span="12">
-        <h1 class="text-jumbo text-ginormous">
-          Oops!
-        </h1>
-        <h2>No tienes permisos para acceder a esta página</h2>
-        <h6>Contacta con el administrador si crees que es un error</h6>
-        <ul class="list-unstyled">
-          <li>Puedes ir a:</li>
-          <li class="link-type">
-            <router-link to="/dashboard">
-              Página de inicio
-            </router-link>
-          </li>
-        </ul>
-      </el-col>
-      <el-col :span="12">
-        <img :src="errGif" width="313" height="428" alt="Error 401">
-      </el-col>
-    </el-row>
+     <div class="err-content">
+       <h1 class="text-jumbo">Oops!</h1>
+       <h2 class="err-title">No tienes permisos para acceder a esta página</h2>
+       <p class="err-subtitle">Contacta con el administrador si crees que es un error</p>
+       <div class="link-section">
+         <p>Puedes ir a:</p>
+         <router-link to="/dashboard" class="premium-link">
+           <i class="el-icon-s-home" /> Página de inicio
+         </router-link>
+       </div>
+     </div>
+   </el-col>
+   <el-col :span="12" class="img-col">
+     <div class="pic-401">
+       <img :src="errGif" width="313" height="428" alt="Error 401">
+     </div>
+   </el-col>
+ </el-row>
   </div>
 </template>
 
@@ -50,36 +50,84 @@ function back() {
 
 <style lang="scss" scoped>
   .errPage-container {
-    width: 800px;
+    width: 900px;
     max-width: 100%;
     margin: 100px auto;
+    padding: 0 20px;
+
     .pan-back-btn {
-      background: #008489;
+      background: var(--color-primary);
       color: #fff;
-      border: none!important;
-    }
-    .pan-img {
-      display: block;
-      margin: 0 auto;
-      width: 100%;
-    }
-    .text-jumbo {
-      font-size: 60px;
+      border: none !important;
+      border-radius: 12px;
+      padding: 10px 24px;
       font-weight: 700;
-      color: #484848;
-    }
-    .list-unstyled {
-      font-size: 14px;
-      li {
-        padding-bottom: 5px;
+      transition: all 0.2s ease;
+      margin-bottom: 40px;
+
+      &:hover {
+        background: var(--color-primary-hover);
+        transform: translateX(-4px);
       }
-      a {
-        color: #008489;
-        text-decoration: none;
+    }
+
+    .err-content {
+      padding-top: 20px;
+    }
+
+    .text-jumbo {
+      font-size: 80px;
+      font-weight: 800;
+      color: var(--color-primary);
+      margin: 0 0 16px 0;
+      letter-spacing: -0.05em;
+    }
+
+    .err-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--color-text-main);
+      margin: 0 0 12px 0;
+    }
+
+    .err-subtitle {
+      font-size: 16px;
+      color: var(--color-text-muted);
+      margin-bottom: 30px;
+    }
+
+    .link-section {
+      p {
+        font-size: 14px;
+        color: var(--color-text-muted);
+        margin-bottom: 12px;
+      }
+      .premium-link {
+        color: var(--color-primary);
+        font-weight: 700;
+        font-size: 1.1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: color 0.2s;
+
         &:hover {
+          color: var(--color-primary-hover);
           text-decoration: underline;
         }
       }
+    }
+
+    .img-col {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .pic-401 {
+      overflow: hidden;
+      border-radius: 24px;
+      box-shadow: 0 10px 30px -10px var(--color-shadow);
     }
   }
 </style>

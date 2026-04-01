@@ -1,0 +1,156 @@
+/* ==================================================
+   Theme Consistency Layer (Light / Dark)
+   Keeps Element Plus + custom modules in sync.
+   ================================================== */
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+}
+
+[data-theme='dark'],
+html.dark {
+  color-scheme: dark;
+}
+
+html,
+body,
+#app {
+  background-color: var(--color-bg-body);
+  color: var(--color-text-main);
+}
+
+.main-container,
+.app-container,
+.components-container,
+.table-container {
+  color: var(--color-text-main);
+}
+
+.el-input__wrapper,
+.el-select__wrapper,
+.el-date-editor .el-input__wrapper,
+.el-range-editor.el-input__wrapper,
+.el-input-number .el-input__wrapper,
+.el-textarea__inner {
+  background-color: var(--color-bg-input);
+  color: var(--color-text-main);
+}
+
+.el-input__inner,
+.el-textarea__inner,
+.el-select__selected-item,
+.el-range-input,
+.el-range-separator,
+.el-input__icon {
+  color: var(--color-text-main);
+}
+
+.el-input__inner::placeholder,
+.el-textarea__inner::placeholder,
+.el-range-input::placeholder,
+.el-select__placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.el-tabs--border-card {
+  background: var(--color-bg-card);
+  border-color: var(--color-border);
+}
+
+.el-tabs--border-card > .el-tabs__header {
+  background-color: var(--color-bg-hover);
+  border-bottom-color: var(--color-border);
+}
+
+.el-tabs--border-card > .el-tabs__header .el-tabs__item {
+  color: var(--color-text-muted);
+}
+
+.el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active {
+  color: var(--color-primary);
+  background-color: var(--color-bg-card);
+  border-left-color: var(--color-border);
+  border-right-color: var(--color-border);
+}
+
+.el-tabs--border-card > .el-tabs__content {
+  background: var(--color-bg-card);
+  color: var(--color-text-main);
+}
+
+.el-table,
+.el-table__inner-wrapper,
+.el-table tr,
+.el-table__expanded-cell {
+  background-color: var(--color-bg-card);
+  color: var(--color-text-main);
+}
+
+.el-table th.el-table__cell {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-muted);
+}
+
+.el-table td.el-table__cell,
+.el-table th.el-table__cell,
+.el-table__inner-wrapper::before {
+  border-color: var(--color-border);
+}
+
+.el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell {
+  background-color: var(--color-bg-hover);
+}
+
+.el-dropdown-menu,
+.el-select-dropdown,
+.el-picker-panel,
+.el-popover.el-popper,
+.el-popper.is-light,
+.el-autocomplete-suggestion,
+.el-cascader__dropdown {
+  background: var(--color-bg-card);
+  border-color: var(--color-border);
+  color: var(--color-text-main);
+}
+
+.el-dropdown-menu__item,
+.el-select-dropdown__item {
+  color: var(--color-text-main);
+}
+
+.el-dropdown-menu__item:hover,
+.el-select-dropdown__item.hover,
+.el-select-dropdown__item:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.el-dialog,
+.el-drawer,
+.el-message-box {
+  background: var(--color-bg-card);
+  border-color: var(--color-border);
+  color: var(--color-text-main);
+}
+
+.el-dialog__title,
+.el-drawer__title,
+.el-message-box__title,
+.el-message-box__message p,
+.el-message-box__content {
+  color: var(--color-text-main);
+}
+
+.el-form-item__label,
+.el-descriptions__label,
+.el-descriptions__content {
+  color: var(--color-text-main);
+}
+
+.el-descriptions__label.el-descriptions__cell {
+  background-color: var(--color-bg-hover);
+}
+
+.el-descriptions__cell {
+  border-color: var(--color-border);
+}

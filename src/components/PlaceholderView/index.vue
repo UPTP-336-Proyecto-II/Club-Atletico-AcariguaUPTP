@@ -38,8 +38,6 @@ export default {
 <style lang="scss" scoped>
 .placeholder-container {
   padding: 40px;
-  background-color: #f5f7fa;
-  min-height: calc(100vh - 84px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -48,7 +46,7 @@ export default {
 .placeholder-card {
   background: var(--color-bg-card);
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(30, 41, 59, 0.1);
+  box-shadow: 0 4px 20px var(--color-shadow);
   padding: 60px 80px;
   text-align: center;
   max-width: 600px;
@@ -68,20 +66,20 @@ export default {
   .page-title {
     font-size: 28px;
     font-weight: 700;
-    color: #333;
+    color: var(--color-text-main);
     margin: 0 0 16px 0;
     font-family: 'Figtree', 'Segoe UI', sans-serif;
   }
 
   .page-description {
     font-size: 16px;
-    color: #666;
+    color: var(--color-text-muted);
     margin: 0 0 32px 0;
   }
 
   .info-box {
     background: rgba(229, 29, 34, 0.05);
-    border: 1px solid rgba(30, 41, 59, 0.2);
+    border: 1px solid var(--color-border);
     border-radius: 8px;
     padding: 16px 24px;
     display: inline-flex;

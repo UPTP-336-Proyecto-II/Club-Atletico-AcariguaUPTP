@@ -214,7 +214,7 @@ export default {
 
 .header-section h3 {
   margin: 0 0 5px 0;
-  color: #303133;
+  color: var(--color-text-main);
   font-size: 1.3rem;
   font-weight: 700;
 }
@@ -226,12 +226,12 @@ export default {
 
 /* Question blocks with enhanced styling */
 .question-block {
-  background: linear-gradient(135deg, var(--color-bg-card), var(--color-bg-body));
+  background: var(--color-bg-card);
   padding: 24px;
   border-radius: 12px;
   margin-bottom: 24px;
-  border: 2px solid #cbd5e1;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border: 2px solid var(--color-border);
+  box-shadow: 0 4px 12px var(--color-shadow);
   transition: all 0.3s ease;
 }
 
@@ -252,8 +252,8 @@ export default {
 /* Enhanced select inputs */
 .question-block :deep(.el-select .el-input__inner),
 .question-block :deep(.el-input__inner) {
-  background: var(--color-bg-card) !important;
-  border: 2px solid #64748b !important;
+  background: var(--color-bg-body) !important;
+  border: 2px solid var(--color-border) !important;
   border-radius: 10px;
   padding: 12px 16px;
   font-size: 0.95rem;

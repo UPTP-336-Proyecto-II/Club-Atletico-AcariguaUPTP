@@ -24,6 +24,16 @@
 
       <!-- Botón de acción -->
       <div class="navbar-actions">
+        <button
+          type="button"
+          class="theme-toggle"
+          :aria-label="theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+          :title="theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+          @click="toggleTheme"
+        >
+          <el-icon v-if="theme === 'dark'"><Sunny /></el-icon>
+          <el-icon v-else><Moon /></el-icon>
+        </button>
         <el-button class="login-btn" @click="goToLogin">Acceder</el-button>
 
         <!-- Menú móvil -->
@@ -46,17 +56,26 @@
 </template>
 
 <script>
+import { Moon, Sunny } from '@element-plus/icons-vue'
+import { applyTheme, getSavedTheme, saveTheme } from '@/utils/theme'
+
 export default {
   name: 'LandingNavBar',
+  components: {
+    Moon,
+    Sunny
+  },
   data() {
     return {
-      mobileMenuOpen: false
+      mobileMenuOpen: false,
+      theme: getSavedTheme()
     }
   },
   mounted() {
+    this.theme = applyTheme(this.theme)
     window.addEventListener('resize', this.closeMobileMenu)
   },
-  beforeDestroy() {
+  beforeUnmount() {
     window.removeEventListener('resize', this.closeMobileMenu)
   },
   methods: {
@@ -68,6 +87,10 @@ export default {
     },
     closeMobileMenu() {
       this.mobileMenuOpen = false
+    },
+    toggleTheme() {
+      const nextTheme = this.theme === 'light' ? 'dark' : 'light'
+      this.theme = saveTheme(nextTheme)
     }
   }
 }
@@ -181,6 +204,38 @@ export default {
   display: flex;
   align-items: center;
   gap: 1rem;
+}
+
+.theme-toggle {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: var(--color-primary);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(255, 59, 48, 0.22);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.theme-toggle :deep(.el-icon) {
+  font-size: 1.1rem;
+}
+
+.theme-toggle:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 16px 28px rgba(255, 59, 48, 0.28);
+}
+
+.theme-toggle:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(255, 59, 48, 0.2),
+    0 12px 24px rgba(255, 59, 48, 0.22);
 }
 
 .login-btn {
@@ -318,6 +373,10 @@ export default {
     padding: 0.5rem 0.75rem;
   }
 
+  .navbar-actions {
+    gap: 0.5rem;
+  }
+
   .logo-icon {
     height: 38px;
   }
@@ -325,6 +384,12 @@ export default {
   .mobile-menu {
     width: 44px;
     height: 44px;
+  }
+
+  .theme-toggle {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
   }
 }
 

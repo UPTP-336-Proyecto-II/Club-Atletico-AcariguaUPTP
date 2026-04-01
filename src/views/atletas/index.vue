@@ -1,7 +1,7 @@
 <template>
   <div class="atletas-container">
     <!-- Header -->
-    <div class="page-header">
+    <div class="premium-header">
       <div class="header-content">
         <div class="header-info">
           <h1>Gestión de Atletas
@@ -14,77 +14,112 @@
           </h1>
           <p class="subtitle">Club Atlético Deportivo Acarigua</p>
         </div>
-        <button v-if="canUserEdit" class="add-atleta-btn" @click="openAtletaModal(false)">
-          <span class="add-icon">+</span>
-          Agregar Atleta
-        </button>
       </div>
     </div>
 
     <!-- Main Content -->
     <div class="main-content">
       <!-- Sidebar con lista de atletas -->
-      <aside class="sidebar">
-        <div class="sidebar-card">
+      <aside class="sidebar premium-sidebar">
+        <el-card v-loading="loadingAtletas" shadow="hover">
           <div class="sidebar-header">
-            <span class="sidebar-title">📋 Lista de Atletas</span>
-            <el-popover placement="bottom-end" width="260" trigger="click">
-              <div class="filter-popover">
-                <h4>⚙️ Filtros Avanzados</h4>
-                <div class="filter-item">
-                  <label>Ordenar por</label>
-                  <el-select v-model="filterOrder" placeholder="Seleccionar" size="small" style="width: 100%">
-                    <el-option label="Más Recientes" value="recent" />
-                    <el-option label="Más Antiguos" value="oldest" />
-                    <el-option label="Nombre (A-Z)" value="name_asc" />
-                    <el-option label="Nombre (Z-A)" value="name_desc" />
-                  </el-select>
+            <span class="sidebar-title">
+              <el-icon class="sidebar-title-icon"><Collection /></el-icon>
+              <span>Lista de Atletas</span>
+            </span>
+            <div class="sidebar-actions">
+              <button v-if="canUserEdit" class="mini-add-btn" title="Agregar Atleta" @click="openAtletaModal(false)">
+                <el-icon><Plus /></el-icon>
+              </button>
+              <el-popover placement="bottom-end" width="280" trigger="click" popper-class="athletes-filter-popper">
+                <div class="filter-popover">
+                  <div class="filter-popover-header">
+                    <span class="filter-popover-kicker">Panel rápido</span>
+                    <h4>Filtros avanzados</h4>
+                    <p>Refina la lista por orden, categoría o estatus.</p>
+                  </div>
+                  <div class="filter-item">
+                    <label>Ordenar por</label>
+                    <el-select
+                      v-model="filterOrder"
+                      placeholder="Elige el orden"
+                      class="modern-filter-select"
+                      popper-class="athletes-filter-select-dropdown"
+                      style="width: 100%"
+                    >
+                      <el-option label="Más Recientes" value="recent" />
+                      <el-option label="Más Antiguos" value="oldest" />
+                      <el-option label="Nombre (A-Z)" value="name_asc" />
+                      <el-option label="Nombre (Z-A)" value="name_desc" />
+                    </el-select>
+                  </div>
+                  <div class="filter-item">
+                    <label>Categoría</label>
+                    <el-select
+                      v-model="filterCategoria"
+                      placeholder="Todas las categorías"
+                      clearable
+                      class="modern-filter-select"
+                      popper-class="athletes-filter-select-dropdown"
+                      style="width: 100%"
+                    >
+                      <el-option v-for="cat in categorias" :key="cat.categoria_id" :label="cat.nombre_categoria" :value="cat.categoria_id" />
+                    </el-select>
+                  </div>
+                  <div class="filter-item">
+                    <label>Estatus</label>
+                    <el-select
+                      v-model="filterEstatus"
+                      placeholder="Activos por defecto"
+                      clearable
+                      class="modern-filter-select"
+                      popper-class="athletes-filter-select-dropdown"
+                      style="width: 100%"
+                    >
+                      <el-option label="Activos / Lesionados" value="" />
+                      <el-option label="Activo" value="ACTIVO" />
+                      <el-option label="Inactivo" value="INACTIVO" />
+                      <el-option label="Lesionado" value="LESIONADO" />
+                      <el-option label="Suspendido" value="SUSPENDIDO" />
+                      <el-option label="Ver Todos" value="TODOS" />
+                    </el-select>
+                  </div>
                 </div>
-                <div class="filter-item">
-                  <label>Categoría</label>
-                  <el-select v-model="filterCategoria" placeholder="Todas" clearable size="small" style="width: 100%">
-                    <el-option v-for="cat in categorias" :key="cat.categoria_id" :label="cat.nombre_categoria" :value="cat.categoria_id" />
-                  </el-select>
-                </div>
-                <div class="filter-item">
-                  <label>Estatus</label>
-                  <el-select v-model="filterEstatus" placeholder="Predeterminado" clearable size="small" style="width: 100%">
-                    <el-option label="Activos / Lesionados" value="" />
-                    <el-option label="Activo" value="ACTIVO" />
-                    <el-option label="Inactivo" value="INACTIVO" />
-                    <el-option label="Lesionado" value="LESIONADO" />
-                    <el-option label="Suspendido" value="SUSPENDIDO" />
-                    <el-option label="Ver Todos" value="TODOS" />
-                  </el-select>
-                </div>
-              </div>
-              <template #reference>
-                <button class="filter-toggle-btn" title="Filtros avanzados">⚙</button>
-              </template>
-            </el-popover>
+                <template #reference>
+                  <button class="filter-toggle-btn" title="Abrir filtros avanzados">
+                    <el-icon><Setting /></el-icon>
+                  </button>
+                </template>
+              </el-popover>
+            </div>
           </div>
           <div class="search-container">
+            <div class="search-intro">
+              <span class="search-intro-badge">Búsqueda rápida</span>
+              <p>Encuentra atletas por nombre o filtra por cédula en segundos.</p>
+            </div>
             <div class="search-field">
-              <label class="search-label">Buscar por Nombre</label>
-              <el-input v-model="searchQuery" placeholder="Nombre o apellido..." size="small" clearable />
+              <label class="premium-search-label">Buscar Atleta</label>
+              <el-input v-model="searchQuery" placeholder="Busca por nombre o apellido" clearable class="modern-search-input modern-sidebar-control" />
             </div>
             <div class="cedula-filter">
-              <label class="search-label">Filtro de Cédula</label>
-              <div class="cedula-filter-buttons">
-                <button class="cedula-btn" :class="{ active: filterCedula === 'todos' }" @click="filterCedula = 'todos'">Todos</button>
-                <button class="cedula-btn" :class="{ active: filterCedula === 'con_cedula' }" @click="filterCedula = 'con_cedula'">Con Cédula</button>
-                <button class="cedula-btn" :class="{ active: filterCedula === 'sin_cedula' }" @click="filterCedula = 'sin_cedula'">Sin Cédula</button>
+              <label class="premium-search-label">Filtro de Cédula</label>
+              <div class="modern-toggle-group">
+                <button class="toggle-btn" :class="{ active: filterCedula === 'todos' }" @click="filterCedula = 'todos'">Todos</button>
+                <button class="toggle-btn" :class="{ active: filterCedula === 'con_cedula' }" @click="filterCedula = 'con_cedula'">Con Cédula</button>
+                <button class="toggle-btn" :class="{ active: filterCedula === 'sin_cedula' }" @click="filterCedula = 'sin_cedula'">Sin Cédula</button>
               </div>
-              <el-input v-if="filterCedula === 'con_cedula'" v-model="searchCedula" placeholder="🔎 Ingresar cédula..." size="small" clearable maxlength="9" class="cedula-search-input" @input="v => searchCedula = v.replace(/\D/g, '')" />
+              <el-input v-if="filterCedula === 'con_cedula'" v-model="searchCedula" placeholder="Escribe la cédula sin puntos" clearable maxlength="9" class="modern-cedula-input modern-sidebar-control" @input="v => searchCedula = v.replace(/\D/g, '')" />
+              <p v-if="filterCedula === 'con_cedula'" class="field-caption">Usa solo números para encontrar coincidencias exactas.</p>
             </div>
           </div>
           <div class="athlete-list">
-            <div v-for="atleta in atletas" :key="atleta.atleta_id" class="athlete-item" :class="{ active: currentAtletaId === atleta.atleta_id }" @click="selectAtleta(atleta.atleta_id)">
-              <div class="athlete-photo">
+            <div v-for="atleta in atletas" :key="atleta.atleta_id" class="premium-list-item" :class="{ active: currentAtletaId === atleta.atleta_id }" @click="selectAtleta(atleta.atleta_id)">
+              <div class="item-photo">
                 <img v-if="atleta.foto" :src="getFotoUrl(atleta.foto)" class="avatar-img">
                 <span v-else class="avatar-initials">{{ (atleta.nombre || '?').charAt(0) }}{{ (atleta.apellido || '').charAt(0) }}</span>
               </div>
-              <div class="athlete-info">
+              <div class="item-info">
                 <h3>{{ atleta.nombre }} {{ atleta.apellido }}</h3>
                 <p>{{ formatEnum(atleta.posicion_de_juego_nombre) || 'Sin posición' }}</p>
                 <p class="athlete-category">{{ atleta.categoria_nombre || 'Sin categoría' }}</p>
@@ -92,25 +127,29 @@
               <span class="athlete-status-dot" :class="'status-' + (atleta.estatus || '').toLowerCase()" :title="atleta.estatus" />
             </div>
             <div v-if="atletas.length === 0" class="empty-list">
-              <span class="empty-list-icon">⚽</span>
+              <span class="empty-list-icon">
+                <el-icon><Collection /></el-icon>
+              </span>
               <p class="empty-list-title">Sin atletas</p>
               <p class="empty-list-hint">Agrega tu primer atleta con el botón de arriba</p>
             </div>
           </div>
-        </div>
+        </el-card>
       </aside>
 
       <!-- Área de contenido -->
       <main class="content-area">
         <div v-if="!currentAtletaId" class="empty-main">
           <div class="empty-main-content">
-            <span class="empty-main-icon">🏟️</span>
+            <span class="empty-main-icon">
+              <el-icon><UserFilled /></el-icon>
+            </span>
             <h3>No hay atleta seleccionado</h3>
             <p>Selecciona un atleta de la lista o agrega uno nuevo.</p>
           </div>
         </div>
 
-        <el-card v-else shadow="hover" class="detail-card">
+        <el-card v-else v-loading="loading" shadow="hover" class="detail-card">
           <!-- Encabezado del atleta -->
           <div class="athlete-details-header">
             <div class="athlete-details-photo">
@@ -119,14 +158,46 @@
             </div>
             <div class="athlete-details-info">
               <h2>{{ currentAtleta.nombre }} {{ currentAtleta.apellido }}</h2>
-              <p>📂 Categoría: {{ currentAtleta.categoria_nombre || 'No asignada' }}</p>
-              <p>🎂 Edad: {{ calculateAge(currentAtleta.fecha_nacimiento) }} años</p>
+              <div class="athlete-meta">
+                <div class="athlete-meta-item">
+                  <span class="athlete-meta-icon">
+                    <el-icon><CollectionTag /></el-icon>
+                  </span>
+                  <span class="athlete-meta-copy">
+                    <span class="athlete-meta-label">Categoría</span>
+                    <span class="athlete-meta-value">{{ currentAtleta.categoria_nombre || 'No asignada' }}</span>
+                  </span>
+                </div>
+                <div class="athlete-meta-item">
+                  <span class="athlete-meta-icon">
+                    <el-icon><Calendar /></el-icon>
+                  </span>
+                  <span class="athlete-meta-copy">
+                    <span class="athlete-meta-label">Edad</span>
+                    <span class="athlete-meta-value">{{ calculateAge(currentAtleta.fecha_nacimiento) }} años</span>
+                  </span>
+                </div>
+              </div>
               <el-tag :type="getStatusType(currentAtleta.estatus)" size="small">{{ currentAtleta.estatus }}</el-tag>
             </div>
             <div class="athlete-actions">
-              <button v-if="!isUserMedico" class="action-btn action-btn-info" @click="goToProgress" title="Análisis">📊 Análisis</button>
-              <button v-if="canUserEdit && !isUserMedico" class="action-btn action-btn-danger" @click="deleteAtleta" title="Eliminar">🗑️ Eliminar</button>
-              <button v-if="canUserEdit || (isUserEntrenador && (activeTab === 'anthropometric' || activeTab === 'performance'))" class="action-btn action-btn-primary" @click="handleEdit" title="Editar">✏️ Editar</button>
+              <button v-if="!isUserMedico" class="action-btn action-btn-info" @click="goToProgress" title="Análisis">
+                <el-icon class="action-btn-icon"><DataAnalysis /></el-icon>
+                <span>Análisis</span>
+              </button>
+              <button v-if="canUserEdit && !isUserMedico" class="action-btn action-btn-danger" @click="deleteAtleta" title="Eliminar">
+                <el-icon class="action-btn-icon"><Delete /></el-icon>
+                <span>Eliminar</span>
+              </button>
+              <button
+                v-if="canUserEdit || (isUserEntrenador && (activeTab === 'anthropometric' || activeTab === 'performance'))"
+                class="action-btn action-btn-primary"
+                @click="handleEdit"
+                title="Editar"
+              >
+                <el-icon class="action-btn-icon"><Edit /></el-icon>
+                <span>Editar</span>
+              </button>
             </div>
           </div>
 
@@ -360,13 +431,18 @@
 
     <!-- Modal Atleta -->
     <el-dialog
-      :title="isEditingAtleta ? 'Editar Atleta' : 'Agregar Nuevo Atleta'"
+      :title="isEditingAtleta ? 'Editar atleta' : 'Nuevo atleta'"
       v-model="showAtletaModal"
       width="700px"
       :close-on-click-modal="false"
+      class="modern-athlete-dialog"
     >
-      <el-form ref="atletaFormRef" :model="atletaForm" :rules="atletaRules" label-position="top">
+      <el-form ref="atletaFormRef" :model="atletaForm" :rules="atletaRules" label-position="top" class="dialog-form">
         <div class="photo-upload-container">
+          <div class="photo-upload-copy">
+            <span class="photo-upload-badge">Foto del perfil</span>
+            <p>Usa una imagen frontal en formato JPG o PNG. Tamaño máximo: 2 MB.</p>
+          </div>
           <el-upload
             class="avatar-uploader"
             :action="backendUrl + '/api/atletas/upload'"
@@ -383,160 +459,203 @@
             </div>
             <div v-else class="avatar-uploader-icon">
               <i class="el-icon-plus" />
-              <span>Subir Foto</span>
+              <span>Subir foto</span>
             </div>
           </el-upload>
         </div>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Nombre" prop="nombre">
-              <el-input v-model="atletaForm.nombre" placeholder="Nombre del atleta" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Apellido" prop="apellido">
-              <el-input v-model="atletaForm.apellido" placeholder="Apellido del atleta" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Cédula (Opcional)">
-              <el-input
-                v-model="atletaForm.cedula"
-                placeholder="Ej: 123456789"
-                maxlength="9"
-                @input="v => atletaForm.cedula = v.replace(/\D/g, '')"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Fecha de Nacimiento" prop="fecha_nacimiento">
-              <el-date-picker
-                v-model="atletaForm.fecha_nacimiento"
-                type="date"
-                placeholder="Seleccionar"
-                style="width: 100%"
-                value-format="yyyy-MM-dd"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Sexo" prop="sexo">
-              <el-select v-model="atletaForm.sexo" placeholder="Seleccionar" style="width: 100%">
-                <el-option label="Masculino" value="M" />
-                <el-option label="Femenino" value="F" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Posición de Juego">
-              <el-select v-model="atletaForm.posicion_de_juego" placeholder="Seleccionar" style="width: 100%">
-                <el-option label="Sin definir" :value="null" />
-                <el-option
-                  v-for="pos in posiciones"
-                  :key="pos.posicion_id"
-                  :label="formatEnum(pos.nombre_posicion)"
-                  :value="pos.posicion_id"
+        <section class="form-section-card">
+          <div class="form-section-heading">
+            <span class="form-section-kicker">Identidad</span>
+            <h4>Datos personales</h4>
+            <p>Información esencial para identificar al atleta dentro del club.</p>
+          </div>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Nombre" prop="nombre">
+                <el-input
+                  v-model="atletaForm.nombre"
+                  placeholder="Ej. Luis"
+                  @input="v => atletaForm.nombre = v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')"
                 />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Categoría" prop="categoria_id">
-              <el-select v-model="atletaForm.categoria_id" placeholder="Seleccionar" style="width: 100%">
-                <el-option
-                  v-for="cat in categorias"
-                  :key="cat.categoria_id"
-                  :label="cat.nombre_categoria"
-                  :value="cat.categoria_id"
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Apellido" prop="apellido">
+                <el-input
+                  v-model="atletaForm.apellido"
+                  placeholder="Ej. González"
+                  @input="v => atletaForm.apellido = v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')"
                 />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Entrenador a Cargo">
-              <el-input
-                :value="getEntrenadorNombre(atletaForm.categoria_id)"
-                disabled
-                placeholder="Seleccione una categoría"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Teléfono">
-              <el-input
-                v-model="atletaForm.telefono"
-                placeholder="Ej: 04141234567"
-                maxlength="11"
-                @input="v => atletaForm.telefono = v.replace(/\D/g, '')"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Estatus">
-              <el-select v-model="atletaForm.estatus" placeholder="Seleccionar" style="width: 100%">
-                <el-option label="ACTIVO" value="ACTIVO" />
-                <el-option label="INACTIVO" value="INACTIVO" />
-                <el-option label="LESIONADO" value="LESIONADO" />
-                <el-option label="SUSPENDIDO" value="SUSPENDIDO" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Pierna Dominante">
-              <el-select v-model="atletaForm.pierna_dominante" placeholder="Seleccionar" style="width: 100%">
-                <el-option label="Derecha" value="Derecha" />
-                <el-option label="Izquierda" value="Izquierda" />
-                <el-option label="Ambidiestro" value="Ambidiestro" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="País">
-              <el-select v-model="atletaForm.direccion.pais" placeholder="Seleccionar" style="width: 100%" filterable @change="handlePaisChangeAtleta">
-                <el-option v-for="pais in paises" :key="pais" :label="formatEnum(pais)" :value="pais" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Estado">
-              <el-select v-if="atletaForm.direccion.pais === 'venezuela'" v-model="atletaForm.direccion.estado" placeholder="Seleccionar" style="width: 100%" filterable>
-                <el-option v-for="estado in estadosVenezuela" :key="estado" :label="formatEnum(estado)" :value="estado" />
-              </el-select>
-              <el-input v-else v-model="atletaForm.direccion.estado" placeholder="Estado / Provincia" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Municipio">
-              <el-input v-model="atletaForm.direccion.municipio" placeholder="Municipio" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Parroquia">
-              <el-input v-model="atletaForm.direccion.parroquia" placeholder="Parroquia" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="24">
-            <el-form-item label="Descripción de la Dirección">
-              <el-input v-model="atletaForm.direccion.descripcion_descriptiva" placeholder="Calle, casa, edificio, referencias..." type="textarea" :rows="2" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Cédula (opcional)">
+                <el-input
+                  v-model="atletaForm.cedula"
+                  placeholder="Solo números, sin puntos"
+                  maxlength="9"
+                  clearable
+                  @input="v => atletaForm.cedula = v.replace(/\D/g, '')"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Fecha de nacimiento" prop="fecha_nacimiento">
+                <el-date-picker
+                  v-model="atletaForm.fecha_nacimiento"
+                  type="date"
+                  placeholder="Selecciona la fecha"
+                  style="width: 100%"
+                  format="YYYY-MM-DD"
+                  value-format="YYYY-MM-DD"
+                  :disabled-date="disableFutureDates"
+                  :editable="false"
+                  :teleported="false"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </section>
+        <section class="form-section-card">
+          <div class="form-section-heading">
+            <span class="form-section-kicker">Perfil deportivo</span>
+            <h4>Rol dentro del equipo</h4>
+            <p>Define la categoría, posición y estatus actual del atleta.</p>
+          </div>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Sexo" prop="sexo">
+                <el-select v-model="atletaForm.sexo" placeholder="Elige una opción" style="width: 100%">
+                  <el-option label="Masculino" value="M" />
+                  <el-option label="Femenino" value="F" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Posición de juego">
+                <el-select v-model="atletaForm.posicion_de_juego" placeholder="Selecciona la posición" style="width: 100%">
+                  <el-option label="Sin definir" :value="null" />
+                  <el-option
+                    v-for="pos in posiciones"
+                    :key="pos.posicion_id"
+                    :label="formatEnum(pos.nombre_posicion)"
+                    :value="pos.posicion_id"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Categoría" prop="categoria_id">
+                <el-select v-model="atletaForm.categoria_id" placeholder="Selecciona la categoría" style="width: 100%">
+                  <el-option
+                    v-for="cat in categorias"
+                    :key="cat.categoria_id"
+                    :label="cat.nombre_categoria"
+                    :value="cat.categoria_id"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Entrenador a cargo">
+                <el-input
+                  :value="getEntrenadorNombre(atletaForm.categoria_id)"
+                  disabled
+                  placeholder="Se completa al elegir la categoría"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Teléfono">
+                <el-input
+                  v-model="atletaForm.telefono"
+                  placeholder="Solo números, por ejemplo 04141234567"
+                  maxlength="11"
+                  clearable
+                  @input="v => atletaForm.telefono = v.replace(/\D/g, '')"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Estatus">
+                <el-select v-model="atletaForm.estatus" placeholder="Selecciona el estatus" style="width: 100%">
+                  <el-option label="ACTIVO" value="ACTIVO" />
+                  <el-option label="INACTIVO" value="INACTIVO" />
+                  <el-option label="LESIONADO" value="LESIONADO" />
+                  <el-option label="SUSPENDIDO" value="SUSPENDIDO" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Pierna dominante">
+                <el-select v-model="atletaForm.pierna_dominante" placeholder="Elige la pierna hábil" style="width: 100%">
+                  <el-option label="Derecha" value="Derecha" />
+                  <el-option label="Izquierda" value="Izquierda" />
+                  <el-option label="Ambidiestro" value="Ambidiestro" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </section>
+        <section class="form-section-card">
+          <div class="form-section-heading">
+            <span class="form-section-kicker">Ubicación</span>
+            <h4>Dirección del atleta</h4>
+            <p>Agrega una dirección clara para contacto y registro administrativo.</p>
+          </div>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="País">
+                <el-select v-model="atletaForm.direccion.pais" placeholder="Selecciona el país" style="width: 100%" filterable @change="handlePaisChangeAtleta">
+                  <el-option v-for="pais in paises" :key="pais" :label="formatEnum(pais)" :value="pais" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Estado">
+                <el-select v-if="atletaForm.direccion.pais === 'venezuela'" v-model="atletaForm.direccion.estado" placeholder="Selecciona el estado" style="width: 100%" filterable>
+                  <el-option v-for="estado in estadosVenezuela" :key="estado" :label="formatEnum(estado)" :value="estado" />
+                </el-select>
+                <el-input v-else v-model="atletaForm.direccion.estado" placeholder="Estado o provincia" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Municipio">
+                <el-input
+                  v-model="atletaForm.direccion.municipio"
+                  placeholder="Ej. Páez"
+                  @input="v => atletaForm.direccion.municipio = v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Parroquia">
+                <el-input
+                  v-model="atletaForm.direccion.parroquia"
+                  placeholder="Ej. Acarigua"
+                  @input="v => atletaForm.direccion.parroquia = v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <el-form-item label="Descripción de la dirección">
+                <el-input v-model="atletaForm.direccion.descripcion_descriptiva" placeholder="Calle, casa, sector y punto de referencia" type="textarea" :rows="3" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </section>
       </el-form>
       <template #footer>
         <el-button @click="showAtletaModal = false">Cancelar</el-button>
@@ -548,42 +667,52 @@
 
     <!-- Modal Ficha Médica -->
     <el-dialog
-      title="Ficha Médica"
+      title="Ficha médica"
       v-model="showMedicalModal"
       width="600px"
       :close-on-click-modal="false"
+      class="modern-athlete-dialog"
     >
-      <el-form ref="medicalFormRef" :model="medicalForm" label-position="top">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Tipo Sanguíneo">
-              <el-select v-model="medicalForm.tipo_sanguineo" placeholder="Seleccionar" style="width: 100%">
-                <el-option label="A+" value="A+" />
-                <el-option label="A-" value="A-" />
-                <el-option label="B+" value="B+" />
-                <el-option label="B-" value="B-" />
-                <el-option label="O+" value="O+" />
-                <el-option label="O-" value="O-" />
-                <el-option label="AB+" value="AB+" />
-                <el-option label="AB-" value="AB-" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Alergias">
-              <el-input v-model="medicalForm.alergias" placeholder="Ej: Polen, maní" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="Lesiones">
-          <el-input v-model="medicalForm.lesion" type="textarea" :rows="2" placeholder="Lesiones previas" />
-        </el-form-item>
-        <el-form-item label="Condición Médica">
-          <el-input v-model="medicalForm.condicion_medica" type="textarea" :rows="2" placeholder="Condiciones médicas actuales" />
-        </el-form-item>
-        <el-form-item label="Observaciones">
-          <el-input v-model="medicalForm.observacion" type="textarea" :rows="3" placeholder="Observaciones adicionales" />
-        </el-form-item>
+      <el-form ref="medicalFormRef" :model="medicalForm" label-position="top" class="dialog-form">
+        <div class="dialog-form-intro compact-intro">
+          <div>
+            <span class="dialog-form-kicker">Salud</span>
+            <h3>Resumen médico</h3>
+          </div>
+          <p>Registra la información clave para atención rápida y seguimiento seguro.</p>
+        </div>
+        <section class="form-section-card">
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Tipo sanguíneo">
+                <el-select v-model="medicalForm.tipo_sanguineo" placeholder="Selecciona el tipo" style="width: 100%">
+                  <el-option label="A+" value="A+" />
+                  <el-option label="A-" value="A-" />
+                  <el-option label="B+" value="B+" />
+                  <el-option label="B-" value="B-" />
+                  <el-option label="O+" value="O+" />
+                  <el-option label="O-" value="O-" />
+                  <el-option label="AB+" value="AB+" />
+                  <el-option label="AB-" value="AB-" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Alergias">
+                <el-input v-model="medicalForm.alergias" placeholder="Ej. Penicilina, maní o polvo" clearable />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-form-item label="Lesiones">
+            <el-input v-model="medicalForm.lesion" type="textarea" :rows="3" placeholder="Describe lesiones previas o actuales" />
+          </el-form-item>
+          <el-form-item label="Condición médica">
+            <el-input v-model="medicalForm.condicion_medica" type="textarea" :rows="3" placeholder="Indica diagnósticos o condiciones relevantes" />
+          </el-form-item>
+          <el-form-item label="Observaciones">
+            <el-input v-model="medicalForm.observacion" type="textarea" :rows="4" placeholder="Añade alertas, restricciones o notas médicas" />
+          </el-form-item>
+        </section>
       </el-form>
       <template #footer>
         <el-button @click="showMedicalModal = false">Cancelar</el-button>
@@ -593,64 +722,77 @@
 
     <!-- Modal Medidas Antropométricas -->
     <el-dialog
-      title="Agregar Medidas Antropométricas"
+      title="Medidas antropométricas"
       v-model="showAnthropometricModal"
       width="600px"
       :close-on-click-modal="false"
+      class="modern-athlete-dialog"
     >
-      <el-form ref="anthropometricFormRef" :model="anthropometricForm" label-position="top">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Peso (kg)">
-              <el-input-number v-model="anthropometricForm.peso" :min="0" :step="0.1" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Altura (cm)">
-              <el-input-number v-model="anthropometricForm.altura" :min="0" :step="0.1" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Porcentaje de Grasa">
-              <el-input-number v-model="anthropometricForm.porcentaje_grasa" :min="0" :step="0.1" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Porcentaje de Musculatura">
-              <el-input-number v-model="anthropometricForm.porcentaje_musculatura" :min="0" :step="0.1" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Envergadura (cm)">
-              <el-input-number v-model="anthropometricForm.envergadura" :min="0" :step="0.1" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Largo de Pierna (cm)">
-              <el-input-number v-model="anthropometricForm.largo_de_pierna" :min="0" :step="0.1" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Largo de Torso (cm)">
-              <el-input-number v-model="anthropometricForm.largo_de_torso" :min="0" :step="0.1" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="Fecha de Medición">
-          <el-date-picker
-            v-model="anthropometricForm.fecha_medicion"
-            type="date"
-            placeholder="Seleccionar fecha"
-            style="width: 100%"
-            value-format="yyyy-MM-dd"
-          />
-        </el-form-item>
+      <el-form ref="anthropometricFormRef" :model="anthropometricForm" label-position="top" class="dialog-form">
+        <div class="dialog-form-intro compact-intro">
+          <div>
+            <span class="dialog-form-kicker">Control físico</span>
+            <h3>Registro de medición</h3>
+          </div>
+          <p>Guarda los valores más recientes para seguir la evolución del atleta.</p>
+        </div>
+        <section class="form-section-card">
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Peso (kg)">
+                <el-input-number v-model="anthropometricForm.peso" :min="0" :step="0.1" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Altura (cm)">
+                <el-input-number v-model="anthropometricForm.altura" :min="0" :step="0.1" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Porcentaje de grasa">
+                <el-input-number v-model="anthropometricForm.porcentaje_grasa" :min="0" :step="0.1" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Porcentaje de musculatura">
+                <el-input-number v-model="anthropometricForm.porcentaje_musculatura" :min="0" :step="0.1" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Envergadura (cm)">
+                <el-input-number v-model="anthropometricForm.envergadura" :min="0" :step="0.1" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Largo de pierna (cm)">
+                <el-input-number v-model="anthropometricForm.largo_de_pierna" :min="0" :step="0.1" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Largo de torso (cm)">
+                <el-input-number v-model="anthropometricForm.largo_de_torso" :min="0" :step="0.1" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-form-item label="Fecha de medición">
+            <el-date-picker
+              v-model="anthropometricForm.fecha_medicion"
+              type="date"
+              placeholder="Selecciona la fecha de medición"
+              style="width: 100%"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
+              :editable="false"
+              :teleported="false"
+            />
+          </el-form-item>
+        </section>
       </el-form>
       <template #footer>
         <el-button @click="showAnthropometricModal = false">Cancelar</el-button>
@@ -660,54 +802,67 @@
 
     <!-- Modal Tests de Rendimiento -->
     <el-dialog
-      title="Agregar Test de Rendimiento"
+      title="Test de rendimiento"
       v-model="showPerformanceModal"
       width="600px"
       :close-on-click-modal="false"
+      class="modern-athlete-dialog"
     >
-      <el-form ref="performanceFormRef" :model="performanceForm" label-position="top">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Test de Fuerza">
-              <el-input-number v-model="performanceForm.test_de_fuerza" :min="0" :step="0.1" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Test de Resistencia">
-              <el-input-number v-model="performanceForm.test_resistencia" :min="0" :step="0.1" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Test de Velocidad">
-              <el-input-number v-model="performanceForm.test_velocidad" :min="0" :step="0.1" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Test de Coordinación">
-              <el-input-number v-model="performanceForm.test_coordinacion" :min="0" :step="0.1" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Test de Reacción">
-              <el-input-number v-model="performanceForm.test_de_reaccion" :min="0" :step="0.1" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Fecha del Test">
-              <el-date-picker
-                v-model="performanceForm.fecha_test"
-                type="date"
-                placeholder="Seleccionar fecha"
-                style="width: 100%"
-                value-format="yyyy-MM-dd"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
+      <el-form ref="performanceFormRef" :model="performanceForm" label-position="top" class="dialog-form">
+        <div class="dialog-form-intro compact-intro">
+          <div>
+            <span class="dialog-form-kicker">Rendimiento</span>
+            <h3>Resultados del atleta</h3>
+          </div>
+          <p>Ingresa el resultado más reciente de cada prueba para mantener el historial al día.</p>
+        </div>
+        <section class="form-section-card">
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Test de fuerza">
+                <el-input-number v-model="performanceForm.test_de_fuerza" :min="0" :step="0.1" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Test de resistencia">
+                <el-input-number v-model="performanceForm.test_resistencia" :min="0" :step="0.1" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Test de velocidad">
+                <el-input-number v-model="performanceForm.test_velocidad" :min="0" :step="0.1" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Test de coordinación">
+                <el-input-number v-model="performanceForm.test_coordinacion" :min="0" :step="0.1" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Test de reacción">
+                <el-input-number v-model="performanceForm.test_de_reaccion" :min="0" :step="0.1" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Fecha del test">
+                <el-date-picker
+                  v-model="performanceForm.fecha_test"
+                  type="date"
+                  placeholder="Selecciona la fecha del test"
+                  style="width: 100%"
+                  format="YYYY-MM-DD"
+                  value-format="YYYY-MM-DD"
+                  :editable="false"
+                  :teleported="false"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </section>
       </el-form>
       <template #footer>
         <el-button @click="showPerformanceModal = false">Cancelar</el-button>
@@ -717,75 +872,98 @@
 
     <!-- Modal Tutor -->
     <el-dialog
-      :title="isEditingTutor ? 'Editar Tutor' : 'Agregar Tutor'"
+      :title="isEditingTutor ? 'Editar tutor' : 'Nuevo tutor'"
       v-model="showTutorModal"
       width="600px"
       :close-on-click-modal="false"
+      class="modern-athlete-dialog"
     >
-      <el-form ref="tutorFormRef" :model="tutorForm" :rules="tutorRules" label-position="top">
-        <el-form-item label="Nombre Completo" prop="nombre_completo">
-          <el-input v-model="tutorForm.nombre_completo" placeholder="Nombre completo del tutor" />
-        </el-form-item>
-        <el-form-item label="Cédula" prop="cedula">
-          <el-input v-model="tutorForm.cedula" placeholder="Ej: 12345678" maxlength="10" @input="v => tutorForm.cedula = v.replace(/\D/g, '')" />
-        </el-form-item>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Teléfono" prop="telefono">
-              <el-input
-                v-model="tutorForm.telefono"
-                placeholder="Ej: 04141234567"
-                maxlength="11"
-                @input="v => tutorForm.telefono = v.replace(/\D/g, '')"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Correo" prop="correo">
-              <el-input v-model="tutorForm.correo" placeholder="correo@ejemplo.com" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="Tipo de Relación" prop="tipo_relacion">
-          <el-select v-model="tutorForm.tipo_relacion" placeholder="Seleccionar" style="width: 100%">
-            <el-option label="Familiar (Padre/Madre)" value="Familiar" />
-            <el-option label="Allegado a familia" value="adyegado a familia" />
-            <el-option label="Representante Legal" value="Representante legal" />
-            <el-option label="Otro" value="OTRO" />
-          </el-select>
-        </el-form-item>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="País" prop="direccion.pais">
-              <el-select v-model="tutorForm.direccion.pais" placeholder="Seleccionar" style="width: 100%" filterable>
-                <el-option v-for="pais in paises" :key="pais" :label="formatEnum(pais)" :value="pais" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Estado" prop="direccion.estado">
-              <el-select v-if="tutorForm.direccion.pais === 'venezuela'" v-model="tutorForm.direccion.estado" placeholder="Seleccionar" style="width: 100%" filterable>
-                <el-option v-for="estado in estadosVenezuela" :key="estado" :label="formatEnum(estado)" :value="estado" />
-              </el-select>
-              <el-input v-else v-model="tutorForm.direccion.estado" placeholder="Estado / Provincia" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Municipio" prop="direccion.municipio">
-              <el-input v-model="tutorForm.direccion.municipio" placeholder="Municipio" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Parroquia" prop="direccion.parroquia">
-              <el-input v-model="tutorForm.direccion.parroquia" placeholder="Parroquia" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="Dirección Detallada">
-          <el-input v-model="tutorForm.direccion.descripcion_descriptiva" type="textarea" :rows="2" placeholder="Calle, casa, edificio..." />
-        </el-form-item>
+      <el-form ref="tutorFormRef" :model="tutorForm" :rules="tutorRules" label-position="top" class="dialog-form">
+        <div class="dialog-form-intro compact-intro">
+          <div>
+            <span class="dialog-form-kicker">Responsable</span>
+            <h3>Datos del tutor</h3>
+          </div>
+          <p>Registra el contacto principal del atleta con información clara y fácil de consultar.</p>
+        </div>
+        <section class="form-section-card">
+          <div class="form-section-heading">
+            <span class="form-section-kicker">Contacto</span>
+            <h4>Información principal</h4>
+            <p>Estos datos se usan para comunicación y respaldo administrativo.</p>
+          </div>
+          <el-form-item label="Nombre completo" prop="nombre_completo">
+            <el-input v-model="tutorForm.nombre_completo" placeholder="Ej. María Fernanda Pérez" />
+          </el-form-item>
+          <el-form-item label="Cédula" prop="cedula">
+            <el-input v-model="tutorForm.cedula" placeholder="Solo números, sin puntos" maxlength="10" clearable @input="v => tutorForm.cedula = v.replace(/\D/g, '')" />
+          </el-form-item>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Teléfono" prop="telefono">
+                <el-input
+                  v-model="tutorForm.telefono"
+                  placeholder="Solo números, por ejemplo 04141234567"
+                  maxlength="11"
+                  clearable
+                  @input="v => tutorForm.telefono = v.replace(/\D/g, '')"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Correo" prop="correo">
+                <el-input v-model="tutorForm.correo" placeholder="ejemplo@correo.com" clearable />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-form-item label="Tipo de relación" prop="tipo_relacion">
+            <el-select v-model="tutorForm.tipo_relacion" placeholder="Selecciona la relación" style="width: 100%">
+              <el-option label="Familiar (Padre/Madre)" value="Familiar" />
+              <el-option label="Allegado a familia" value="adyegado a familia" />
+              <el-option label="Representante Legal" value="Representante legal" />
+              <el-option label="Otro" value="OTRO" />
+            </el-select>
+          </el-form-item>
+        </section>
+        <section class="form-section-card">
+          <div class="form-section-heading">
+            <span class="form-section-kicker">Ubicación</span>
+            <h4>Dirección del tutor</h4>
+            <p>Agrega una dirección detallada para tener un punto de contacto confiable.</p>
+          </div>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="País" prop="direccion.pais">
+                <el-select v-model="tutorForm.direccion.pais" placeholder="Selecciona el país" style="width: 100%" filterable>
+                  <el-option v-for="pais in paises" :key="pais" :label="formatEnum(pais)" :value="pais" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Estado" prop="direccion.estado">
+                <el-select v-if="tutorForm.direccion.pais === 'venezuela'" v-model="tutorForm.direccion.estado" placeholder="Selecciona el estado" style="width: 100%" filterable>
+                  <el-option v-for="estado in estadosVenezuela" :key="estado" :label="formatEnum(estado)" :value="estado" />
+                </el-select>
+                <el-input v-else v-model="tutorForm.direccion.estado" placeholder="Estado o provincia" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="Municipio" prop="direccion.municipio">
+                <el-input v-model="tutorForm.direccion.municipio" placeholder="Ej. Páez" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Parroquia" prop="direccion.parroquia">
+                <el-input v-model="tutorForm.direccion.parroquia" placeholder="Ej. Acarigua" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-form-item label="Dirección detallada">
+            <el-input v-model="tutorForm.direccion.descripcion_descriptiva" type="textarea" :rows="3" placeholder="Calle, casa, sector y punto de referencia" />
+          </el-form-item>
+        </section>
       </el-form>
       <template #footer>
         <el-button @click="showTutorModal = false">Cancelar</el-button>
@@ -798,13 +976,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Calendar, Collection, CollectionTag, Plus, Setting, DataAnalysis, Delete, Edit, UserFilled } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import { canEdit, isMedico, isEntrenador, getVisibleAtletasTabs } from '@/utils/permission'
 import { getPosiciones } from '@/api/posiciones'
+import { useServerDataRefresh } from '@/composables/useServerDataRefresh'
 
 const router = useRouter()
 const store = useStore()
@@ -917,6 +1097,48 @@ const tutorForm = reactive({
   tipo_relacion: ''
 })
 
+const isValidExistingDate = (value) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || '').trim())
+  if (!match) return false
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+
+  if (month < 1 || month > 12) return false
+
+  const maxDay = new Date(year, month, 0).getDate()
+  return day >= 1 && day <= maxDay
+}
+
+const disableFutureDates = (date) => {
+  const today = new Date()
+  today.setHours(23, 59, 59, 999)
+  return date.getTime() > today.getTime()
+}
+
+const validateExistingDate = (label, required = false) => (rule, value, callback) => {
+  const normalized = String(value || '').trim()
+
+  if (!normalized) {
+    if (required) callback(new Error(`${label} es requerida`))
+    else callback()
+    return
+  }
+
+  if (!isValidExistingDate(normalized)) {
+    callback(new Error(`${label} no existe. Usa una fecha valida`))
+    return
+  }
+
+  if (normalized > getTodayLocalDate()) {
+    callback(new Error(`${label} no puede ser futura`))
+    return
+  }
+
+  callback()
+}
+
 // Validation Rules
 const atletaRules = {
   nombre: [
@@ -927,7 +1149,7 @@ const atletaRules = {
     { required: true, message: 'El apellido es requerido', trigger: 'blur' },
     { pattern: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, message: 'Solo se permiten letras', trigger: 'blur' }
   ],
-  fecha_nacimiento: [{ required: true, message: 'La fecha de nacimiento es requerida', trigger: 'change' }],
+  fecha_nacimiento: [{ validator: validateExistingDate('La fecha de nacimiento', true), trigger: ['change', 'blur'] }],
   sexo: [{ required: true, message: 'El sexo es requerido', trigger: 'change' }],
   categoria_id: [{ required: true, message: 'La categoría es requerida', trigger: 'change' }]
 }
@@ -959,6 +1181,13 @@ const isUserMedico = computed(() => isMedico())
 const isUserEntrenador = computed(() => isEntrenador())
 const visibleTabs = computed(() => getVisibleAtletasTabs())
 const isTabVisible = computed(() => (tabName) => visibleTabs.value.includes(tabName))
+const hasOpenModal = computed(() => (
+  showAtletaModal.value ||
+  showMedicalModal.value ||
+  showAnthropometricModal.value ||
+  showPerformanceModal.value ||
+  showTutorModal.value
+))
 
 // Methods
 const loadCategorias = async () => {
@@ -970,8 +1199,8 @@ const loadCategorias = async () => {
   }
 }
 
-const loadAtletas = async () => {
-  loadingAtletas.value = true
+const loadAtletas = async ({ silent = false } = {}) => {
+  if (!silent) loadingAtletas.value = true
   try {
     const params = {}
     if (searchQuery.value) params.search = searchQuery.value
@@ -996,9 +1225,9 @@ const loadAtletas = async () => {
     atletas.value = Array.isArray(response) ? response : []
   } catch (error) {
     console.error('Error cargando atletas:', error)
-    ElMessage.error('Error al cargar atletas')
+    if (!silent) ElMessage.error('Error al cargar atletas')
   } finally {
-    loadingAtletas.value = false
+    if (!silent) loadingAtletas.value = false
   }
 }
 
@@ -1060,9 +1289,36 @@ const loadTutor = async (tutor_id) => {
   }
 }
 
+const clearCurrentAtletaSelection = () => {
+  currentAtletaId.value = null
+  currentAtleta.value = {}
+  fichaMedica.value = null
+  medidas.value = []
+  tests.value = []
+  tutor.value = null
+}
+
+const refreshCurrentAtletaData = async () => {
+  if (!currentAtletaId.value) return
+
+  const selectedAtleta = atletas.value.find(a => a.atleta_id === currentAtletaId.value)
+  if (!selectedAtleta) {
+    clearCurrentAtletaSelection()
+    return
+  }
+
+  currentAtleta.value = selectedAtleta
+
+  await Promise.all([
+    loadFichaMedica(currentAtletaId.value),
+    loadMedidas(currentAtletaId.value),
+    loadTests(currentAtletaId.value),
+    loadTutor(currentAtleta.value.tutor_id)
+  ])
+}
+
 const selectAtleta = async (id, keepTab = false) => {
   currentAtletaId.value = id
-  currentAtleta.value = atletas.value.find(a => a.atleta_id === id) || {}
 
   if (!keepTab) {
     activeTab.value = isUserMedico.value ? 'medical' : 'personal'
@@ -1072,12 +1328,7 @@ const selectAtleta = async (id, keepTab = false) => {
     tutor.value = null
   }
 
-  await Promise.all([
-    loadFichaMedica(id),
-    loadMedidas(id),
-    loadTests(id),
-    loadTutor(currentAtleta.value.tutor_id)
-  ])
+  await refreshCurrentAtletaData()
 }
 
 const loadData = async () => {
@@ -1087,6 +1338,25 @@ const loadData = async () => {
     loadTutores(),
     loadPosiciones()
   ])
+}
+
+const getTodayLocalDate = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const normalizeDateValue = (value) => {
+  if (!value) return ''
+  if (typeof value === 'string') {
+    return value.length >= 10 ? value.slice(0, 10) : value
+  }
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`
+  }
+  return ''
 }
 
 const resetAtletaForm = () => {
@@ -1171,7 +1441,7 @@ const openAtletaModal = (editing) => {
       nombre: currentAtleta.value.nombre,
       apellido: currentAtleta.value.apellido,
       cedula: currentAtleta.value.cedula,
-      fecha_nacimiento: currentAtleta.value.fecha_nacimiento,
+      fecha_nacimiento: normalizeDateValue(currentAtleta.value.fecha_nacimiento),
       sexo: currentAtleta.value.sexo || 'M',
       posicion_de_juego: currentAtleta.value.posicion_de_juego || '',
       categoria_id: currentAtleta.value.categoria_id,
@@ -1220,11 +1490,11 @@ const openAnthropometricModal = () => {
       envergadura: ultimaMedida.envergadura,
       largo_de_pierna: ultimaMedida.largo_de_pierna,
       largo_de_torso: ultimaMedida.largo_de_torso,
-      fecha_medicion: new Date().toISOString().split('T')[0]
+      fecha_medicion: getTodayLocalDate()
     })
   } else {
     resetAnthropometricForm()
-    anthropometricForm.fecha_medicion = new Date().toISOString().split('T')[0]
+    anthropometricForm.fecha_medicion = getTodayLocalDate()
   }
   showAnthropometricModal.value = true
 }
@@ -1238,11 +1508,11 @@ const openPerformanceModal = () => {
       test_velocidad: ultimoTest.test_velocidad,
       test_coordinacion: ultimoTest.test_coordinacion,
       test_de_reaccion: ultimoTest.test_de_reaccion,
-      fecha_test: new Date().toISOString().split('T')[0]
+      fecha_test: getTodayLocalDate()
     })
   } else {
     resetPerformanceForm()
-    performanceForm.fecha_test = new Date().toISOString().split('T')[0]
+    performanceForm.fecha_test = getTodayLocalDate()
   }
   showPerformanceModal.value = true
 }
@@ -1287,19 +1557,23 @@ const saveAtleta = () => {
   atletaFormRef.value.validate(async (valid) => {
     if (!valid) return
     loading.value = true
+    const payload = {
+      ...atletaForm,
+      fecha_nacimiento: normalizeDateValue(atletaForm.fecha_nacimiento)
+    }
     try {
       if (isEditingAtleta.value) {
         await request({
           url: `/atletas/${currentAtletaId.value}`,
           method: 'put',
-          data: atletaForm
+          data: payload
         })
         ElMessage.success('Atleta actualizado correctamente')
       } else {
         await request({
           url: '/atletas',
           method: 'post',
-          data: atletaForm
+          data: payload
         })
         ElMessage.success('Atleta creado correctamente')
       }
@@ -1310,7 +1584,8 @@ const saveAtleta = () => {
       }
     } catch (error) {
       console.error('Error guardando atleta:', error)
-      ElMessage.error('Error al guardar atleta')
+      const backendError = error?.response?.data?.error
+      ElMessage.error(backendError || 'Error al guardar atleta')
     } finally {
       loading.value = false
     }
@@ -1436,8 +1711,7 @@ const deleteAtleta = () => {
     try {
       await request({ url: `/atletas/${currentAtletaId.value}`, method: 'delete' })
       ElMessage.success('Atleta eliminado correctamente')
-      currentAtletaId.value = null
-      currentAtleta.value = {}
+      clearCurrentAtletaSelection()
       await loadAtletas()
     } catch (error) {
       console.error('Error eliminando atleta:', error)
@@ -1508,6 +1782,13 @@ const goToProgress = () => {
   router.push({ path: '/reportes/rendimiento', query: { atleta_id: currentAtletaId.value } })
 }
 
+useServerDataRefresh(async () => {
+  await loadAtletas({ silent: true })
+  await refreshCurrentAtletaData()
+}, {
+  isBusy: () => loading.value || loadingAtletas.value || hasOpenModal.value
+})
+
 // Watchers
 watch(searchQuery, () => {
   if (searchTimeout) clearTimeout(searchTimeout)
@@ -1528,8 +1809,13 @@ watch(currentAtletaId, (newId) => {
   if (newId && isUserMedico.value) activeTab.value = 'medical'
 })
 
-onMounted(() => {
-  loadData()
+onMounted(async () => {
+  await loadData()
+})
+
+onUnmounted(() => {
+  if (searchTimeout) clearTimeout(searchTimeout)
+  if (searchCedulaTimeout) clearTimeout(searchCedulaTimeout)
 })
 </script>
 
@@ -1539,13 +1825,13 @@ onMounted(() => {
   min-height: 100vh;
 }
 
-.page-header {
+.premium-header {
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   color: white;
-  padding: 20px;
-  border-radius: 10px;
-  margin-bottom: 30px;
-  box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
+  padding: 24px 30px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 25px -5px var(--color-shadow);
 }
 
 .header-content {
@@ -1634,6 +1920,34 @@ aside.sidebar {
   flex-direction: column;
 }
 
+.sidebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mini-add-btn {
+  background: var(--color-bg-hover);
+  color: var(--color-primary);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+  }
+}
+
 .sidebar-header {
   display: flex;
   justify-content: space-between;
@@ -1644,9 +1958,16 @@ aside.sidebar {
 }
 
 .sidebar-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 700;
   font-size: 0.95rem;
   letter-spacing: 0.2px;
+}
+
+.sidebar-title-icon {
+  font-size: 1rem;
 }
 
 .filter-toggle-btn {
@@ -1685,9 +2006,18 @@ aside.sidebar {
 }
 
 .empty-main-icon {
-  font-size: 4rem;
-  display: block;
-  margin-bottom: 16px;
+  width: 88px;
+  height: 88px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+  border-radius: 24px;
+  font-size: 2.4rem;
+  color: var(--color-primary);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.42));
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
 }
 
 .empty-main-content h3 {
@@ -1742,8 +2072,10 @@ aside.sidebar {
 
 /* Athlete Category badge in list */
 .athlete-category {
-  color: var(--color-border) !important;
-  font-size: 0.78rem !important;
+  color: var(--color-text-main) !important;
+  font-size: 0.8rem !important;
+  font-weight: 600;
+  opacity: 1;
 }
 
 /* Empty List */
@@ -1753,9 +2085,18 @@ aside.sidebar {
 }
 
 .empty-list-icon {
-  font-size: 3rem;
-  display: block;
-  margin-bottom: 12px;
+  width: 64px;
+  height: 64px;
+  font-size: 1.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  border-radius: 18px;
+  color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
 }
 
 .empty-list-title {
@@ -1786,454 +2127,598 @@ aside.sidebar {
   font-family: inherit;
 }
 
-.action-btn-primary {
-  background: var(--color-primary);
-  color: #fff;
-  border-color: var(--color-primary);
-}
-.action-btn-primary:hover {
-  background: var(--color-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(30, 41, 59, 0.3);
+.action-btn-icon {
+  font-size: 0.95rem;
 }
 
-.action-btn-danger {
-  background: var(--color-bg-card);
-  color: #ef4444;
-  border-color: #fecaca;
-}
-.action-btn-danger:hover {
-  background: #fef2f2;
-  border-color: #ef4444;
-  transform: translateY(-1px);
-}
-
-.action-btn-info {
-  background: var(--color-bg-card);
-  color: #3b82f6;
-  border-color: #bfdbfe;
-}
-.action-btn-info:hover {
-  background: #eff6ff;
-  border-color: #3b82f6;
-  transform: translateY(-1px);
-}
-
+/* Search & Filters Inside Sidebar */
 .search-container {
-  padding: 15px;
-  background: var(--color-bg-card);
-  border-bottom: 1px solid var(--color-border);
+  padding: 18px 16px 16px;
+  background: linear-gradient(180deg, rgba(255, 59, 48, 0.08), transparent 90px), var(--color-bg-card);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
 
-.search-container :deep(.el-input__wrapper) {
-  background: var(--color-bg-body) !important;
-  box-shadow: none !important;
-  border: none !important;
-  border-radius: 10px;
-  padding: 4px 14px;
-  transition: all 0.2s ease;
-}
-
-.search-container :deep(.el-input__wrapper.is-focus) {
-  background: var(--color-bg-card) !important;
-  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1) !important;
-  outline: none !important;
-}
-
-.search-container :deep(.el-input__inner) {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-}
-
-.search-container :deep(.el-input__prefix) {
-  color: var(--color-border);
-}
-
-/* Athlete list scrollable area */
-.athlete-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 4px 0;
-}
-
-.athlete-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.athlete-list::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-.athlete-list::-webkit-scrollbar-thumb:hover {
-  background: var(--color-border);
-}
-
-/* Cedula Filter Styles */
-.cedula-filter {
-  margin-top: 10px;
-}
-
-.cedula-filter-buttons {
-  display: flex;
-  gap: 4px;
-  border-radius: 10px;
-  padding: 4px;
-  background: var(--color-bg-body);
-}
-
-.cedula-btn {
-  flex: 1;
-  padding: 6px 10px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border: none;
+.search-intro {
+  margin-bottom: 14px;
+  padding: 0;
+  border-radius: 0;
   background: transparent;
-  color: var(--color-text-muted);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  border: none;
+  box-shadow: none;
 }
 
-.cedula-btn:hover {
-  color: var(--color-primary);
-  background: rgba(229, 29, 34, 0.05);
-}
-
-.cedula-btn.active {
-  background: var(--color-bg-card);
-  color: var(--color-primary);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.cedula-search-input {
-  margin-top: 8px;
-}
-
-.cedula-search-input :deep(.el-input__wrapper) {
-  background: var(--color-bg-card) !important;
-  box-shadow: 0 0 0 2px #64748b inset !important;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.cedula-search-input :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 2px var(--color-primary) inset, 0 0 0 4px rgba(30, 41, 59, 0.12) !important;
-}
-
-.cedula-search-input :deep(.el-input__inner) {
-  font-size: 0.85rem;
-  font-weight: 500;
+.search-intro-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
   color: var(--color-text-main);
+  border: 1px solid var(--color-border);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.cedula-search-input :deep(.el-input__inner::placeholder) {
-  color: var(--color-text-placeholder) !important;
+[data-theme='dark'] .search-intro-badge {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border-color: transparent;
+}
+
+.search-intro p {
+  margin: 10px 0 0;
+  color: var(--color-text-main);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.premium-search-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+  opacity: 0.95;
+}
+
+:deep(.athletes-filter-popper) {
+  border-radius: 22px !important;
+  padding: 0 !important;
+  background: var(--color-bg-card) !important;
+  border: 1px solid rgba(148, 163, 184, 0.16) !important;
+  box-shadow: 0 28px 55px -35px rgba(15, 23, 42, 0.75) !important;
 }
 
 .filter-popover {
-  padding: 5px;
+  padding: 18px;
 }
 
-.filter-popover h4 {
-  margin: 0 0 18px 0;
-  font-size: 1rem;
-  font-weight: 700;
+.filter-popover-header {
+  margin-bottom: 16px;
+}
+
+.filter-popover-kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 59, 48, 0.12);
   color: var(--color-primary);
-  border-bottom: 2px solid var(--color-primary);
-  padding-bottom: 12px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+}
+
+.filter-popover-header h4 {
+  margin: 10px 0 6px;
+  color: var(--color-text-main);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.filter-popover-header p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.83rem;
+  line-height: 1.5;
 }
 
 .filter-item {
-  margin-bottom: 18px;
+  margin-bottom: 14px;
+}
+
+.filter-item:last-child {
+  margin-bottom: 0;
 }
 
 .filter-item label {
   display: block;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-main);
   margin-bottom: 8px;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
 }
 
-.filter-item :deep(.el-select .el-input__wrapper) {
+:deep(.modern-filter-select .el-select__wrapper) {
+  min-height: 44px;
+  border-radius: 14px;
+  background: var(--color-bg-body);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.16);
+  transition: box-shadow 0.25s ease, background 0.25s ease, transform 0.25s ease;
+}
+
+:deep(.modern-filter-select .el-select__wrapper:hover) {
+  box-shadow: inset 0 0 0 1px rgba(255, 90, 79, 0.28);
+}
+
+:deep(.modern-filter-select .el-select__wrapper.is-focused) {
+  background: var(--color-bg-card);
+  box-shadow: 0 0 0 4px rgba(255, 59, 48, 0.14), inset 0 0 0 1px var(--color-primary);
+}
+
+:deep(.athletes-filter-select-dropdown.el-popper) {
+  border-radius: 14px !important;
   background: var(--color-bg-card) !important;
-  box-shadow: 0 0 0 2px #64748b inset !important;
-  border-radius: 10px;
-  transition: all 0.3s ease;
+  border: 1px solid rgba(148, 163, 184, 0.18) !important;
+  box-shadow: 0 22px 40px -28px rgba(15, 23, 42, 0.9) !important;
 }
 
-.filter-item :deep(.el-select .el-input__wrapper.is-hover) {
-  box-shadow: 0 0 0 2px var(--color-primary) inset !important;
-}
-
-.filter-item :deep(.el-select .el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 2px var(--color-primary) inset, 0 0 0 4px rgba(30, 41, 59, 0.12) !important;
-}
-
-.filter-item :deep(.el-select .el-input__inner) {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--color-text-main);
-}
-
-/* Placeholder styling for select dropdowns in filter popover */
-.filter-item :deep(.el-select .el-input__inner::placeholder) {
-  color: var(--color-text-placeholder) !important;
-  font-weight: 500;
-  opacity: 1;
-}
-
-/* Estilos para el input de cédula - igual que los selectores */
-.filter-item :deep(> .el-input .el-input__wrapper) {
+:deep(.athletes-filter-select-dropdown .el-popper__arrow::before) {
   background: var(--color-bg-card) !important;
-  box-shadow: 0 0 0 2px #64748b inset !important;
-  border-radius: 10px;
-  transition: all 0.3s ease;
+  border-color: rgba(148, 163, 184, 0.18) !important;
 }
 
-.filter-item :deep(> .el-input .el-input__wrapper.is-hover) {
-  box-shadow: 0 0 0 2px var(--color-primary) inset !important;
+:deep(.athletes-filter-select-dropdown .el-select-dropdown__wrap) {
+  background: transparent !important;
 }
 
-.filter-item :deep(> .el-input .el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 2px var(--color-primary) inset, 0 0 0 4px rgba(30, 41, 59, 0.12) !important;
-}
-
-.filter-item :deep(> .el-input .el-input__inner) {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--color-text-main);
-}
-
-.filter-item :deep(> .el-input .el-input__inner::placeholder) {
-  color: var(--color-text-placeholder) !important;
-  font-weight: 500;
-  opacity: 1;
-}
-
-/* Estilos modernos para el switch */
-.filter-item :deep(.el-switch) {
-  height: 28px;
-}
-
-.filter-item :deep(.el-switch__core) {
-  width: 50px !important;
-  height: 26px !important;
-  border-radius: 13px;
-  border: 2px solid #cbd5e1;
-  background-color: var(--color-border);
-  transition: all 0.3s ease;
-}
-
-.filter-item :deep(.el-switch__core::after) {
-  width: 20px;
-  height: 20px;
-  top: 1px;
-  left: 1px;
-  border-radius: 50%;
-  background-color: var(--color-bg-card);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease;
-}
-
-.filter-item :deep(.el-switch.is-checked .el-switch__core) {
-  background-color: var(--color-primary) !important;
-  border-color: var(--color-primary) !important;
-}
-
-.filter-item :deep(.el-switch.is-checked .el-switch__core::after) {
-  left: 100%;
-  margin-left: -23px;
-}
-
-.filter-item :deep(.el-switch__label) {
-  font-size: 0.85rem;
+:deep(.athletes-filter-select-dropdown .el-select-dropdown__item) {
+  color: var(--color-text-main) !important;
   font-weight: 600;
-  color: var(--color-text-muted);
 }
 
-.filter-item :deep(.el-switch__label.is-active) {
+:deep(.athletes-filter-select-dropdown .el-select-dropdown__item:hover),
+:deep(.athletes-filter-select-dropdown .el-select-dropdown__item.hover) {
+  background: rgba(255, 59, 48, 0.16) !important;
+  color: var(--color-text-main) !important;
+}
+
+:deep(.athletes-filter-select-dropdown .el-select-dropdown__item.selected) {
+  background: rgba(255, 59, 48, 0.22) !important;
+  color: #bfdbfe !important;
+  font-weight: 700;
+}
+
+:deep(.modern-sidebar-control .el-input__wrapper) {
+  min-height: 46px;
+  border-radius: 15px;
+  background: var(--color-bg-body);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18);
+  padding: 0 14px;
+  transition: box-shadow 0.25s ease, transform 0.25s ease, background 0.25s ease;
+}
+
+:deep(.modern-sidebar-control .el-input__wrapper:hover) {
+  box-shadow: inset 0 0 0 1px rgba(255, 90, 79, 0.26);
+}
+
+:deep(.modern-sidebar-control .el-input__wrapper.is-focus) {
+  background: var(--color-bg-card);
+  box-shadow: 0 0 0 4px rgba(255, 59, 48, 0.14), inset 0 0 0 1px var(--color-primary);
+}
+
+:deep(.modern-sidebar-control .el-input__inner) {
+  font-size: 0.93rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.field-caption {
+  margin: 8px 2px 0;
+  color: var(--color-text-muted);
+  font-size: 0.77rem;
+  line-height: 1.45;
+}
+
+.modern-toggle-group {
+  display: flex;
+  gap: 6px;
+  background: linear-gradient(180deg, rgba(148, 163, 184, 0.14), rgba(148, 163, 184, 0.08));
+  padding: 6px;
+  border-radius: 16px;
+  margin-bottom: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.toggle-btn {
+  flex: 1;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 9px 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.active {
+    background: linear-gradient(135deg, rgba(255, 59, 48, 0.18), rgba(255, 59, 48, 0.08));
+    color: var(--color-primary);
+    border-color: rgba(255, 90, 79, 0.16);
+    box-shadow: 0 18px 30px -28px rgba(255, 59, 48, 0.95);
+    transform: translateY(-1px);
+  }
+
+  &:hover:not(.active) {
+    color: var(--color-text-main);
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+.modern-cedula-input {
+  margin-top: 8px;
+}
+
+/* Modern Dialog Forms */
+:deep(.modern-athlete-dialog) {
+  border-radius: 28px !important;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 59, 48, 0.06), transparent 140px), var(--color-bg-card);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 0 35px 70px -42px rgba(15, 23, 42, 0.8);
+}
+
+:deep(.modern-athlete-dialog .el-dialog__header) {
+  padding: 24px 24px 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+:deep(.modern-athlete-dialog .el-dialog__title) {
+  color: var(--color-text-main);
+  font-size: 1.14rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+:deep(.modern-athlete-dialog .el-dialog__body) {
+  padding: 20px 24px 8px;
+}
+
+:deep(.modern-athlete-dialog .el-dialog__footer) {
+  padding: 0 24px 24px;
+}
+
+:deep(.modern-athlete-dialog .el-button) {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 14px;
+  font-weight: 700;
+}
+
+:deep(.modern-athlete-dialog .el-button--default) {
+  background: var(--color-bg-body);
+  border-color: transparent;
   color: var(--color-text-main);
 }
 
-.filter-item :deep(.el-switch__label--left) {
-  margin-right: 8px;
-}
-
-.filter-item :deep(.el-switch__label--right) {
-  margin-left: 8px;
-}
-
-.filter-btn {
-  font-size: 1.3rem;
-  color: var(--color-text-muted);
-  padding: 5px;
-  transition: all 0.3s ease;
-}
-
-.filter-btn:hover {
-  color: var(--color-primary);
-  transform: rotate(90deg);
-}
-
-.avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 12px;
-}
-
-.avatar-img-large {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 12px;
+:deep(.modern-athlete-dialog .el-button--default:hover) {
+  background: var(--color-bg-hover);
+  border-color: rgba(148, 163, 184, 0.16);
+  color: var(--color-text-main);
 }
 
 .photo-upload-container {
   display: flex;
-  justify-content: center;
-  margin-bottom: 20px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(255, 59, 48, 0.14), rgba(255, 122, 102, 0.05));
+  border: 1px dashed rgba(96, 165, 250, 0.28);
+  box-shadow: 0 24px 36px -34px rgba(255, 59, 48, 0.95);
+}
+
+.photo-upload-copy {
+  flex: 1;
+}
+
+.photo-upload-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.photo-upload-copy p {
+  margin: 10px 0 0;
+  color: var(--color-text-main);
+  font-size: 0.86rem;
+  line-height: 1.5;
 }
 
 .avatar-uploader {
-  border: 2px dashed #d9d9d9;
-  border-radius: 50%;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  width: 120px;
-  height: 120px;
-  transition: border-color 0.3s;
-}
-
-.avatar-uploader:hover {
-  border-color: var(--color-primary);
+  flex-shrink: 0;
 }
 
 .avatar-uploader-icon {
-  font-size: 28px;
-  color: #8c939d;
   width: 120px;
   height: 120px;
-  line-height: 1.2;
-  text-align: center;
+  border-radius: 18px;
+  border: 1px dashed rgba(255, 90, 79, 0.38);
+  background: rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--color-primary);
+  font-weight: 700;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
 }
 
-.avatar-uploader-icon span {
-  font-size: 12px;
-  margin-top: 5px;
+.avatar-uploader-icon:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 59, 48, 0.08);
+  box-shadow: 0 22px 34px -30px rgba(255, 59, 48, 0.95);
 }
 
 .avatar-preview {
-  width: 120px;
-  height: 120px;
-  display: block;
-  object-fit: cover;
-}
-
-.athlete-item {
-  padding: 14px;
-  margin: 8px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--color-bg-card);
-}
-
-.athlete-item:hover {
-  border-color: #cbd5e1;
-  background: var(--color-bg-card);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  transform: translateY(-1px);
-}
-
-.athlete-item.active {
-  background: var(--color-bg-card);
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary), 0 4px 12px rgba(30, 41, 59, 0.1);
-}
-
-.athlete-photo {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  min-height: 48px;
-  flex-shrink: 0;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  overflow: hidden;
-  box-shadow: 0 3px 8px rgba(30, 41, 59, 0.3);
-}
-
-.avatar-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.athlete-info {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
-.athlete-info h3 {
-  font-size: 0.95rem;
-  font-weight: 700;
-  margin: 0 0 6px 0;
+.dialog-form-intro {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255, 59, 48, 0.14), rgba(255, 122, 102, 0.05));
+  border: 1px solid rgba(96, 165, 250, 0.18);
+  box-shadow: 0 20px 34px -30px rgba(255, 59, 48, 0.95);
+}
+
+.compact-intro {
+  padding: 16px 18px;
+}
+
+.dialog-form-kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dialog-form-intro h3 {
+  margin: 10px 0 0;
   color: var(--color-text-main);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 1.18rem;
+  font-weight: 800;
 }
 
-.athlete-info p {
-  font-size: 0.8rem;
+.dialog-form-intro p {
+  margin: 0;
+  max-width: 260px;
   color: var(--color-text-muted);
-  margin: 3px 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.form-section-card {
+  padding: 18px 18px 6px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 59, 48, 0.05), transparent 48px), var(--color-bg-card);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow: 0 24px 42px -38px rgba(15, 23, 42, 0.95);
+}
+
+.form-section-heading {
+  margin-bottom: 16px;
+}
+
+.form-section-kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 59, 48, 0.12);
+  color: var(--color-primary);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.form-section-heading h4 {
+  margin: 10px 0 6px;
+  color: var(--color-text-main);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.form-section-heading p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+:deep(.dialog-form .el-form-item) {
+  margin-bottom: 18px;
+}
+
+:deep(.dialog-form .el-form-item__label) {
+  padding-bottom: 8px;
+  color: var(--color-text-main);
+  font-size: 0.83rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+:deep(.dialog-form .el-input__wrapper),
+:deep(.dialog-form .el-select__wrapper),
+:deep(.dialog-form .el-date-editor .el-input__wrapper),
+:deep(.dialog-form .el-input-number .el-input__wrapper) {
+  min-height: 48px;
+  border-radius: 16px;
+  background: transparent !important;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18);
+  padding: 0 14px;
+  transition: box-shadow 0.25s ease, background 0.25s ease, transform 0.25s ease;
+}
+
+:deep(.dialog-form .el-input__wrapper:hover),
+:deep(.dialog-form .el-select__wrapper:hover),
+:deep(.dialog-form .el-date-editor .el-input__wrapper:hover),
+:deep(.dialog-form .el-input-number:hover .el-input__wrapper) {
+  box-shadow: inset 0 0 0 1px rgba(255, 90, 79, 0.28);
+}
+
+:deep(.dialog-form .el-input__wrapper.is-focus),
+:deep(.dialog-form .el-select__wrapper.is-focused),
+:deep(.dialog-form .el-date-editor .el-input__wrapper.is-focus),
+:deep(.dialog-form .el-input-number .el-input__wrapper.is-focus) {
+  background: transparent !important;
+  box-shadow: 0 0 0 4px rgba(255, 59, 48, 0.12), inset 0 0 0 1px var(--color-primary);
+}
+
+:deep(.dialog-form .el-input__inner),
+:deep(.dialog-form .el-select__selected-item),
+:deep(.dialog-form .el-select__placeholder),
+:deep(.dialog-form .el-textarea__inner),
+:deep(.dialog-form .el-input-number .el-input__inner) {
+  color: var(--color-text-main);
+  font-size: 0.95rem;
   font-weight: 500;
+}
+
+:deep(.dialog-form .el-textarea__inner) {
+  min-height: 104px;
+  border-radius: 16px;
+  background: transparent !important;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18);
+  padding: 14px 16px;
+  line-height: 1.55;
+  resize: vertical;
+  transition: box-shadow 0.25s ease, background 0.25s ease;
+}
+
+:deep(.dialog-form .el-textarea__inner:hover) {
+  box-shadow: inset 0 0 0 1px rgba(255, 90, 79, 0.28);
+}
+
+:deep(.dialog-form .el-textarea__inner:focus) {
+  background: transparent !important;
+  box-shadow: 0 0 0 4px rgba(255, 59, 48, 0.12), inset 0 0 0 1px var(--color-primary);
+}
+
+:deep(.dialog-form .el-input-number) {
+  width: 100%;
+}
+
+:deep(.dialog-form .el-input-number__increase),
+:deep(.dialog-form .el-input-number__decrease) {
+  width: 34px;
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+}
+
+:deep(.dialog-form .el-input-number__increase:hover),
+:deep(.dialog-form .el-input-number__decrease:hover) {
+  background: rgba(255, 59, 48, 0.08);
+}
+
+/* Athlete List */
+.athlete-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: calc(100vh - 450px);
+}
+
+.athlete-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-left: auto;
+}
+
+.status-activo { background-color: #10b981; }
+.status-lesionado { background-color: #f59e0b; }
+.status-suspendido { background-color: #ef4444; }
+.status-inactivo { background-color: #64748b; }
+
+/* Detail Card */
+.detail-card {
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
 }
 
 .athlete-details-header {
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-bottom: 30px;
-  padding-bottom: 20px;
+  gap: 24px;
+  padding-bottom: 24px;
   border-bottom: 2px solid var(--color-border);
+  margin-bottom: 24px;
 }
 
 .athlete-details-photo {
   width: 100px;
   height: 100px;
-  border-radius: 12px;
-  background-color: var(--color-primary);
-  color: white;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3rem;
-  flex-shrink: 0;
+  font-size: 2.8rem;
+}
+
+.item-photo {
+  overflow: hidden;
+}
+
+.avatar-img,
+.avatar-img-large {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .athlete-details-info {
@@ -2245,7 +2730,7 @@ aside.sidebar {
 .athlete-details-info h2 {
   font-size: 1.5rem;
   margin: 0 0 8px 0;
-  color: #2c3e50;
+  color: var(--color-text-main);
   word-break: break-all;
 }
 
@@ -2253,6 +2738,58 @@ aside.sidebar {
   color: var(--color-text-muted);
   margin: 4px 0;
   font-size: 0.95rem;
+}
+
+.athlete-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 0 14px;
+}
+
+.athlete-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--color-bg-card), var(--color-bg-body));
+  border: 1px solid var(--color-border);
+  box-shadow: 0 12px 26px rgba(2, 6, 23, 0.18);
+}
+
+.athlete-meta-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: var(--color-primary);
+  background: linear-gradient(180deg, var(--color-bg-body), var(--color-bg-card));
+  font-size: 1rem;
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.athlete-meta-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.athlete-meta-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.athlete-meta-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-main);
 }
 
 .athlete-actions {
@@ -2278,7 +2815,7 @@ aside.sidebar {
 .form-item label {
   display: block;
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--color-text-main);
   margin-bottom: 8px;
   font-size: 0.9rem;
 }
@@ -2317,7 +2854,7 @@ aside.sidebar {
 .performance-item p {
   font-size: 1.8rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--color-text-main);
   margin: 0;
 }
 
@@ -2495,8 +3032,21 @@ aside.sidebar {
     font-size: 1.2rem;
   }
 
-  .athlete-details-info p {
-    font-size: 0.85rem;
+  .athlete-meta {
+    justify-content: center;
+  }
+
+  .athlete-meta-item {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .athlete-meta-copy {
+    align-items: center;
+  }
+
+  .athlete-meta-value {
+    font-size: 0.9rem;
   }
 
   .athlete-actions {
@@ -2541,6 +3091,36 @@ aside.sidebar {
 
   .tab-header-actions {
     justify-content: center;
+  }
+
+  .dialog-form-intro,
+  .photo-upload-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dialog-form-intro p {
+    max-width: none;
+  }
+
+  .form-section-card {
+    padding: 16px 16px 4px;
+  }
+
+  :deep(.modern-athlete-dialog) {
+    width: calc(100vw - 24px) !important;
+  }
+
+  :deep(.modern-athlete-dialog .el-dialog__header) {
+    padding: 20px 18px 12px;
+  }
+
+  :deep(.modern-athlete-dialog .el-dialog__body) {
+    padding: 16px 18px 8px;
+  }
+
+  :deep(.modern-athlete-dialog .el-dialog__footer) {
+    padding: 0 18px 18px;
   }
 
   /* Tabs scrollable */
@@ -2594,6 +3174,14 @@ aside.sidebar {
   .performance-item p {
     font-size: 1.3rem;
   }
+
+  .dialog-form-intro h3 {
+    font-size: 1.02rem;
+  }
+
+  .photo-upload-container {
+    padding: 16px;
+  }
 }
 
 .photo-preview-wrapper {
@@ -2644,3 +3232,4 @@ aside.sidebar {
   margin-bottom: 12px;
 }
 </style>
+

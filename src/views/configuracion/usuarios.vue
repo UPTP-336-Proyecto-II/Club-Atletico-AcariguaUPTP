@@ -1,15 +1,12 @@
 <template>
   <div class="usuarios-container">
     <!-- Header -->
-    <div class="page-header">
+    <div class="premium-header">
       <div class="header-content">
         <div>
           <h1><i class="el-icon-user" /> Gestión de Usuarios</h1>
           <p class="subtitle">Club Atlético Deportivo Acarigua</p>
         </div>
-        <el-button type="primary" icon="el-icon-plus" @click="openUsuarioModal(false)">
-          Agregar Usuario
-        </el-button>
       </div>
     </div>
 
@@ -20,63 +17,76 @@
         <el-card shadow="hover">
           <template #header>
             <div class="sidebar-header">
-            <span><i class="el-icon-user" /> Lista de Usuarios</span>
-            <el-popover
-              placement="bottom-end"
-              width="200"
-              trigger="click"
-            >
-              <div class="filter-popover">
-                <h4>Filtros Avanzados</h4>
-                <div class="filter-item">
-                  <label style="display:block;margin-bottom:5px;font-size:0.85rem;color:#606266">Estatus</label>
-                  <el-select v-model="filterEstatus" placeholder="Todos" clearable size="small" style="width: 100%">
-                    <el-option label="Activos" value="ACTIVO" />
-                    <el-option label="Inactivos" value="INACTIVO" />
-                    <el-option label="Todos" value="TODOS" />
-                  </el-select>
-                </div>
-                <div class="filter-item">
-                  <label style="display:block;margin-bottom:5px;font-size:0.85rem;color:#606266">Rol</label>
-                  <el-select v-model="filterRol" placeholder="Todos los roles" clearable size="small" style="width: 100%">
-                    <el-option
-                      v-for="rol in roles"
-                      :key="rol.rol_id"
-                      :label="rol.nombre_rol"
-                      :value="rol.rol_id"
-                    />
-                  </el-select>
-                </div>
-                <div class="filter-item">
-                  <label style="display:block;margin-bottom:5px;font-size:0.85rem;color:#606266">Ordenar por</label>
-                  <el-select v-model="filterSort" placeholder="Seleccionar" size="small" style="width: 100%">
-                    <el-option label="Más Recientes" value="reciente" />
-                    <el-option label="Más Antiguos" value="antiguo" />
-                    <el-option label="Alfabético A-Z" value="az" />
-                    <el-option label="Alfabético Z-A" value="za" />
-                  </el-select>
-                </div>
+              <span class="sidebar-title">
+                <el-icon><Collection /></el-icon>
+                <span>Lista de Usuarios</span>
+              </span>
+              <div class="sidebar-actions">
+                <button class="mini-add-btn" title="Agregar Usuario" @click="openUsuarioModal(false)">
+                  <el-icon><Plus /></el-icon>
+                </button>
+                <el-popover
+                  placement="bottom-end"
+                  width="260"
+                  trigger="click"
+                >
+                  <div class="filter-popover">
+                    <h4>Filtros Avanzados</h4>
+                    <div class="filter-item">
+                      <label>Estatus</label>
+                      <el-select v-model="filterEstatus" placeholder="Todos" clearable size="small" style="width: 100%">
+                        <el-option label="Activos" value="ACTIVO" />
+                        <el-option label="Inactivos" value="INACTIVO" />
+                        <el-option label="Todos" value="TODOS" />
+                      </el-select>
+                    </div>
+                    <div class="filter-item">
+                      <label>Rol</label>
+                      <el-select v-model="filterRol" placeholder="Todos los roles" clearable size="small" style="width: 100%">
+                        <el-option
+                          v-for="rol in roles"
+                          :key="rol.rol_id"
+                          :label="rol.nombre_rol"
+                          :value="rol.rol_id"
+                        />
+                      </el-select>
+                    </div>
+                    <div class="filter-item">
+                      <label>Ordenar por</label>
+                      <el-select v-model="filterSort" placeholder="Seleccionar" size="small" style="width: 100%">
+                        <el-option label="Más Recientes" value="reciente" />
+                        <el-option label="Más Antiguos" value="antiguo" />
+                        <el-option label="Alfabético A-Z" value="az" />
+                        <el-option label="Alfabético Z-A" value="za" />
+                      </el-select>
+                    </div>
+                  </div>
+                  <template #reference>
+                    <button class="filter-toggle-btn" title="Filtros avanzados">
+                      <el-icon><Setting /></el-icon>
+                    </button>
+                  </template>
+                </el-popover>
               </div>
-              <template #reference><el-button type="text" icon="el-icon-s-operation" class="filter-btn" /></template>
-            </el-popover>
             </div>
           </template>
           <div class="search-container">
+            <label class="premium-search-label">Buscar Usuario</label>
             <el-input
               v-model="searchQuery"
-              placeholder="Buscar..."
-              prefix-icon="el-icon-search"
+              placeholder="Email o miembro..."
               size="small"
               clearable
+              class="modern-search-input"
             />
           </div>
           <div class="user-list">
             <div
               v-for="usuario in filteredUsuarios"
-              :key="usuario.usuario_id"
+              :key="getUsuarioIdentifier(usuario)"
               class="user-item"
-              :class="{ active: currentUsuarioId === usuario.usuario_id }"
-              @click="selectUsuario(usuario.usuario_id)"
+              :class="{ active: currentUsuarioId === getUsuarioIdentifier(usuario) }"
+              @click="selectUsuario(getUsuarioIdentifier(usuario))"
             >
               <div class="user-avatar">
                 <i class="el-icon-user-solid" />
@@ -124,14 +134,23 @@
             </div>
             <div class="user-actions">
               <el-button
-                :type="currentUsuario.estatus === 'ACTIVO' || currentUsuario.estatus === 'Activo' ? 'warning' : 'success'"
-                :icon="currentUsuario.estatus === 'ACTIVO' || currentUsuario.estatus === 'Activo' ? 'el-icon-close' : 'el-icon-check'"
+                type="danger"
+                class="action-btn action-btn-danger"
                 @click="toggleEstatus"
               >
-                {{ currentUsuario.estatus === 'ACTIVO' || currentUsuario.estatus === 'Activo' ? 'Desactivar' : 'Activar' }}
+                <el-icon class="btn-icon">
+                  <component :is="currentUsuario.estatus === 'ACTIVO' || currentUsuario.estatus === 'Activo' ? CircleClose : RefreshRight" />
+                </el-icon>
+                <span>{{ currentUsuario.estatus === 'ACTIVO' || currentUsuario.estatus === 'Activo' ? 'Desactivar' : 'Activar' }}</span>
               </el-button>
-              <el-button type="primary" icon="el-icon-edit" @click="handleEdit">Editar</el-button>
-              <el-button type="danger" icon="el-icon-delete" @click="handleDeleteUsuario">Eliminar</el-button>
+              <el-button type="danger" class="action-btn action-btn-danger" @click="handleEdit">
+                <el-icon class="btn-icon"><Edit /></el-icon>
+                <span>Editar</span>
+              </el-button>
+              <el-button type="danger" class="action-btn action-btn-danger" @click="handleDeleteUsuario">
+                <el-icon class="btn-icon"><Delete /></el-icon>
+                <span>Eliminar</span>
+              </el-button>
             </div>
           </div>
 
@@ -293,7 +312,12 @@
           <el-divider content-position="left"><i class="el-icon-lock" /> Preguntas de Seguridad</el-divider>
 
           <el-form-item label="Pregunta 1" prop="pregunta_1">
-            <el-select v-model="usuarioForm.pregunta_1" placeholder="Selecciona una pregunta" style="width: 100%">
+            <el-select
+              v-model="usuarioForm.pregunta_1"
+              placeholder="Selecciona una pregunta"
+              style="width: 100%"
+              popper-class="security-question-popper"
+            >
               <el-option
                 v-for="pregunta in preguntasDisponibles"
                 :key="pregunta.id"
@@ -308,7 +332,12 @@
           </el-form-item>
 
           <el-form-item label="Pregunta 2" prop="pregunta_2">
-            <el-select v-model="usuarioForm.pregunta_2" placeholder="Selecciona una pregunta" style="width: 100%">
+            <el-select
+              v-model="usuarioForm.pregunta_2"
+              placeholder="Selecciona una pregunta"
+              style="width: 100%"
+              popper-class="security-question-popper"
+            >
               <el-option
                 v-for="pregunta in preguntasDisponibles"
                 :key="pregunta.id"
@@ -342,6 +371,8 @@ import { getRoles } from '@/api/roles'
 import { getPlantel } from '@/api/plantel'
 import { getPreguntasDisponibles, guardarPreguntas, obtenerPreguntasRespuestasUsuario } from '@/api/preguntasSeguridad'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Collection, Plus, Setting, CircleClose, RefreshRight, Edit, Delete } from '@element-plus/icons-vue'
+import { useServerDataRefresh } from '@/composables/useServerDataRefresh'
 
 const usuarioFormRef = ref(null)
 
@@ -434,6 +465,11 @@ const filteredUsuarios = computed(() => {
   return filtered
 })
 
+const getUsuarioIdentifier = (usuario) => {
+  if (!usuario) return null
+  return usuario.usuario_id ?? usuario.email
+}
+
 const passwordStrength = computed(() => {
   const count = Object.values(passwordChecks.value).filter(v => v).length
   if (count <= 2) return 'weak'
@@ -512,7 +548,7 @@ const loadUsuarios = async () => {
     usuarios.value = Array.isArray(response) ? response : []
 
     if (currentUsuarioId.value) {
-      const exists = usuarios.value.find(u => u.usuario_id === currentUsuarioId.value)
+      const exists = usuarios.value.find(u => getUsuarioIdentifier(u) === currentUsuarioId.value)
       if (!exists) {
         currentUsuarioId.value = null
         currentUsuario.value = {}
@@ -546,7 +582,16 @@ const loadPreguntasDisponibles = async () => {
   try {
     const response = await getPreguntasDisponibles()
     const data = response.data || response
-    preguntasDisponibles.value = Array.isArray(data) ? data : []
+    const normalized = Array.isArray(data)
+      ? data
+        .map((item) => ({
+          id: item.id ?? item.preguntas_id ?? item.pregunta_id ?? null,
+          pregunta: item.pregunta ?? item.preguntas ?? item.texto ?? ''
+        }))
+        .filter((item) => item.id !== null && String(item.pregunta).trim() !== '')
+      : []
+
+    preguntasDisponibles.value = normalized
   } catch (error) {
     console.error('Error cargando preguntas:', error)
   }
@@ -765,6 +810,15 @@ const formatDate = (dateString) => {
   return date.toLocaleString('es-ES')
 }
 
+useServerDataRefresh(async () => {
+  await loadData()
+  if (currentUsuarioId.value) {
+    await selectUsuario(currentUsuarioId.value)
+  }
+}, {
+  isBusy: () => loading.value || showUsuarioModal.value
+})
+
 onMounted(() => {
   loadData()
 })
@@ -773,16 +827,11 @@ onMounted(() => {
 <style scoped>
 .usuarios-container {
   padding: 20px;
-  min-height: 100vh;
 }
 
-.page-header {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  color: white;
-  padding: 20px;
-  border-radius: 10px;
-  margin-bottom: 30px;
-  box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
+/* Local UI Adjustments */
+.header-content h1 {
+  margin: 0;
 }
 
 .header-content {
@@ -990,18 +1039,15 @@ aside.sidebar {
 
 .user-avatar {
   width: 48px;
-  height: 48px;
-  min-width: 48px;
-  min-height: 48px;
-  flex-shrink: 0;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  color: white;
+  width: 40px;
+  height: 40px;
+  background-color: var(--color-bg-body);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  box-shadow: 0 3px 8px rgba(30, 41, 59, 0.3);
+  margin-right: 15px;
+  color: var(--color-text-muted);
 }
 
 .user-info {
@@ -1051,10 +1097,6 @@ aside.sidebar {
 
 .user-details-info {
   flex: 1;
-}
-
-.user-details-info {
-  flex: 1;
   min-width: 0;
   overflow: hidden;
 }
@@ -1062,7 +1104,7 @@ aside.sidebar {
 .user-details-info h2 {
   font-size: 1.5rem;
   margin: 0 0 8px 0;
-  color: #2c3e50;
+  color: var(--color-text-main);
   word-break: break-all;
 }
 
@@ -1077,6 +1119,74 @@ aside.sidebar {
   gap: 10px;
 }
 
+.user-actions :deep(.action-btn-danger) {
+  background-color: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #fff !important;
+  min-width: 122px;
+  font-weight: 700;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.user-actions :deep(.action-btn-danger:hover),
+.user-actions :deep(.action-btn-danger:focus) {
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
+}
+
+.btn-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+:deep(.security-question-popper) {
+  background-color: var(--color-bg-card) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+:deep(.security-question-popper .el-select-dropdown__item) {
+  color: var(--color-text-main) !important;
+  background-color: transparent !important;
+}
+
+:deep(.security-question-popper .el-select-dropdown__item.hover),
+:deep(.security-question-popper .el-select-dropdown__item:hover) {
+  background-color: var(--color-bg-hover) !important;
+  color: var(--color-text-main) !important;
+}
+
+:deep(.security-question-popper .el-select-dropdown__item.selected) {
+  color: var(--color-primary) !important;
+  font-weight: 700;
+}
+
+:deep(.security-question-popper .el-select-dropdown__empty) {
+  color: var(--color-text-muted) !important;
+}
+
+[data-theme='dark'] :deep(.security-question-popper),
+html.dark :deep(.security-question-popper) {
+  background-color: #0f1b34 !important;
+  border-color: #30415f !important;
+}
+
+[data-theme='dark'] :deep(.security-question-popper .el-select-dropdown__item),
+html.dark :deep(.security-question-popper .el-select-dropdown__item) {
+  color: #e2e8f0 !important;
+}
+
+[data-theme='dark'] :deep(.security-question-popper .el-select-dropdown__item.hover),
+[data-theme='dark'] :deep(.security-question-popper .el-select-dropdown__item:hover),
+html.dark :deep(.security-question-popper .el-select-dropdown__item.hover),
+html.dark :deep(.security-question-popper .el-select-dropdown__item:hover) {
+  background-color: #1e2f4d !important;
+  color: #f8fafc !important;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1086,16 +1196,18 @@ aside.sidebar {
 
 .form-item label {
   display: block;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
 }
 
 .form-item p {
-  color: var(--color-text-muted);
-  font-size: 1rem;
   margin: 0;
+  font-weight: 500;
+  color: var(--color-text-main);
 }
 
 .empty-state {
@@ -1174,179 +1286,72 @@ aside.sidebar {
 
   .linked-member {
     font-size: 0.85rem !important;
-    color: #0891b2 !important;
-  }
-
-  /* Sidebar más amplio */
-  .sidebar-header {
-    font-size: 1.1rem;
-    padding: 12px 0;
-  }
-
-  .filter-btn {
-    font-size: 1.4rem !important;
-  }
-
-  /* Search input más grande */
-  .search-container :deep(.el-input__inner) {
-    height: 48px;
-    font-size: 1rem;
-    padding: 12px 16px;
-    border-radius: 12px;
-  }
-
-  .search-container :deep(.el-input__prefix) {
-    left: 12px;
-    font-size: 1.1rem;
-  }
-
-  .user-details-header {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .user-actions {
-    flex-direction: column;
-    width: 100%;
   }
 }
 
-/* Password Checklist Styles */
-.password-checklist {
-  margin-top: 10px;
-  padding: 12px;
-  background: var(--color-bg-card);
-  border-radius: 8px;
-  border: 1px solid var(--color-border);
-}
-
-.checklist-title {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #475569;
-  margin-bottom: 8px;
-}
-
-.checklist-item {
+/* Sidebar más amplio */
+.sidebar-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.85rem;
-  color: var(--color-border);
-  padding: 4px 0;
-  transition: color 0.2s;
 }
 
-.checklist-item i {
-  font-size: 0.9rem;
-}
-
-.checklist-item.valid {
-  color: #22c55e;
-}
-
-.checklist-item.valid i {
-  color: #22c55e;
-}
-
-/* Strength Bar */
-.strength-bar {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--color-border);
-}
-
-.strength-label {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-  margin-bottom: 6px;
-}
-
-.strength-track {
-  height: 6px;
-  background: var(--color-border);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.strength-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.3s, background 0.3s;
-}
-
-.strength-fill.strength-weak {
-  background: #ef4444;
-}
-
-.strength-fill.strength-medium {
-  background: #f59e0b;
-}
-
-.strength-fill.strength-strong {
-  background: #22c55e;
-}
-
-.strength-weak {
-  color: #ef4444;
-  font-weight: 600;
-}
-
-.strength-medium {
-  color: #f59e0b;
-  font-weight: 600;
-}
-
-.strength-strong {
-  color: #22c55e;
-  font-weight: 600;
-}
-
-/* Email Suggestion */
-.email-suggestion {
-  margin-top: 8px;
-  padding: 8px 12px;
-  background: #fef3c7;
-  border: 1px solid #fcd34d;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  color: #92400e;
+.mini-add-btn {
+  background: var(--color-bg-hover);
+  color: var(--color-primary);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+  }
 }
 
-.email-suggestion strong {
-  color: #1d4ed8;
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  color: #fff;
+  margin: -18px -20px;
+  border-radius: 12px 12px 0 0;
+}
+
+.sidebar-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.filter-toggle-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  font-size: 1.1rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   cursor: pointer;
-  text-decoration: underline;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
 }
 
-.email-suggestion strong:hover {
-  color: #1e40af;
-}
-
-/* Security Questions Section */
-.security-questions-section {
-  margin-top: 10px;
-}
-
-.security-questions-section .el-divider {
-  margin: 15px 0;
-}
-
-.security-questions-section .el-divider__text {
-  color: var(--color-primary);
-  font-weight: 600;
-}
-
-.security-hint {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-  margin: 0 0 15px 0;
-  background: var(--color-bg-card);
-  padding: 10px;
-  border-radius: 6px;
-  border-left: 3px solid var(--color-primary);
+.filter-toggle-btn:hover {
+  background: rgba(255,255,255,0.3);
 }
 </style>

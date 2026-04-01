@@ -168,8 +168,8 @@ export default {
 
 <style scoped>
 .footer {
-  background: var(--color-text-dark);
-  color: var(--color-background);
+  background: #020617; /* Fixed dark slate for professional consistency */
+  color: #f8fafc; /* Always light text */
   padding: 4rem 0 2rem;
 }
 

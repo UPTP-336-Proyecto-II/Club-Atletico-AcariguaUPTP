@@ -1,7 +1,7 @@
 <template>
   <div class="asistencia-container">
     <!-- Header -->
-    <div class="page-header">
+    <div class="premium-header">
       <div class="header-content">
         <div>
           <h1><i class="el-icon-date" /> Control de Asistencia</h1>
@@ -14,6 +14,8 @@
             placeholder="Seleccionar Fecha"
             value-format="yyyy-MM-dd"
             :clearable="false"
+            :teleported="false"
+            popper-class="header-date-picker-popper"
             class="header-date-picker"
             @change="loadData"
           />
@@ -22,18 +24,21 @@
     </div>
 
     <!-- Controls & Filters -->
-    <el-card shadow="hover" class="control-card">
+    <el-card shadow="hover" class="premium-control-card">
       <div class="control-row">
         <div class="control-item category-select">
-          <label>Categoría</label>
+          <label class="premium-search-label">Categoría</label>
           <el-select
             v-model="categoria_id"
-            placeholder="Seleccionar Categoría"
+            placeholder="Seleccionar..."
             filterable
             @change="loadData"
+            popper-class="modern-filter-popper"
+            class="modern-filter-control"
+            style="width: 100%"
           >
             <el-option
-              v-for="cat in categorias"
+              v-for="cat in categoriasFiltradas"
               :key="cat.categoria_id"
               :label="cat.nombre_categoria"
               :value="cat.categoria_id"
@@ -42,11 +47,16 @@
         </div>
 
         <div class="control-item category-select">
-          <label>Entrenador Resp.</label>
+          <label class="premium-search-label">Entrenador Resp.</label>
           <el-select
             v-model="entrenador_id"
             placeholder="Responsable"
             filterable
+            clearable
+            @change="handleEntrenadorChange"
+            popper-class="modern-filter-popper"
+            class="modern-filter-control"
+            style="width: 100%"
           >
             <el-option
               v-for="entr in entrenadores"
@@ -58,8 +68,15 @@
         </div>
 
         <div class="control-item event-select">
-          <label>Tipo de Evento</label>
-          <el-select v-model="tipo_evento" placeholder="Tipo">
+          <label class="premium-search-label">Tipo de Evento</label>
+          <el-select
+            v-model="tipo_evento"
+            placeholder="Tipo"
+            @change="handleTipoEventoChange"
+            popper-class="modern-filter-popper"
+            class="modern-filter-control"
+            style="width: 100%"
+          >
             <el-option label="Entrenamiento" value="Entrenamiento" />
             <el-option label="Partido" value="Partido" />
             <el-option label="Evento Especial" value="Evento especial" />
@@ -67,13 +84,16 @@
         </div>
 
         <div class="control-item search-box">
-          <label>Buscar Atleta</label>
+          <label class="premium-search-label">Buscar Atleta</label>
           <el-input
             v-model="searchQuery"
             placeholder="Nombre..."
             clearable
+            class="modern-filter-input"
           />
         </div>
+
+
 
         <div class="control-item actions">
           <el-button
@@ -82,6 +102,7 @@
             :loading="saving"
             :disabled="!categoria_id || listaAtletas.length === 0"
             @click="performSave"
+            class="premium-save-btn"
           >
             Guardar Asistencia
           </el-button>
@@ -241,6 +262,7 @@ import { getAtletas } from '@/api/atletas'
 import { getAsistencias, createAsistencia, updateAsistencia } from '@/api/asistencias'
 import { getPlantel } from '@/api/plantel'
 import { ElMessage } from 'element-plus'
+import { useServerDataRefresh } from '@/composables/useServerDataRefresh'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -254,12 +276,30 @@ const listaAtletas = ref([])
 const searchQuery = ref('')
 const backendUrl = 'http://localhost:3000'
 
+const normalizeText = (value) => {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+const categoriasFiltradas = computed(() => {
+  if (!entrenador_id.value) return categorias.value
+
+  const entrenadorActual = String(entrenador_id.value)
+  const matches = categorias.value.filter(cat => String(cat.entrenador_id || '') === entrenadorActual)
+
+  return matches.length > 0 ? matches : categorias.value
+})
+
 const filteredAtletas = computed(() => {
   if (!searchQuery.value) return listaAtletas.value
-  const q = searchQuery.value.toLowerCase()
+  const q = normalizeText(searchQuery.value)
   return listaAtletas.value.filter(a =>
-    a.nombre.toLowerCase().includes(q) ||
-    a.apellido.toLowerCase().includes(q)
+    normalizeText(a.nombre).includes(q) ||
+    normalizeText(a.apellido).includes(q) ||
+    normalizeText(a.cedula).includes(q)
   )
 })
 
@@ -290,13 +330,31 @@ const fetchEntrenadores = async () => {
       list = await getPlantel()
     }
     entrenadores.value = Array.isArray(list) ? list : []
-    if (entrenadores.value.length > 0 && !entrenador_id.value) {
-      entrenador_id.value = entrenadores.value[0].plantel_id
-    }
   } catch (error) {
     console.error(error)
     entrenadores.value = []
   }
+}
+
+const handleEntrenadorChange = async () => {
+  if (!categoria_id.value) return
+
+  const categoriaSigueDisponible = categoriasFiltradas.value.some(
+    cat => String(cat.categoria_id) === String(categoria_id.value)
+  )
+
+  if (!categoriaSigueDisponible) {
+    categoria_id.value = ''
+    listaAtletas.value = []
+    return
+  }
+
+  await loadData()
+}
+
+const handleTipoEventoChange = async () => {
+  if (!categoria_id.value) return
+  await loadData()
 }
 
 const loadData = async () => {
@@ -313,11 +371,18 @@ const loadData = async () => {
       fecha: fecha.value
     })
 
+    const tipoEventoActual = normalizeText(tipo_evento.value)
+    const asistenciasFiltradas = Array.isArray(asistencias)
+      ? asistencias.filter(record => {
+          const mismaFecha = String(record.fecha || '').includes(fecha.value)
+          if (!mismaFecha) return false
+          if (!record.tipo_evento) return true
+          return normalizeText(record.tipo_evento) === tipoEventoActual
+        })
+      : []
+
     listaAtletas.value = atletasCategoria.map(atleta => {
-      const record = asistencias.find(r =>
-        r.atleta_id === atleta.atleta_id &&
-         r.fecha.includes(fecha.value)
-      )
+      const record = asistenciasFiltradas.find(r => r.atleta_id === atleta.atleta_id)
 
       return {
         ...atleta,
@@ -404,6 +469,19 @@ const tableRowClassName = ({ row }) => {
   return ''
 }
 
+useServerDataRefresh(async () => {
+  await Promise.all([
+    fetchCategorias(),
+    fetchEntrenadores()
+  ])
+
+  if (categoria_id.value) {
+    await loadData()
+  }
+}, {
+  isBusy: () => loading.value || saving.value
+})
+
 onMounted(() => {
   fecha.value = getTodayDate()
   fetchCategorias()
@@ -413,86 +491,283 @@ onMounted(() => {
 
 <style scoped>
 .asistencia-container {
-  padding: 20px;
-  background-color: #f0f2f5;
-  min-height: calc(100vh - 84px);
+  padding: 24px;
+  min-height: 100vh;
+  background-color: var(--color-bg-body);
 }
 
-.page-header {
+.premium-header {
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   color: white;
-  padding: 24px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 24px 30px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 25px -5px var(--color-shadow);
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
 }
 
-.header-content h1 {
-  font-size: 1.5rem;
+.premium-header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
   margin: 0 0 5px 0;
-  font-weight: 600;
 }
 
 .subtitle {
-  font-size: 0.9rem;
-  margin: 0;
+  font-size: 1rem;
   opacity: 0.9;
+  margin: 0;
 }
 
-/* Header Date Picker - Modern Executive Style */
+/* Date Picker - Modern, Rounded and Glass */
 .header-actions {
   display: flex;
   align-items: center;
+  margin-left: auto;
+}
+
+.header-date-picker {
+  width: 270px;
+}
+
+.header-date-picker :deep(.el-date-editor.el-input),
+.header-date-picker :deep(.el-input) {
+  border-radius: 16px !important;
+}
+
+.header-date-picker :deep(.el-input__wrapper) {
+  min-height: 52px;
+  border-radius: 16px !important;
+  border: 1px solid rgba(203, 213, 225, 0.46) !important;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.52), rgba(30, 64, 175, 0.34)) !important;
+  backdrop-filter: blur(12px) saturate(145%);
+  -webkit-backdrop-filter: blur(12px) saturate(145%);
+  box-shadow:
+    0 12px 26px rgba(2, 6, 23, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  padding: 0 14px !important;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.2s ease, background 0.25s ease !important;
+  cursor: pointer !important;
+}
+
+.header-date-picker :deep(.el-input__wrapper:hover) {
+  transform: translateY(-1px);
+  border-color: rgba(226, 232, 240, 0.72) !important;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.62), rgba(255, 59, 48, 0.42)) !important;
+  box-shadow:
+    0 16px 30px rgba(2, 6, 23, 0.46),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+}
+
+.header-date-picker :deep(.el-input__wrapper.is-focus),
+.header-date-picker :deep(.el-input__wrapper:focus-within) {
+  transform: translateY(-1px);
+  border-color: rgba(248, 113, 113, 0.92) !important;
+  box-shadow:
+    0 0 0 3px rgba(239, 68, 68, 0.2),
+    0 16px 32px rgba(2, 6, 23, 0.5) !important;
+}
+
+.header-date-picker :deep(.el-input__wrapper:active) {
+  transform: translateY(0) scale(0.985);
 }
 
 .header-date-picker :deep(.el-input__inner) {
-  background: rgba(255, 255, 255, 0.15);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: #f1f5f9 !important;
+  font-weight: 700 !important;
+  font-size: 1.02rem !important;
+  height: 52px !important;
+  line-height: 52px !important;
+  text-align: left !important;
+  letter-spacing: 0.02em;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  text-decoration: none !important;
+  outline: none !important;
+  cursor: pointer !important;
+}
+
+.header-date-picker :deep(.el-input__inner:hover),
+.header-date-picker :deep(.el-input__inner:focus),
+.header-date-picker :deep(.el-input.is-focus .el-input__inner) {
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  text-decoration: none !important;
+  outline: none !important;
+}
+
+.header-date-picker :deep(.el-input__wrapper::before),
+.header-date-picker :deep(.el-input__wrapper::after),
+.header-date-picker :deep(.el-input__inner::before),
+.header-date-picker :deep(.el-input__inner::after) {
+  display: none !important;
+}
+
+.header-date-picker :deep(.el-input__prefix),
+.header-date-picker :deep(.el-input__prefix-inner),
+.header-date-picker :deep(.el-input__prefix-inner i) {
+  color: #dbeafe !important;
+  font-size: 1.15rem !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.header-date-picker :deep(.el-input__suffix),
+.header-date-picker :deep(.el-input__suffix-inner),
+.header-date-picker :deep(.el-input__suffix-inner i) {
+  color: #dbeafe !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.header-date-picker :deep(.el-input__prefix-inner),
+.header-date-picker :deep(.el-input__suffix-inner) {
+  background: transparent !important;
+}
+
+.header-date-picker :deep(.el-input__wrapper.is-focus .el-input__prefix-inner i),
+.header-date-picker :deep(.el-input__wrapper:focus-within .el-input__prefix-inner i) {
+  color: #fff1f2 !important;
+  transform: scale(1.08);
+}
+
+:deep(.header-date-picker-popper.el-picker__popper) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(148, 163, 184, 0.34) !important;
+  background: linear-gradient(180deg, rgba(2, 6, 23, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%) !important;
+  backdrop-filter: blur(14px) saturate(132%);
+  -webkit-backdrop-filter: blur(14px) saturate(132%);
+  box-shadow: 0 24px 48px rgba(2, 6, 23, 0.6) !important;
+  overflow: hidden;
+  animation: modernDatePanelIn 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: top center;
+}
+
+:deep(.header-date-picker-popper .el-popper__arrow),
+:deep(.header-date-picker-popper .el-popper__arrow::before) {
+  display: none !important;
+}
+
+:deep(.header-date-picker-popper .el-picker-panel) {
+  background: transparent !important;
+  color: #e2e8f0 !important;
+  border: none !important;
+  border-radius: 18px !important;
+}
+
+:deep(.header-date-picker-popper .el-date-picker__header) {
+  margin: 12px 14px 8px;
+}
+
+:deep(.header-date-picker-popper .el-date-picker__header-label) {
+  color: #e2e8f0 !important;
+  font-weight: 700 !important;
+}
+
+:deep(.header-date-picker-popper .el-picker-panel__icon-btn) {
+  color: #cbd5e1 !important;
+  font-size: 15px !important;
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+:deep(.header-date-picker-popper .el-picker-panel__icon-btn:hover) {
+  color: #fff1f2 !important;
+  transform: scale(1.08);
+}
+
+:deep(.header-date-picker-popper .el-date-table th) {
+  color: #bfdbfe !important;
+  font-weight: 600 !important;
+}
+
+:deep(.header-date-picker-popper .el-date-table td .el-date-table-cell) {
+  height: 36px;
+  padding: 2px 0;
+}
+
+:deep(.header-date-picker-popper .el-date-table td .el-date-table-cell__text) {
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  border-radius: 999px;
+  color: #e2e8f0;
+  transition: transform 0.16s ease, background-color 0.16s ease, color 0.16s ease;
+}
+
+:deep(.header-date-picker-popper .el-date-table td.available:hover .el-date-table-cell__text) {
+  background: rgba(148, 163, 184, 0.28);
   color: #fff;
-  font-weight: 600;
-  font-size: 0.95rem;
-  padding: 12px 20px 12px 45px;
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transform: scale(1.06);
 }
 
-.header-date-picker :deep(.el-input__inner:hover) {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  transform: translateY(-1px);
+:deep(.header-date-picker-popper .el-date-table td.today .el-date-table-cell__text) {
+  box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.72) inset;
+  color: #ffe4e6 !important;
 }
 
-.header-date-picker :deep(.el-input__inner:focus) {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: #fff;
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.2);
+:deep(.header-date-picker-popper .el-date-table td.current:not(.disabled) .el-date-table-cell__text) {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  color: #fff !important;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(220, 38, 38, 0.42);
 }
 
-.header-date-picker :deep(.el-input__prefix) {
-  left: 15px;
-  color: #fff;
-  font-size: 1.1rem;
+:deep(.header-date-picker-popper .el-date-table td.prev-month .el-date-table-cell__text),
+:deep(.header-date-picker-popper .el-date-table td.next-month .el-date-table-cell__text) {
+  color: rgba(148, 163, 184, 0.6) !important;
 }
 
-.header-date-picker :deep(.el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.7);
+@keyframes modernDatePanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.97);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
 }
 
-/* Controls */
-.control-card {
-  margin-bottom: 20px;
-  border: none;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+.premium-save-btn {
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  padding: 12px 24px !important;
+  border-radius: 12px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.2) !important;
+  width: 100%;
+}
+
+.premium-save-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 59, 48, 0.3) !important;
+}
+
+.premium-control-card {
+  margin-bottom: 24px;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 10px 15px -3px var(--color-shadow);
   border-radius: 16px;
+  background-color: var(--color-bg-card);
 }
 
 .control-row {
@@ -512,82 +787,165 @@ onMounted(() => {
   min-width: auto;
 }
 
-.control-item label {
+.premium-search-label {
   display: block;
-  font-size: 0.85rem;
-  color: var(--color-text-main);
+  font-size: 0.75rem;
   font-weight: 700;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* Modern Input & Select Styles */
-.control-item :deep(.el-input__inner),
-.control-item :deep(.el-select .el-input__inner) {
-  background: var(--color-bg-card) !important;
-  border: 1px solid var(--color-border) !important;
-  border-radius: 10px;
-  padding: 12px 16px;
-  height: 44px;
-  font-size: 0.9rem;
-  font-weight: 500;
   color: var(--color-text-muted);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  padding-left: 4px;
 }
 
-.control-item :deep(.el-input__inner:hover),
-.control-item :deep(.el-select .el-input__inner:hover) {
-  border-color: #cbd5e1 !important;
-  background: var(--color-bg-card) !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+/* Modern Filter Controls */
+.modern-filter-control :deep(.el-input__wrapper),
+.modern-filter-input :deep(.el-input__wrapper) {
+  min-height: 48px;
+  border-radius: 14px !important;
+  border: 1px solid rgba(203, 213, 225, 0.48) !important;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.5), rgba(30, 64, 175, 0.22)) !important;
+  backdrop-filter: blur(10px) saturate(138%);
+  -webkit-backdrop-filter: blur(10px) saturate(138%);
+  box-shadow:
+    0 10px 24px rgba(2, 6, 23, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+  padding: 0 14px !important;
+  transition: transform 0.2s ease, box-shadow 0.22s ease, border-color 0.2s ease, background 0.22s ease !important;
 }
 
-.control-item :deep(.el-input__inner:focus),
-.control-item :deep(.el-select .el-input.is-focus .el-input__inner),
-.control-item :deep(.el-input__wrapper.is-focus) {
-  border-color: var(--color-primary) !important;
-  background: var(--color-bg-card) !important;
-  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.12) !important;
-  outline: none !important;
+.modern-filter-control :deep(.el-input__wrapper:hover),
+.modern-filter-input :deep(.el-input__wrapper:hover) {
+  transform: translateY(-1px);
+  border-color: rgba(226, 232, 240, 0.75) !important;
+  box-shadow:
+    0 14px 28px rgba(2, 6, 23, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
 
-.control-item :deep(.el-input__inner::placeholder) {
-  color: var(--color-text-placeholder) !important;
-  font-weight: 500;
-  font-style: normal;
+.modern-filter-control :deep(.el-input__wrapper.is-focus),
+.modern-filter-control :deep(.el-input__wrapper:focus-within),
+.modern-filter-input :deep(.el-input__wrapper.is-focus),
+.modern-filter-input :deep(.el-input__wrapper:focus-within) {
+  transform: translateY(-1px);
+  border-color: rgba(248, 113, 113, 0.9) !important;
+  box-shadow:
+    0 0 0 3px rgba(239, 68, 68, 0.16),
+    0 16px 30px rgba(2, 6, 23, 0.24) !important;
+}
+
+.modern-filter-control :deep(.el-input__inner),
+.modern-filter-input :deep(.el-input__inner) {
+  height: 48px !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: #f1f5f9 !important;
+  font-size: 0.95rem !important;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.modern-filter-control :deep(.el-input__inner::placeholder),
+.modern-filter-input :deep(.el-input__inner::placeholder) {
+  color: #cbd5e1 !important;
   opacity: 1 !important;
 }
 
-.control-item :deep(.el-input__prefix) {
-  left: 12px;
-  color: var(--color-text-muted);
-  font-size: 1.1rem;
+.modern-filter-control :deep(.el-select__caret),
+.modern-filter-control :deep(.el-input__suffix-inner i) {
+  color: #dbeafe !important;
+  transition: transform 0.2s ease, color 0.2s ease;
 }
 
-.control-item :deep(.el-select .el-input__suffix) {
-  right: 12px;
+.modern-filter-control :deep(.is-focus .el-select__caret) {
+  color: #fff1f2 !important;
 }
 
-.control-item :deep(.el-select .el-input__icon) {
-  color: var(--color-border);
-  font-size: 0.9rem;
+.modern-filter-input :deep(.el-input__inner:-webkit-autofill),
+.modern-filter-input :deep(.el-input__inner:-webkit-autofill:hover),
+.modern-filter-input :deep(.el-input__inner:-webkit-autofill:focus),
+.modern-filter-input :deep(.el-input__inner:-webkit-autofill:active) {
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+  background-color: transparent !important;
+  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s;
 }
 
-/* Specific Modern Search Box Style */
-.search-box :deep(.el-input__inner) {
-  border: none !important;
-  background: var(--color-bg-body) !important;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05) !important;
-  padding-left: 20px;
-}
-
-.search-box :deep(.el-input__inner:focus),
-.search-box :deep(.el-input__wrapper.is-focus) {
+/* Search input: remove gray inner fill and keep clean style */
+.modern-filter-input :deep(.el-input__wrapper) {
   background: var(--color-bg-card) !important;
-  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.12) !important;
-  outline: none !important;
+  border-color: rgba(148, 163, 184, 0.45) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.modern-filter-input :deep(.el-input__wrapper:hover) {
+  background: var(--color-bg-card) !important;
+  border-color: rgba(100, 116, 139, 0.62) !important;
+  box-shadow: none !important;
+}
+
+.modern-filter-input :deep(.el-input__wrapper.is-focus),
+.modern-filter-input :deep(.el-input__wrapper:focus-within) {
+  background: var(--color-bg-card) !important;
+  border-color: rgba(15, 23, 42, 0.78) !important;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.12) !important;
+}
+
+.modern-filter-input :deep(.el-input__inner) {
+  color: var(--color-text-main) !important;
+}
+
+.modern-filter-input :deep(.el-input__inner::placeholder) {
+  color: var(--color-text-placeholder) !important;
+}
+
+.modern-filter-input :deep(.el-input__inner:-webkit-autofill),
+.modern-filter-input :deep(.el-input__inner:-webkit-autofill:hover),
+.modern-filter-input :deep(.el-input__inner:-webkit-autofill:focus),
+.modern-filter-input :deep(.el-input__inner:-webkit-autofill:active) {
+  -webkit-box-shadow: 0 0 0 1000px var(--color-bg-card) inset !important;
+  -webkit-text-fill-color: var(--color-text-main) !important;
+}
+
+:deep(.modern-filter-popper.el-select__popper) {
+  border-radius: 16px !important;
+  border: 1px solid rgba(148, 163, 184, 0.34) !important;
+  background: linear-gradient(180deg, rgba(2, 6, 23, 0.92), rgba(15, 23, 42, 0.92)) !important;
+  backdrop-filter: blur(12px) saturate(130%);
+  -webkit-backdrop-filter: blur(12px) saturate(130%);
+  box-shadow: 0 22px 44px rgba(2, 6, 23, 0.55) !important;
+  overflow: hidden;
+  animation: modernDatePanelIn 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:deep(.modern-filter-popper .el-popper__arrow),
+:deep(.modern-filter-popper .el-popper__arrow::before) {
+  display: none !important;
+}
+
+:deep(.modern-filter-popper .el-select-dropdown__item) {
+  color: #e2e8f0 !important;
+  height: 38px;
+  line-height: 38px;
+  border-radius: 10px;
+  margin: 2px 8px;
+  transition: background-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+
+:deep(.modern-filter-popper .el-select-dropdown__item.hover),
+:deep(.modern-filter-popper .el-select-dropdown__item:hover) {
+  background: rgba(148, 163, 184, 0.2) !important;
+  color: #fff !important;
+  transform: translateX(1px);
+}
+
+:deep(.modern-filter-popper .el-select-dropdown__item.selected) {
+  color: #fff1f2 !important;
+  font-weight: 700;
+  background: rgba(239, 68, 68, 0.24) !important;
 }
 
 /* Primary Button Style */
@@ -700,11 +1058,11 @@ onMounted(() => {
 }
 
 :deep(.row-ausente) {
-  background-color: #fef2f2 !important;
+  background-color: rgba(239, 68, 68, 0.1) !important;
 }
 
 :deep(.row-justificado) {
-  background-color: var(--color-bg-card)beb !important;
+  background-color: rgba(255, 59, 48, 0.1) !important;
 }
 
 .empty-state {

@@ -30,7 +30,7 @@ const variables = {
   menuText: 'rgba(255, 255, 255, 0.9)',
   menuActiveText: '#ffffff',
   subMenuActiveText: 'rgba(255, 255, 255, 0.9)',
-  menuBg: 'var(--color-text-main)',
+  menuBg: 'var(--color-bg-sidebar)',
   menuHover: 'rgba(0, 0, 0, 0.15)',
   subMenuBg: 'rgba(0, 0, 0, 0.1)',
   subMenuHover: 'rgba(0, 0, 0, 0.2)',

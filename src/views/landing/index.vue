@@ -112,7 +112,7 @@ export default {
 }
 
 .content-section:nth-child(even) {
-  background: #f8f9fa;
+  background: var(--color-bg-hover);
 }
 
 .section-content {
@@ -132,7 +132,7 @@ export default {
 
 .section-subtitle {
   font-size: 1.2rem;
-  color: #000000;
+  color: var(--color-text-muted);
   font-weight: 400;
   max-width: 600px;
   margin: 0 auto;

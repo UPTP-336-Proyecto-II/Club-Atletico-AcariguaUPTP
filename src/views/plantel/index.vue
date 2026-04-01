@@ -1,88 +1,104 @@
 <template>
   <div class="plantel-container">
     <!-- Header -->
-    <div class="page-header">
+    <div class="premium-header">
       <div class="header-content">
         <div>
           <h1><i class="el-icon-s-custom" /> Gestión del Plantel</h1>
           <p class="subtitle">Club Atlético Deportivo Acarigua</p>
         </div>
-        <el-button type="primary" icon="el-icon-plus" @click="handleCreate">
-          Nuevo Miembro
-        </el-button>
       </div>
     </div>
 
     <!-- Main Content -->
     <div class="main-content">
       <!-- Sidebar con lista de miembros -->
-      <aside class="sidebar">
+      <aside class="sidebar premium-sidebar">
         <el-card shadow="hover">
           <template #header>
             <div class="sidebar-header">
-            <span><i class="el-icon-user" /> Lista del Plantel</span>
-            <el-popover
-              placement="bottom-end"
-              width="250"
-              trigger="click"
-            >
-              <div class="filter-popover">
-                <h4>Filtros Avanzados</h4>
-                <div class="filter-item">
-                  <label>Rol</label>
-                  <el-select
-                    v-model="filterRol"
-                    placeholder="Filtrar por Rol"
-                    clearable
-                    size="small"
-                    style="width: 100%"
-                    @change="fetchPlantel"
-                  >
-                    <el-option
-                      v-for="rol in rolesOptions"
-                      :key="rol.value"
-                      :label="rol.label"
-                      :value="rol.value"
-                    />
-                  </el-select>
-                </div>
-                <div class="filter-item">
-                  <label>Ordenar por</label>
-                  <el-select v-model="filterSort" placeholder="Seleccionar" size="small" style="width: 100%" @change="fetchPlantel">
-                    <el-option label="Más Recientes" value="reciente" />
-                    <el-option label="Más Antiguos" value="antiguo" />
-                    <el-option label="Alfabético A-Z" value="az" />
-                    <el-option label="Alfabético Z-A" value="za" />
-                  </el-select>
-                </div>
+              <span class="sidebar-title">
+                <el-icon><Collection /></el-icon>
+                <span>Lista del Plantel</span>
+              </span>
+              <div class="sidebar-actions">
+                <button class="mini-add-btn" title="Nuevo Miembro" @click="handleCreate">
+                  <el-icon><Plus /></el-icon>
+                </button>
+                <el-popover
+                  placement="bottom-end"
+                  width="260"
+                  trigger="click"
+                >
+                  <div class="filter-popover">
+                    <h4>Filtros Avanzados</h4>
+                    <div class="filter-item">
+                      <label>Rol</label>
+                      <el-select
+                        v-model="filterRol"
+                        placeholder="Filtrar por Rol"
+                        clearable
+                        size="small"
+                        style="width: 100%"
+                        @change="fetchPlantel"
+                      >
+                        <el-option
+                          v-for="rol in rolesOptions"
+                          :key="rol.value"
+                          :label="rol.label"
+                          :value="rol.value"
+                        />
+                      </el-select>
+                    </div>
+                    <div class="filter-item">
+                      <label>Ordenar por</label>
+                      <el-select v-model="filterSort" placeholder="Seleccionar" size="small" style="width: 100%" @change="fetchPlantel">
+                        <el-option label="Más Recientes" value="reciente" />
+                        <el-option label="Más Antiguos" value="antiguo" />
+                        <el-option label="Alfabético A-Z" value="az" />
+                        <el-option label="Alfabético Z-A" value="za" />
+                      </el-select>
+                    </div>
+                  </div>
+                  <template #reference>
+                    <button class="filter-toggle-btn" title="Filtros avanzados">
+                      <el-icon><Setting /></el-icon>
+                    </button>
+                  </template>
+                </el-popover>
               </div>
-              <template #reference><el-button type="text" icon="el-icon-s-operation" class="filter-btn" /></template>
-            </el-popover>
             </div>
           </template>
           <div class="search-container">
+            <div class="search-intro">
+              <span class="search-intro-badge">Filtro por cédula</span>
+              <p>Encuentra rápidamente a cualquier miembro del plantel usando solo su documento.</p>
+            </div>
             <div class="search-field">
-              <label class="search-label">Buscar Miembro</label>
+              <label class="search-label">Buscar por Cédula</label>
               <el-input
-                v-model="searchQuery"
-                placeholder="Nombre o apellido..."
-                size="small"
+                v-model="searchCedula"
+                placeholder="Escribe la cédula sin puntos"
                 clearable
+                maxlength="9"
+                class="modern-search-input modern-sidebar-control"
+                @input="v => searchCedula = v.replace(/[^0-9]/g, '')"
               />
+              <p class="field-caption">Usa solo números para obtener coincidencias por cédula.</p>
             </div>
           </div>
           <div class="member-list">
             <div
               v-for="miembro in filteredPlantel"
               :key="miembro.plantel_id"
-              class="member-item"
+              class="premium-list-item"
               :class="{ active: currentMemberId === miembro.plantel_id }"
               @click="selectMember(miembro)"
             >
-              <div class="member-photo">
+              <div class="item-photo">
                 <i class="el-icon-user" />
               </div>
-              <div class="member-info">
+              <div class="item-info">
                 <h3>{{ miembro.nombre }} {{ miembro.apellido }}</h3>
                 <p>{{ miembro.nombre_rol }}</p>
                 <p><i class="el-icon-phone-outline" /> {{ miembro.telefono || 'Sin teléfono' }}</p>
@@ -117,8 +133,14 @@
               <p style="margin-top: 10px"><i class="el-icon-phone" /> {{ currentMember.telefono || 'No especificado' }}</p>
             </div>
             <div class="member-actions">
-              <el-button type="danger" icon="el-icon-delete" @click="handleDelete(currentMember)">Eliminar</el-button>
-              <el-button type="primary" icon="el-icon-edit" @click="handleEdit(currentMember)">Editar</el-button>
+              <el-button type="danger" @click="handleDelete(currentMember)">
+                <el-icon><Delete /></el-icon>
+                <span>Eliminar</span>
+              </el-button>
+              <el-button type="primary" @click="handleEdit(currentMember)">
+                <el-icon><Edit /></el-icon>
+                <span>Editar</span>
+              </el-button>
             </div>
           </div>
 
@@ -220,7 +242,10 @@
                 type="date"
                 placeholder="Seleccione fecha"
                 style="width: 100%"
-                value-format="yyyy-MM-dd"
+                format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD"
+                :disabled-date="disableFutureDates"
+                :editable="false"
               />
             </el-form-item>
           </el-col>
@@ -306,6 +331,8 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { getPlantel, createPlantel, updatePlantel, deletePlantel } from '@/api/plantel'
 import { getRoles } from '@/api/roles'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Collection, Plus, Setting, Delete, Edit } from '@element-plus/icons-vue'
+import { useServerDataRefresh } from '@/composables/useServerDataRefresh'
 
 const plantelForm = ref(null)
 
@@ -313,10 +340,8 @@ const loading = ref(false)
 const submitting = ref(false)
 const plantelList = ref([])
 const searchCedula = ref('')
-const filterSinCedula = ref(false)
 const filterRol = ref('')
 const filterSort = ref('az')
-const searchQuery = ref('')
 let searchCedulaTimeout = null
 const dialogVisible = ref(false)
 const isEdit = ref(false)
@@ -341,6 +366,54 @@ const formData = ref({
   }
 })
 
+const isValidExistingDate = (value) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || '').trim())
+  if (!match) return false
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+
+  if (month < 1 || month > 12) return false
+
+  const maxDay = new Date(year, month, 0).getDate()
+  return day >= 1 && day <= maxDay
+}
+
+const getTodayLocalDate = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const disableFutureDates = (date) => {
+  const today = new Date()
+  today.setHours(23, 59, 59, 999)
+  return date.getTime() > today.getTime()
+}
+
+const validateExistingDate = (rule, value, callback) => {
+  const normalized = String(value || '').trim()
+  if (!normalized) {
+    callback()
+    return
+  }
+
+  if (!isValidExistingDate(normalized)) {
+    callback(new Error('La fecha de nacimiento no existe. Usa una fecha valida'))
+    return
+  }
+
+  if (normalized > getTodayLocalDate()) {
+    callback(new Error('La fecha de nacimiento no puede ser futura'))
+    return
+  }
+
+  callback()
+}
+
 const formRules = {
   nombre: [
     { required: true, message: 'El nombre es obligatorio', trigger: 'blur' }
@@ -358,21 +431,19 @@ const formRules = {
   ],
   rol: [
     { required: true, message: 'Seleccione un rol', trigger: 'change' }
+  ],
+  fecha_nac: [
+    { validator: validateExistingDate, trigger: ['change', 'blur'] }
   ]
 }
 
 const rolesOptions = ref([])
 
 const filteredPlantel = computed(() => {
-  let filtered = plantelList.value
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(m =>
-      m.nombre.toLowerCase().includes(query) ||
-      m.apellido.toLowerCase().includes(query)
-    )
+  if (!searchCedula.value) {
+    return plantelList.value
   }
-  return filtered
+  return plantelList.value.filter(m => String(m.cedula || '').includes(searchCedula.value))
 })
 
 watch(searchCedula, () => {
@@ -404,9 +475,6 @@ const fetchPlantel = async () => {
     const params = {}
     if (searchCedula.value) {
       params.cedula = searchCedula.value
-    }
-    if (filterSinCedula.value) {
-      params.sin_cedula = 'true'
     }
     if (filterRol.value) {
       params.rol = filterRol.value
@@ -530,7 +598,8 @@ const handleSubmit = async () => {
   } catch (error) {
     if (error !== false) {
       console.error('Error guardando miembro:', error)
-      ElMessage.error('Error al guardar el miembro')
+      const backendError = error?.response?.data?.error
+      ElMessage.error(backendError || 'Error al guardar el miembro')
     }
   } finally {
     submitting.value = false
@@ -560,6 +629,15 @@ const handleDelete = (row) => {
   }).catch(() => {})
 }
 
+useServerDataRefresh(async () => {
+  await Promise.all([
+    loadRoles(),
+    fetchPlantel()
+  ])
+}, {
+  isBusy: () => loading.value || submitting.value || dialogVisible.value
+})
+
 onMounted(() => {
   loadRoles()
   fetchPlantel()
@@ -569,192 +647,169 @@ onMounted(() => {
 <style scoped>
 .plantel-container {
   padding: 20px;
-  min-height: 100vh;
 }
 
-.page-header {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  color: white;
-  padding: 20px;
-  border-radius: 10px;
-  margin-bottom: 30px;
-  box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.page-header h1 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin: 0 0 5px 0;
-}
-
-.subtitle {
-  font-size: 1rem;
-  opacity: 0.9;
+/* Local Overrides */
+.header-content h1 {
   margin: 0;
 }
 
-/* Header Button - Modern Executive Style */
-.header-content :deep(> .el-button--primary) {
-  background: rgba(255, 255, 255, 0.15) !important;
-  border: 2px solid rgba(255, 255, 255, 0.3) !important;
-  color: #fff !important;
-  font-weight: 600;
-  font-size: 0.95rem;
-  padding: 12px 24px;
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-.header-content :deep(> .el-button--primary:hover) {
-  background: rgba(255, 255, 255, 0.25) !important;
-  border-color: rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-
-.header-content :deep(> .el-button--primary:active) {
-  transform: translateY(0);
-}
-
-.main-content {
-  display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: 15px;
-}
-
-/* Sidebar Styles */
-.sidebar .el-card {
-  height: calc(100vh - 200px);
-  overflow: hidden;
+.sidebar-actions {
   display: flex;
-  flex-direction: column;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
-  border: 2px solid var(--color-border) !important;
-  border-radius: 14px;
+  align-items: center;
+  gap: 8px;
 }
 
-.sidebar :deep(.el-card__body) {
-  padding: 0;
-  flex: 1;
+.mini-add-btn {
+  background: var(--color-bg-hover);
+  color: var(--color-primary);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  cursor: pointer;
   display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+  }
 }
 
 .sidebar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 14px 16px;
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   color: #fff;
+  margin: -18px -20px;
+  border-radius: 12px 12px 0 0;
 }
 
-.search-container {
-  padding: 15px;
-  background: var(--color-bg-card);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.search-container :deep(.el-input__inner) {
-  background: var(--color-bg-body) !important;
-  border: none !important;
-  box-shadow: none !important;
-  border-radius: 10px;
-  padding: 10px 14px 10px 36px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  transition: all 0.2s ease;
-}
-
-.search-container :deep(.el-input__inner:focus) {
-  background: var(--color-bg-card) !important;
-  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1) !important;
-}
-
-.search-container :deep(.el-input__inner::placeholder) {
-  color: var(--color-text-placeholder) !important;
-}
-
-.search-container :deep(.el-input__prefix) {
-  color: var(--color-border);
-}
-
-.member-list {
-  overflow-y: auto;
-  flex: 1;
-  padding: 8px 0;
-}
-
-.member-item {
-  padding: 14px;
-  margin: 8px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
+.sidebar-title {
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  background: var(--color-bg-card);
+  gap: 8px;
+  font-weight: 700;
 }
 
-.member-item:hover {
-  border-color: #cbd5e1;
-  background: var(--color-bg-card);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  transform: translateY(-1px);
-}
-
-.member-item.active {
-  background: var(--color-bg-card);
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary), 0 4px 12px rgba(30, 41, 59, 0.1);
-}
-
-.member-photo {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  min-height: 48px;
-  flex-shrink: 0;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  color: white;
+.filter-toggle-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  font-size: 1.1rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  overflow: hidden;
-  box-shadow: 0 3px 8px rgba(30, 41, 59, 0.3);
+  transition: all 0.25s ease;
 }
 
-.member-info {
-  flex: 1;
-  min-width: 0;
+.filter-toggle-btn:hover {
+  background: rgba(255,255,255,0.3);
 }
 
-.member-info h3 {
-  font-size: 0.95rem;
-  font-weight: 700;
-  margin: 0 0 6px 0;
+.search-container {
+  padding: 18px 16px 16px;
+  background: linear-gradient(180deg, rgba(255, 59, 48, 0.08), transparent 90px), var(--color-bg-card);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.search-intro {
+  margin-bottom: 14px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.search-intro-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
   color: var(--color-text-main);
+  border: 1px solid var(--color-border);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.member-info p {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-  margin: 3px 0;
-  font-weight: 500;
+[data-theme='dark'] .search-intro-badge {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border-color: transparent;
 }
+
+.search-intro p {
+  margin: 10px 0 0;
+  color: var(--color-text-main);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.search-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+  opacity: 0.95;
+}
+
+.search-field {
+  margin-bottom: 0;
+}
+
+:deep(.modern-sidebar-control .el-input__wrapper) {
+  min-height: 46px;
+  border-radius: 15px;
+  background: var(--color-bg-body);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18);
+  padding: 0 14px;
+  transition: box-shadow 0.25s ease, background 0.25s ease;
+}
+
+:deep(.modern-sidebar-control .el-input__wrapper:hover) {
+  box-shadow: inset 0 0 0 1px rgba(255, 90, 79, 0.26);
+}
+
+:deep(.modern-sidebar-control .el-input__wrapper.is-focus) {
+  background: var(--color-bg-card);
+  box-shadow: 0 0 0 4px rgba(255, 59, 48, 0.14), inset 0 0 0 1px var(--color-primary);
+}
+
+:deep(.modern-sidebar-control .el-input__inner) {
+  font-size: 0.93rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.field-caption {
+  margin: 8px 2px 0;
+  color: var(--color-text-muted);
+  font-size: 0.77rem;
+  line-height: 1.45;
+}
+
 
 .empty-state-list {
   text-align: center;
@@ -808,7 +863,14 @@ onMounted(() => {
 
 .member-details-info h2 {
   margin: 0 0 10px 0;
-  color: #2c3e50;
+  color: var(--color-text-main);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.member-details-info :deep(.el-tag) {
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .member-actions {
@@ -833,7 +895,7 @@ onMounted(() => {
 
 .form-item p {
   margin: 0;
-  color: #2c3e50;
+  color: var(--color-text-main);
   font-size: 1rem;
 }
 
@@ -918,6 +980,47 @@ onMounted(() => {
 
 :deep(.el-tabs__item:hover) {
   color: var(--color-primary);
+}
+
+:deep(.el-tabs--border-card) {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+}
+
+:deep(.el-tabs--border-card > .el-tabs__header) {
+  background: var(--color-bg-body);
+  border-bottom: 1px solid var(--color-border);
+}
+
+:deep(.el-tabs--border-card > .el-tabs__header .el-tabs__nav-wrap::after) {
+  background-color: var(--color-border);
+}
+
+:deep(.el-tabs--border-card > .el-tabs__header .el-tabs__item) {
+  color: var(--color-text-muted);
+  border-right-color: var(--color-border);
+}
+
+:deep(.el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active) {
+  background: var(--color-bg-card);
+  color: var(--color-primary);
+  border-right-color: var(--color-border);
+  border-left-color: var(--color-border);
+}
+
+:deep(.el-tabs--border-card > .el-tabs__content) {
+  background: var(--color-bg-card);
+}
+
+.member-actions :deep(.el-button) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.member-actions :deep(.el-button .el-icon) {
+  font-size: 0.95rem;
+  line-height: 1;
 }
 
 /* ============================================

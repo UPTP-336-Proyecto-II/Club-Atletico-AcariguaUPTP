@@ -48,13 +48,13 @@ export default {
   }
 
   .dashboard-editor-container {
-    background-color: #e3e3e3;
-    min-height: 100vh;
+    background-color: var(--color-bg-body);
+    min-height: calc(100vh - 84px);
     padding: 50px 60px 0px;
     .pan-info-roles {
       font-size: 12px;
       font-weight: 700;
-      color: #333;
+      color: var(--color-text-muted);
       display: block;
     }
     .info-container {
@@ -65,7 +65,7 @@ export default {
       .display_name {
         font-size: 48px;
         line-height: 48px;
-        color: #212121;
+        color: var(--color-text-main);
         position: absolute;
         top: 25px;
       }
