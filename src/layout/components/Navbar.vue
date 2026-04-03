@@ -42,6 +42,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ArrowDown, Moon, Sunny } from '@element-plus/icons-vue'
 import Breadcrumb from '@/components/Breadcrumb/index.vue'
 import Hamburger from '@/components/Hamburger/index.vue'
+import { applyTheme, getSavedTheme, saveTheme } from '@/utils/theme'
 
 export default {
   components: {
@@ -56,7 +57,7 @@ export default {
     const route = useRoute()
     const router = useRouter()
     
-    const theme = ref(localStorage.getItem('theme') || 'light')
+    const theme = ref(getSavedTheme())
 
     const sidebar = computed(() => store.getters.sidebar)
     const avatar = computed(() => store.getters.avatar)
@@ -75,18 +76,8 @@ export default {
     }
 
     function toggleTheme() {
-      theme.value = theme.value === 'light' ? 'dark' : 'light'
-      localStorage.setItem('theme', theme.value)
-      updateTheme()
-    }
-
-    function updateTheme() {
-      document.documentElement.setAttribute('data-theme', theme.value)
-      if (theme.value === 'dark') {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
+      const nextTheme = theme.value === 'light' ? 'dark' : 'light'
+      theme.value = saveTheme(nextTheme)
     }
 
     async function logout() {
@@ -95,7 +86,7 @@ export default {
     }
 
     onMounted(() => {
-      updateTheme()
+      theme.value = applyTheme(theme.value)
     })
 
     return {

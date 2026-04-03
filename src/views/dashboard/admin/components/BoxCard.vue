@@ -80,6 +80,7 @@ const statusFilter = (status) => {
     right: 0px;
     font-size: 20px;
     font-weight: bold;
+    color: var(--color-text-main);
   }
   .panThumb {
     z-index: 100;
@@ -88,10 +89,10 @@ const statusFilter = (status) => {
     position: absolute!important;
     top: -45px;
     left: 0px;
-    border: 5px solid #ffffff;
+    border: 5px solid var(--color-bg-card);
     background-color: var(--color-bg-card);
     margin: auto;
-    box-shadow: none!important;
+    box-shadow: 0 4px 12px var(--color-shadow)!important;
     :deep(.pan-info) {
       box-shadow: none!important;
     }

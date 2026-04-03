@@ -1,7 +1,7 @@
 <template>
   <div class="progress-container">
     <!-- Header -->
-    <div class="page-header">
+    <div class="premium-header">
       <div class="header-content">
         <div>
           <h1><i class="el-icon-data-line" /> Evolución de Atletas</h1>
@@ -11,52 +11,94 @@
     </div>
 
     <!-- Barra de Control Compacta -->
-    <el-card class="control-panel" shadow="hover">
+    <el-card class="premium-control-card" shadow="hover">
       <div class="control-content">
         <div class="search-section">
-          <label class="control-label"><i class="el-icon-search" /> Buscar Atleta:</label>
-          <el-select
-            :key="searchKey"
-            v-model="selectedAtletaId"
-            filterable
-            remote
-            :remote-method="filterAtletas"
-            no-data-text="No se encontraron atletas"
-            placeholder="Nombre o Apellido..."
-            class="compact-search"
-            @change="handleAtletaChange"
-          >
-            <el-option
-              v-for="item in filteredAtletas"
-              :key="item.atleta_id"
-              :label="item.nombre + ' ' + item.apellido"
-              :value="item.atleta_id"
+          <label class="premium-search-label">Buscar Atleta</label>
+          <div class="filter-control-row">
+            <el-select
+              :key="searchKey"
+              v-model="selectedAtletaId"
+              filterable
+              remote
+              clearable
+              :remote-method="filterAtletas"
+              no-data-text="No se encontraron atletas"
+              placeholder="Nombre o Apellido..."
+              class="modern-search-input modern-filter-control"
+              popper-class="modern-filter-popper"
+              @change="handleAtletaChange"
+              @clear="clearSelectedAtleta"
+              style="width: 100%"
             >
-              <div class="atleta-option">
-                <img v-if="item.foto" :src="getFotoUrl(item.foto)" class="option-avatar">
-                <div v-else class="option-avatar-placeholder"><i class="el-icon-user" /></div>
-                <span>{{ item.nombre }} {{ item.apellido }}</span>
-                <el-tag size="mini" type="info" class="option-tag">{{ item.categoria_nombre }}</el-tag>
-              </div>
-            </el-option>
-          </el-select>
+              <el-option
+                v-for="item in filteredAtletas"
+                :key="item.atleta_id"
+                :label="item.nombre + ' ' + item.apellido"
+                :value="item.atleta_id"
+              >
+                <div class="atleta-option">
+                  <img v-if="item.foto" :src="getFotoUrl(item.foto)" class="option-avatar">
+                  <div v-else class="option-avatar-placeholder"><i class="el-icon-user" /></div>
+                  <span>{{ item.nombre }} {{ item.apellido }}</span>
+                </div>
+              </el-option>
+            </el-select>
+            <button
+              v-if="hasSelectedAtleta"
+              type="button"
+              class="quick-clear-btn"
+              title="Limpiar selección de atleta"
+              @click="clearSelectedAtleta"
+            >
+              <el-icon class="quick-clear-icon"><CloseBold /></el-icon>
+              <span class="quick-clear-text">Limpiar atleta</span>
+            </button>
+          </div>
         </div>
 
         <div class="filter-section">
-          <label class="control-label"><i class="el-icon-medal" /> Categoría:</label>
-          <el-select v-model="selectedCategoriaId" placeholder="Todas" clearable class="compact-select" @change="handleCategoriaChange">
-            <el-option
-              v-for="cat in categorias"
-              :key="cat.categoria_id"
-              :label="cat.nombre_categoria"
-              :value="cat.categoria_id"
-            />
-          </el-select>
+          <label class="premium-search-label">Categoría</label>
+          <div class="filter-control-row">
+            <el-select
+              v-model="selectedCategoriaId"
+              placeholder="Todas"
+              clearable
+              class="modern-search-input modern-filter-control"
+              popper-class="modern-filter-popper"
+              @change="handleCategoriaChange"
+              @clear="clearSelectedCategoria"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="cat in categorias"
+                :key="cat.categoria_id"
+                :label="cat.nombre_categoria"
+                :value="cat.categoria_id"
+              />
+            </el-select>
+            <button
+              v-if="hasSelectedCategoria"
+              type="button"
+              class="quick-clear-btn"
+              title="Limpiar selección de categoría"
+              @click="clearSelectedCategoria"
+            >
+              <el-icon class="quick-clear-icon"><CloseBold /></el-icon>
+              <span class="quick-clear-text">Limpiar categoría</span>
+            </button>
+          </div>
         </div>
 
         <div class="actions-section">
-          <el-button type="danger" icon="el-icon-printer" :disabled="!selectedAtletaId" @click="printCurrentReport">Imprimir Atleta</el-button>
-          <el-button type="primary" icon="el-icon-document-copy" :disabled="!selectedCategoriaId" @click="printCategoryReports">Reportes Categoría</el-button>
+          <el-button type="danger" class="report-action-btn" :disabled="!selectedAtletaId" @click="printCurrentReport">
+            <el-icon><Printer /></el-icon>
+            <span>Imprimir Atleta</span>
+          </el-button>
+          <el-button type="primary" class="report-action-btn" :disabled="!selectedCategoriaId" @click="printCategoryReports">
+            <el-icon><DocumentCopy /></el-icon>
+            <span>Reporte Categoría</span>
+          </el-button>
         </div>
       </div>
     </el-card>
@@ -161,6 +203,8 @@ import { useRoute } from 'vue-router'
 import request from '@/utils/request'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
+import { CloseBold, Printer, DocumentCopy } from '@element-plus/icons-vue'
+import { useServerDataRefresh } from '@/composables/useServerDataRefresh'
 
 const route = useRoute()
 
@@ -175,6 +219,7 @@ const mediciones = ref([])
 const loading = ref(false)
 const backendUrl = ref('http://localhost:3000')
 const searchKey = ref(0)
+const athleteQuery = ref('')
 const charts = {
   performance: null,
   radar: null,
@@ -203,11 +248,14 @@ const trends = computed(() => {
   ]
 })
 
+const hasSelectedAtleta = computed(() => selectedAtletaId.value !== null && selectedAtletaId.value !== undefined && selectedAtletaId.value !== '')
+const hasSelectedCategoria = computed(() => selectedCategoriaId.value !== null && selectedCategoriaId.value !== undefined && selectedCategoriaId.value !== '')
+
 const loadAtletas = async () => {
   try {
     const response = await request({ url: '/atletas', method: 'get' })
     atletas.value = Array.isArray(response) ? response : []
-    filteredAtletas.value = [...atletas.value].slice(0, 50)
+    applyAtletaFilters(athleteQuery.value)
   } catch (error) {
     console.error('Error cargando atletas:', error)
   }
@@ -222,40 +270,84 @@ const loadCategorias = async () => {
   }
 }
 
+const isSameId = (left, right) => String(left) === String(right)
+const normalizeRouteAtletaId = (value) => {
+  if (value === undefined || value === null || value === '') return null
+  const parsed = Number(value)
+  return Number.isNaN(parsed) ? value : parsed
+}
+
+const applyAtletaFilters = (query = '') => {
+  const normalizedQuery = String(query || '').trim().toLowerCase()
+
+  const listByCategory = selectedCategoriaId.value
+    ? atletas.value.filter(a => isSameId(a.categoria_id, selectedCategoriaId.value))
+    : atletas.value
+
+  const filteredByQuery = normalizedQuery
+    ? listByCategory.filter(item => {
+      const fullName = `${item.nombre || ''} ${item.apellido || ''}`.toLowerCase()
+      const cedula = String(item.cedula || '').toLowerCase()
+      return fullName.includes(normalizedQuery) || cedula.includes(normalizedQuery)
+    })
+    : listByCategory
+
+  filteredAtletas.value = filteredByQuery.slice(0, normalizedQuery ? 20 : 50)
+}
+
+const resetSelectedAtleta = () => {
+  selectedAtletaId.value = null
+  atleta.value = {}
+  tests.value = []
+  mediciones.value = []
+}
+
+const clearSelectedAtleta = () => {
+  athleteQuery.value = ''
+  resetSelectedAtleta()
+  applyAtletaFilters('')
+}
+
+const clearSelectedCategoria = () => {
+  selectedCategoriaId.value = ''
+  applyAtletaFilters(athleteQuery.value)
+}
+
 const filterAtletas = (query) => {
-  if (query !== '') {
-    filteredAtletas.value = atletas.value.filter(item => {
-      const fullName = (item.nombre + ' ' + item.apellido).toLowerCase()
-      return fullName.indexOf(query.toLowerCase()) > -1
-    }).slice(0, 20)
-  } else {
-    filteredAtletas.value = (selectedCategoriaId.value
-      ? atletas.value.filter(a => a.categoria_id === selectedCategoriaId.value)
-      : atletas.value
-    ).slice(0, 50)
-  }
+  athleteQuery.value = String(query || '')
+  applyAtletaFilters(athleteQuery.value)
 }
 
 const handleCategoriaChange = (val) => {
-  selectedAtletaId.value = null
-  if (val) {
-    filteredAtletas.value = atletas.value.filter(a => a.categoria_id === val).slice(0, 50)
-  } else {
-    filteredAtletas.value = [...atletas.value].slice(0, 50)
+  applyAtletaFilters(athleteQuery.value)
+
+  if (!selectedAtletaId.value) return
+
+  const selectedCurrent = atletas.value.find(a => isSameId(a.atleta_id, selectedAtletaId.value))
+  if (!selectedCurrent) {
+    resetSelectedAtleta()
+    return
+  }
+
+  if (val && !isSameId(selectedCurrent.categoria_id, val)) {
+    resetSelectedAtleta()
   }
 }
 
 const handleAtletaChange = async (id) => {
-  if (!id) return
+  if (id === null || id === undefined || id === '') {
+    resetSelectedAtleta()
+    return
+  }
   loading.value = true
 
   try {
     const currentAtleta = await request({ url: `/atletas?atleta_id=${id}`, method: 'get' })
     if (currentAtleta) {
-      const updatedInfo = Array.isArray(currentAtleta) ? currentAtleta.find(a => a.atleta_id === id) : currentAtleta
+      const updatedInfo = Array.isArray(currentAtleta) ? currentAtleta.find(a => isSameId(a.atleta_id, id)) : currentAtleta
       if (updatedInfo) {
         atleta.value = updatedInfo
-        const idx = atletas.value.findIndex(a => a.atleta_id === id)
+        const idx = atletas.value.findIndex(a => isSameId(a.atleta_id, id))
         if (idx !== -1) {
           atletas.value[idx] = updatedInfo 
         }
@@ -506,8 +598,8 @@ const printCategoryReports = async () => {
 
   loading.value = true
   try {
-    const categoria = categorias.value.find(c => c.categoria_id === selectedCategoriaId.value)
-    const athletes = atletas.value.filter(a => a.categoria_id === selectedCategoriaId.value)
+    const categoria = categorias.value.find(c => isSameId(c.categoria_id, selectedCategoriaId.value))
+    const athletes = atletas.value.filter(a => isSameId(a.categoria_id, selectedCategoriaId.value))
 
     if (athletes.length === 0) {
       ElMessage.warning('No hay atletas en esta categoría')
@@ -538,7 +630,7 @@ const printCategoryReports = async () => {
     }))
 
     const { PdfReportService } = await import('@/utils/pdfReportService')
-    PdfReportService.generateCategoryPerformanceReport(allData, categoria.nombre_categoria, categoria.entrenador_nombre)
+    PdfReportService.generateCategoryPerformanceReport(allData, categoria?.nombre_categoria || 'Categoria', categoria?.entrenador_nombre || '')
     ElMessage.success('Generando PDF...')
   } catch (error) {
     console.error('Error generando reporte de categoría:', error)
@@ -548,11 +640,20 @@ const printCategoryReports = async () => {
   }
 }
 
+useServerDataRefresh(async () => {
+  await Promise.all([loadAtletas(), loadCategorias()])
+  if (selectedAtletaId.value) {
+    await handleAtletaChange(selectedAtletaId.value)
+  }
+}, {
+  isBusy: () => loading.value
+})
+
 onMounted(async () => {
   await Promise.all([loadAtletas(), loadCategorias()])
-  const queryId = route.query.atleta_id
-  if (queryId) {
-    selectedAtletaId.value = parseInt(queryId)
+  const queryId = normalizeRouteAtletaId(route.query.atleta_id)
+  if (queryId !== null) {
+    selectedAtletaId.value = queryId
     handleAtletaChange(selectedAtletaId.value)
   }
 })
@@ -561,9 +662,9 @@ onActivated(async () => {
   await loadAtletas()
   searchKey.value++
   
-  const queryId = route.query.atleta_id
-  if (queryId && parseInt(queryId) !== selectedAtletaId.value) {
-    selectedAtletaId.value = parseInt(queryId)
+  const queryId = normalizeRouteAtletaId(route.query.atleta_id)
+  if (queryId !== null && !isSameId(queryId, selectedAtletaId.value)) {
+    selectedAtletaId.value = queryId
     await handleAtletaChange(selectedAtletaId.value)
   } else if (selectedAtletaId.value) {
     handleAtletaChange(selectedAtletaId.value)
@@ -580,59 +681,112 @@ onBeforeUnmount(() => {
 <style scoped>
 .progress-container {
   padding: 20px;
-  min-height: 100vh;
 }
 
-.page-header {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  color: white;
-  padding: 20px;
-  border-radius: 10px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
-}
-
+/* Local UI Adjustments */
 .header-content h1 {
-  font-size: 1.8rem;
   margin: 0;
-  font-weight: 700;
-}
-
-.subtitle {
-  opacity: 0.9;
-  margin: 5px 0 0;
-}
-
-.control-panel {
-  margin-bottom: 30px;
-  border-radius: 10px;
-  border-bottom: 3px solid var(--color-primary);
 }
 
 .control-content {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) minmax(220px, 300px) auto;
+  align-items: end;
   justify-content: space-between;
   gap: 20px;
-  flex-wrap: wrap;
-}
-
-.control-label {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--color-text-main);
-  margin-right: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.control-label i {
-  display: none;
 }
 
 .search-section, .filter-section {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+
+.search-section {
+  min-width: 280px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.filter-section {
+  min-width: 220px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.search-section .premium-search-label,
+.filter-section .premium-search-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.actions-section {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.report-action-btn {
+  min-height: 44px;
+  border-radius: 12px;
+  font-weight: 700;
+  padding: 0 16px;
+  display: inline-flex;
   align-items: center;
+  gap: 8px;
+}
+
+.report-action-btn .el-icon {
+  font-size: 1rem;
+}
+
+.filter-control-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-control-row .modern-filter-control {
+  flex: 1;
+}
+
+.quick-clear-btn {
+  min-width: 126px;
+  height: 48px;
+  padding: 0 12px;
+  border: 1px solid #d4dde9;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px #d6dee8 inset;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.quick-clear-btn:hover {
+  color: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 1px #c5d0dc inset, 0 6px 14px rgba(15, 23, 42, 0.12);
+}
+
+.quick-clear-btn:active {
+  transform: translateY(0);
+}
+
+.quick-clear-icon {
+  font-size: 0.9rem;
 }
 
 .compact-search {
@@ -644,35 +798,82 @@ onBeforeUnmount(() => {
 }
 
 /* Modern Input & Select Styles */
-.search-section :deep(.el-input__inner),
-.filter-section :deep(.el-input__inner) {
-  background: var(--color-bg-card) !important;
-  border: 2px solid #64748b !important;
-  border-radius: 12px;
-  padding: 12px 16px;
-  height: 46px;
-  font-size: 0.95rem;
-  font-weight: 500;
+.modern-filter-control :deep(.el-input__wrapper) {
+  min-height: 48px;
+  border-radius: 14px;
+  padding: 0 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+  box-shadow: 0 0 0 1px #d1d9e6 inset, 0 8px 18px rgba(15, 23, 42, 0.08) !important;
+  transition: box-shadow 0.25s ease, transform 0.25s ease, background-color 0.25s ease;
+}
+
+.modern-filter-control :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px #9fb3c8 inset, 0 10px 24px rgba(15, 23, 42, 0.12) !important;
+}
+
+.modern-filter-control :deep(.el-input.is-focus .el-input__wrapper) {
+  box-shadow: 0 0 0 2px rgba(30, 41, 59, 0.22), 0 12px 28px rgba(15, 23, 42, 0.16) !important;
+  transform: translateY(-1px);
+}
+
+.modern-filter-control :deep(.el-input__inner) {
+  font-size: 0.93rem;
+  font-weight: 600;
   color: var(--color-text-main);
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
-.search-section :deep(.el-input__inner:hover),
-.filter-section :deep(.el-input__inner:hover) {
-  border-color: var(--color-primary) !important;
-}
-
-.search-section :deep(.el-input.is-focus .el-input__inner),
-.filter-section :deep(.el-input.is-focus .el-input__inner) {
-  border-color: var(--color-primary) !important;
-  box-shadow: 0 0 0 4px rgba(30, 41, 59, 0.12);
-}
-
-.search-section :deep(.el-input__inner::placeholder),
-.filter-section :deep(.el-input__inner::placeholder) {
-  color: var(--color-text-placeholder) !important;
+.modern-filter-control :deep(.el-input__inner::placeholder) {
+  color: var(--color-text-placeholder);
   font-weight: 500;
+}
+
+.modern-filter-control :deep(.el-select__caret) {
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), color 0.28s ease;
+}
+
+.modern-filter-control :deep(.el-input.is-focus .el-select__caret) {
+  color: var(--color-primary);
+}
+
+:deep(.modern-filter-popper.el-select-dropdown) {
+  border: 1px solid #d9e2ec !important;
+  border-radius: 14px !important;
+  padding: 6px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18) !important;
+  animation: filter-dropdown-in 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top center;
+}
+
+:deep(.modern-filter-popper .el-select-dropdown__item) {
+  min-height: 38px;
+  line-height: 38px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+:deep(.modern-filter-popper .el-select-dropdown__item.hover),
+:deep(.modern-filter-popper .el-select-dropdown__item:hover) {
+  background: #eef4ff;
+  color: #1f3a5f;
+  transform: translateX(2px);
+}
+
+:deep(.modern-filter-popper .el-select-dropdown__item.selected) {
+  background: #dbeafe;
+  color: #1e3a8a;
+  font-weight: 700;
+}
+
+@keyframes filter-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .atleta-option {
@@ -697,10 +898,6 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   font-size: 12px;
-}
-
-.option-tag {
-  margin-left: auto;
 }
 
 .empty-layout {
@@ -842,7 +1039,12 @@ onBeforeUnmount(() => {
 /* Tablets y laptops pequeños */
 @media (max-width: 1200px) {
   .control-content {
+    grid-template-columns: minmax(260px, 1fr) minmax(220px, 320px);
     gap: 15px;
+  }
+
+  .actions-section {
+    grid-column: 1 / -1;
   }
 
   .compact-search {
@@ -879,6 +1081,7 @@ onBeforeUnmount(() => {
   }
 
   .control-content {
+    display: flex;
     flex-direction: column;
     align-items: stretch;
     gap: 15px;
@@ -886,10 +1089,10 @@ onBeforeUnmount(() => {
 
   .search-section,
   .filter-section {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+    align-items: stretch;
     width: 100%;
+    min-width: auto;
+    max-width: none;
   }
 
   .compact-search,
@@ -907,6 +1110,17 @@ onBeforeUnmount(() => {
   .actions-section .el-button {
     flex: 1;
     min-width: 140px;
+  }
+
+  .quick-clear-btn {
+    min-width: 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+  }
+
+  .quick-clear-text {
+    display: none;
   }
 
   .summary-content {
@@ -1112,10 +1326,21 @@ onBeforeUnmount(() => {
     padding: 10px;
   }
 
-  .search-section :deep(.el-input__inner),
-  .filter-section :deep(.el-input__inner) {
-    height: 42px;
+  .modern-filter-control :deep(.el-input__wrapper) {
+    min-height: 42px;
+    border-radius: 12px;
+    padding: 0 12px;
+  }
+
+  .modern-filter-control :deep(.el-input__inner) {
     font-size: 0.9rem;
+  }
+
+  .quick-clear-btn {
+    min-width: 38px;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
   }
 
   .athlete-avatar {

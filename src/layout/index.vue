@@ -122,10 +122,10 @@ export default {
   /* App Footer Global Styles */
   .app-footer {
     text-align: center;
-    color: #909399;
+    color: var(--color-text-muted);
     padding: 20px 0;
     width: 100%;
-    background: #f0f2f5;
+    background: var(--color-bg-body);
   }
 
   .footer-content p {
@@ -169,7 +169,7 @@ export default {
   }
 
   .hideSidebar .fixed-header {
-    width: calc(100% - 54px)
+    width: 100%
   }
 
   .mobile .fixed-header {

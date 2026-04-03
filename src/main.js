@@ -13,11 +13,16 @@ import '@/styles/index.scss' // global css
 import App from './App.vue'
 import store from './store'
 import router from './router'
+import { initializeTheme } from '@/utils/theme'
+import { startServerSyncWatcher } from '@/utils/serverSync'
 
 import './permission' // permission control
 import { setupErrorLog } from './utils/error-log' // error log
 import SvgIcon from '@/components/SvgIcon/index.vue'
 import 'virtual:svg-icons-register'
+
+// Apply persisted theme before mounting to avoid flash/inconsistent UI
+initializeTheme()
 
 const app = createApp(App)
 
@@ -34,6 +39,7 @@ app.use(ElementPlus, {
 })
 app.use(store)
 app.use(router)
+startServerSyncWatcher()
 
 // Setup error log
 setupErrorLog(app)

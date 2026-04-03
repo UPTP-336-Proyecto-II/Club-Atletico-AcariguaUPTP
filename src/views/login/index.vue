@@ -33,6 +33,7 @@
           ref="loginFormRef"
           :model="loginForm"
           :rules="loginRules"
+          label-position="top"
           class="login-form"
           @submit.prevent="handleLogin"
         >
@@ -57,7 +58,7 @@
                 :type="passwordType"
                 placeholder="Ingresa tu contraseña"
                 size="large"
-                class="mobile-input"
+                class="mobile-input password-input"
                 @keyup.enter="handleLogin"
                 @input="handleInput"
               />
@@ -296,7 +297,11 @@ onBeforeUnmount(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(229, 29, 34, 0.75) 0%, rgba(139, 0, 0, 0.65) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(15, 23, 42, 0.9) 0%,
+    rgba(239, 68, 68, 0.6) 100%
+  );
 }
 
 .login-center-wrapper {
@@ -309,7 +314,8 @@ onBeforeUnmount(() => {
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--color-bg-card);
+  opacity: 0.98;
   backdrop-filter: blur(20px);
   border-radius: 16px;
   padding: 2rem 1.5rem;
@@ -350,14 +356,14 @@ onBeforeUnmount(() => {
 .logo-text h1 {
   font-size: 1.3rem;
   font-weight: 700;
-  color: var(--color-text-dark);
+  color: var(--color-text-main);
   margin: 0;
   line-height: 1.2;
 }
 
 .logo-text p {
   font-size: 0.9rem;
-  color: var(--color-text-dark);
+  color: var(--color-text-main);
   margin: 0;
   font-weight: 600;
   opacity: 0.9;
@@ -373,40 +379,65 @@ onBeforeUnmount(() => {
 .welcome-section h2 {
   font-size: 1.4rem;
   font-weight: 600;
-  color: var(--color-text-dark);
+  color: var(--color-text-main);
   margin: 0 0 0.25rem 0;
 }
 
 .welcome-section p {
-  color: #000;
+  color: var(--color-text-muted);
   margin: 0;
   font-size: 0.9rem;
 }
 
 .login-form {
   margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+:deep(.login-form .el-form-item) {
+  margin-bottom: 0 !important;
+}
+
+.form-item-custom {
+  width: 100%;
+}
+
+:deep(.form-item-custom .el-form-item__content) {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  line-height: 1.2;
 }
 
 :deep(.form-item-custom .el-form-item__label) {
   color: var(--color-text-dark) !important;
   font-weight: 700 !important;
-  padding-bottom: 8px !important;
+  padding-bottom: 6px !important;
   font-size: 0.9rem !important;
+  line-height: 1.2 !important;
 }
 
 :deep(.form-item-custom .el-form-item__error) {
-  padding-top: 4px !important;
-  margin-top: 2px !important;
+  order: 2;
+  width: 100%;
+  display: block;
+  padding-top: 0 !important;
+  margin-top: 4px !important;
   position: relative !important;
   top: 0 !important;
   transform: none !important;
 }
 
 .input-group {
+  order: 1;
   position: relative;
   display: flex;
   align-items: center;
-  margin-bottom: 0.5rem;
+  width: 100%;
+  margin-bottom: 0.35rem;
 }
 
 .password-toggle {
@@ -437,45 +468,91 @@ onBeforeUnmount(() => {
 }
 
 :deep(.mobile-input .el-input__inner) {
-  padding-left: 16px !important;
-  padding-right: 50px !important;
   height: 52px !important;
-  border: 2px solid var(--color-text-light);
-  border-radius: 12px;
-  background: var(--color-bg-card)fff;
+  min-height: 52px;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: var(--color-text-dark);
   font-size: 16px !important;
   font-weight: 500;
-  transition: all 0.2s ease;
+  line-height: 1.2;
+  text-align: left;
+  padding: 0 !important;
+}
+
+:deep(.mobile-input .el-input__inner:focus) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+:deep(.mobile-input .el-input__wrapper) {
+  height: 52px !important;
   min-height: 52px;
-  color: var(--color-text-dark);
+  border-radius: 12px;
+  background: transparent !important;
+  border: 1px solid rgba(148, 163, 184, 0.5) !important;
+  box-shadow: none !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  padding: 0 14px !important;
+  align-items: center;
+}
+
+:deep(.mobile-input .el-input__wrapper:hover) {
+  border-color: rgba(100, 116, 139, 0.72) !important;
+  box-shadow: none !important;
+}
+
+:deep(.mobile-input .el-input__wrapper.is-focus),
+:deep(.mobile-input .el-input__wrapper:focus-within) {
+  border-color: rgba(15, 23, 42, 0.85) !important;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14) !important;
+  transform: translateY(-1px);
+}
+
+:deep(.password-input .el-input__inner) {
+  padding-right: 48px !important;
 }
 
 :deep(.mobile-input .el-input__inner::placeholder) {
   color: var(--color-text-placeholder);
   opacity: 1;
-  padding-left: 30px !important;
-  transition: padding-left 0.3s ease;
 }
 
-:deep(.mobile-input .el-input__inner:not(:placeholder-shown)) {
-  padding-left: 16px !important;
+:deep(.mobile-input .el-input__inner:-webkit-autofill),
+:deep(.mobile-input .el-input__inner:-webkit-autofill:hover),
+:deep(.mobile-input .el-input__inner:-webkit-autofill:focus),
+:deep(.mobile-input .el-input__inner:-webkit-autofill:active) {
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  -webkit-text-fill-color: var(--color-text-dark) !important;
+  caret-color: var(--color-text-dark);
+  background-color: transparent !important;
+  border-radius: 0;
+  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s;
 }
 
-:deep(.mobile-input .el-input__inner:hover) {
-  border-color: #cbd5e0;
+:deep(.mobile-input .el-input__wrapper.is-disabled) {
+  border-color: rgba(148, 163, 184, 0.45) !important;
+  box-shadow: none !important;
 }
 
-:deep(.mobile-input .el-input__inner:focus) {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1);
-  padding-left: 16px !important;
+:deep(.mobile-input .el-input__wrapper.is-disabled .el-input__inner) {
+  -webkit-text-fill-color: var(--color-text-placeholder);
+}
+
+.password-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.2);
 }
 
 /* Forgot Password */
 .forgot-wrapper {
+  order: 3;
+  width: 100%;
+  display: block;
   text-align: right;
-  margin-top: -5px;
-  margin-bottom: 10px;
+  margin-top: 6px;
+  margin-bottom: 0;
 }
 
 .forgot-link {
@@ -515,7 +592,7 @@ onBeforeUnmount(() => {
 }
 
 .login-footer p {
-  color: #000;
+  color: var(--color-text-muted);
   margin: 0;
   font-size: 0.85rem;
 }
@@ -580,7 +657,7 @@ onBeforeUnmount(() => {
 }
 
 .modal-description {
-  color: #666;
+  color: var(--color-text-muted);
   margin-bottom: 20px;
   font-size: 0.95rem;
   line-height: 1.5;
@@ -641,7 +718,7 @@ onBeforeUnmount(() => {
 }
 
 .info .value {
-  color: #2c3e50;
+  color: var(--color-text-main);
   font-weight: 600;
   text-decoration: none;
   font-size: 0.95rem;
@@ -821,7 +898,7 @@ onBeforeUnmount(() => {
 .question-block label {
   display: block;
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--color-text-main);
   margin-bottom: 8px;
   font-size: 0.9rem;
 }

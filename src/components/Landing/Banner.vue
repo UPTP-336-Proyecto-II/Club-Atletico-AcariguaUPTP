@@ -144,8 +144,8 @@ const scrollToSection = (sectionId) => {
   bottom: 0;
   background: linear-gradient(
     135deg,
-    rgba(229, 29, 34, 0.7) 0%,
-    rgba(139, 0, 0, 0.6) 100%
+    rgba(15, 23, 42, 0.9) 0%,
+    rgba(239, 68, 68, 0.6) 100%
   );
 }
 
@@ -181,20 +181,21 @@ const scrollToSection = (sectionId) => {
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
-  color: var(--color-background);
+  color: #ffffff;
 }
 
 .banner-text {
-  color: var(--color-background);
+  color: #ffffff;
 }
 
 .badge {
   display: inline-block;
-  background: var(--color-background);
+  background: #ffffff;
   color: var(--color-primary);
   padding: 0.5rem 1.5rem;
   border-radius: 25px;
   margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .badge-text {
@@ -215,7 +216,7 @@ const scrollToSection = (sectionId) => {
 }
 
 .highlight {
-  background: linear-gradient(135deg, var(--color-background) 0%, var(--color-text-light) 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -240,9 +241,9 @@ const scrollToSection = (sectionId) => {
 }
 
 .primary-action {
-  background: var(--color-background);
+  background: #ffffff;
   color: var(--color-primary);
-  border: 2px solid transparent;
+  border: 2px solid #ffffff;
   padding: 15px 30px;
   font-weight: 600;
   transition: all 0.3s ease;
@@ -256,8 +257,8 @@ const scrollToSection = (sectionId) => {
 
 .secondary-action {
   background: transparent;
-  border: 2px solid var(--color-background);
-  color: var(--color-background);
+  border: 2px solid #ffffff;
+  color: #ffffff;
   padding: 15px 30px;
   font-weight: 600;
   transition: all 0.3s ease;
@@ -376,11 +377,9 @@ const scrollToSection = (sectionId) => {
   }
 
   .secondary-action {
-    background: var(--color-primary);
-    border: none;
-    outline: 2px solid var(--color-background);
-    outline-offset: -2px;
-    color: var(--color-background);
+    background: transparent;
+    border: 2px solid #ffffff;
+    color: #ffffff;
   }
 }
 

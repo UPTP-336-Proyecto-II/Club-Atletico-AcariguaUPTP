@@ -19,6 +19,8 @@
     z-index: 1001;
     overflow: hidden;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1); // Sombra para profundidad
+    transform: translate3d(0, 0, 0);
+    pointer-events: auto;
 
     // reset element-ui css
     .horizontal-collapse-transition {
@@ -128,11 +130,14 @@
 
   .hideSidebar {
     .sidebar-container {
-      width: 60px !important;
+      width: 0 !important;
+      transform: translate3d(-$sideBarWidth, 0, 0);
+      box-shadow: none;
+      pointer-events: none;
     }
 
     .main-container {
-      margin-left: 60px;
+      margin-left: 0;
     }
 
     .submenu-title-noDropdown {

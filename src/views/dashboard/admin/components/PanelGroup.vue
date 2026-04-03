@@ -79,10 +79,10 @@ const handleSetLineChartData = (type) => {
     font-size: 12px;
     position: relative;
     overflow: hidden;
-    color: #666;
+    color: var(--color-text-main);
     background: var(--color-bg-card);
-    box-shadow: 4px 4px 40px rgba(0, 0, 0, .05);
-    border-color: rgba(0, 0, 0, .05);
+    box-shadow: 0 4px 12px var(--color-shadow);
+    border: 1px solid var(--color-border);
 
     &:hover {
       .card-panel-icon-wrapper {
@@ -143,7 +143,7 @@ const handleSetLineChartData = (type) => {
 
       .card-panel-text {
         line-height: 18px;
-        color: rgba(0, 0, 0, 0.45);
+        color: var(--color-text-muted);
         font-size: 16px;
         margin-bottom: 12px;
       }

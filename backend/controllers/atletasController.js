@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const addressService = require('../services/addressService');
+const { normalizeDateInput, validateDateField } = require('../services/dateValidationService');
 const {
   isLegacySchema,
   isMigratedLegacySchema,
@@ -71,6 +72,39 @@ function buildLegacyAtletaSelect(isMigrated = false) {
           ${joins}`;
 }
 
+async function resolveLegacyRepresentanteId(requestedTutorId, fallbackDireccionId) {
+  if (requestedTutorId) {
+    return requestedTutorId;
+  }
+
+  const [existingRepresentantes] = await pool.execute(
+    'SELECT representante_id FROM representante ORDER BY representante_id ASC LIMIT 1'
+  );
+
+  if (existingRepresentantes.length > 0) {
+    return existingRepresentantes[0].representante_id;
+  }
+
+  let direccionId = fallbackDireccionId;
+  if (!direccionId) {
+    const [dirRes] = await pool.execute(
+      'INSERT INTO direcciones (parroquias_id, localidad, tipo_vivienda, `ubicación vivienda`) VALUES (?, ?, ?, ?)',
+      [0, '', '', '']
+    );
+    direccionId = dirRes.insertId;
+  }
+
+  const tempCedula = `TMP${Date.now().toString().slice(-8)}`;
+  const [representanteRes] = await pool.execute(
+    `INSERT INTO representante
+     (nombre_completo, telefono, cedula, tipo_relacion, direccion_id, foto)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    ['Sin representante', '00000000000', tempCedula, 'representante', direccionId, null]
+  );
+
+  return representanteRes.insertId;
+}
+
 const getAtletas = async (req, res) => {
   try {
     const { search, cedula, sin_cedula, categoria_id, estatus, order } = req.query;
@@ -137,10 +171,12 @@ const getAtletas = async (req, res) => {
 
     if (estatus && estatus !== 'TODOS') {
       query += ' AND a.estatus = ?';
-      params.push(estatus);
+      params.push(legacySchema ? mapAthleteStatusToLegacy(estatus) : estatus);
     } else if (!estatus) {
-      // Por defecto ocultamos inactivos si no se especifica filtro de estatus
-      query += " AND a.estatus IN ('ACTIVO', 'LESIONADO', 'Activo', 'Lesionado')";
+      // Por defecto mostramos atletas activos/lesionados.
+      query += legacySchema
+        ? ' AND a.estatus IN (1, 2)'
+        : " AND a.estatus IN ('ACTIVO', 'LESIONADO', 'Activo', 'Lesionado')";
     }
 
     // Ordenamiento
@@ -221,6 +257,12 @@ const createAtleta = async (req, res) => {
       foto
     } = req.body;
 
+    const fechaNacimientoValue = normalizeDateInput(fecha_nacimiento);
+    const fechaNacimientoError = validateDateField(fechaNacimientoValue, 'La fecha de nacimiento', { required: true, notFuture: true });
+    if (fechaNacimientoError) {
+      return res.status(400).json({ error: fechaNacimientoError });
+    }
+
     const legacySchema = await isLegacySchema();
 
     let direccion_id = null;
@@ -245,12 +287,13 @@ const createAtleta = async (req, res) => {
       const estatusNumeric = mapAthleteStatusToLegacy(estatus || 'ACTIVO');
       const piernaNorm = (pierna_dominante || 'derecha').toLowerCase();
       const sexoValue = (sexo || 'M').toUpperCase().charAt(0);
+      const representanteId = await resolveLegacyRepresentanteId(tutor_id, direccion_id);
 
       const [result] = await pool.execute(
         `INSERT INTO atletas
          (nombre, apellido, cedula, telefono, direccion_id, fecha_nacimiento, sexo, posicion_de_juego, pierna_dominante, categoria_id, representante_id, estatus, foto)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [nombre, apellido, cedula || null, telefono || null, direccion_id, fecha_nacimiento, sexoValue, posicion_de_juego || null, piernaNorm, categoria_id, tutor_id || null, estatusNumeric, foto || null]
+        [nombre, apellido, cedula || null, telefono || null, direccion_id, fechaNacimientoValue, sexoValue, posicion_de_juego || null, piernaNorm, categoria_id, representanteId, estatusNumeric, foto || null]
       );
 
       res.status(201).json({
@@ -262,7 +305,7 @@ const createAtleta = async (req, res) => {
         `INSERT INTO atletas
          (nombre, apellido, cedula, telefono, direccion_id, fecha_nacimiento, posicion_de_juego, pierna_dominante, categoria_id, tutor_id, estatus, foto)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [nombre, apellido, cedula || null, telefono, direccion_id, fecha_nacimiento, posicion_de_juego, pierna_dominante || 'Derecha', categoria_id, tutor_id, estatus || 'ACTIVO', foto]
+        [nombre, apellido, cedula || null, telefono, direccion_id, fechaNacimientoValue, posicion_de_juego, pierna_dominante || 'Derecha', categoria_id, tutor_id, estatus || 'ACTIVO', foto]
       );
 
       res.status(201).json({
@@ -295,6 +338,12 @@ const updateAtleta = async (req, res) => {
       cedula
     } = req.body;
 
+    const fechaNacimientoValue = normalizeDateInput(fecha_nacimiento);
+    const fechaNacimientoError = validateDateField(fechaNacimientoValue, 'La fecha de nacimiento', { required: true, notFuture: true });
+    if (fechaNacimientoError) {
+      return res.status(400).json({ error: fechaNacimientoError });
+    }
+
     const legacySchema = await isLegacySchema();
 
     let finalDireccionId = undefined;
@@ -313,12 +362,13 @@ const updateAtleta = async (req, res) => {
       const estatusNumeric = mapAthleteStatusToLegacy(estatus || 'ACTIVO');
       const piernaNorm = (pierna_dominante || 'derecha').toLowerCase();
       const sexoValue = sexo ? sexo.toUpperCase().charAt(0) : undefined;
+      const representanteId = await resolveLegacyRepresentanteId(tutor_id, finalDireccionId);
 
       let query = `UPDATE atletas SET nombre = ?, apellido = ?, cedula = ?, telefono = ?, direccion_id = ?,
                    fecha_nacimiento = ?, posicion_de_juego = ?, pierna_dominante = ?, categoria_id = ?,
                    representante_id = ?, estatus = ?, foto = ?`;
-      const params = [nombre, apellido, cedula || null, telefono || null, finalDireccionId, fecha_nacimiento,
-        posicion_de_juego || null, piernaNorm, categoria_id, tutor_id || null, estatusNumeric, foto || null];
+      const params = [nombre, apellido, cedula || null, telefono || null, finalDireccionId, fechaNacimientoValue,
+        posicion_de_juego || null, piernaNorm, categoria_id, representanteId, estatusNumeric, foto || null];
 
       if (sexoValue) {
         query += ', sexo = ?';
@@ -335,7 +385,7 @@ const updateAtleta = async (req, res) => {
          SET nombre = ?, apellido = ?, cedula = ?, telefono = ?, direccion_id = ?, fecha_nacimiento = ?,
              posicion_de_juego = ?, pierna_dominante = ?, categoria_id = ?, tutor_id = ?, estatus = ?, foto = ?
          WHERE atleta_id = ?`,
-        [nombre, apellido, cedula || null, telefono, finalDireccionId, fecha_nacimiento, posicion_de_juego, pierna_dominante, categoria_id, tutor_id, estatus, foto, id]
+        [nombre, apellido, cedula || null, telefono, finalDireccionId, fechaNacimientoValue, posicion_de_juego, pierna_dominante, categoria_id, tutor_id, estatus, foto, id]
       );
     }
 
@@ -349,10 +399,12 @@ const updateAtleta = async (req, res) => {
 const deleteAtleta = async (req, res) => {
   try {
     const { id } = req.params;
+    const legacySchema = await isLegacySchema();
+    const inactiveStatusValue = legacySchema ? mapAthleteStatusToLegacy('INACTIVO') : 'INACTIVO';
 
     const [result] = await pool.execute(
       'UPDATE atletas SET estatus = ? WHERE atleta_id = ?',
-      ['INACTIVO', id]
+      [inactiveStatusValue, id]
     );
 
     if (result.affectedRows === 0) {
@@ -370,10 +422,15 @@ const updateAtletaTutor = async (req, res) => {
   try {
     const { id } = req.params;
     const { tutor_id } = req.body;
+    const legacySchema = await isLegacySchema();
+    const columnName = legacySchema ? 'representante_id' : 'tutor_id';
+    const tutorIdToPersist = legacySchema
+      ? await resolveLegacyRepresentanteId(tutor_id, null)
+      : tutor_id;
 
     const [result] = await pool.execute(
-      'UPDATE atletas SET tutor_id = ? WHERE atleta_id = ?',
-      [tutor_id, id]
+      `UPDATE atletas SET ${columnName} = ? WHERE atleta_id = ?`,
+      [tutorIdToPersist, id]
     );
 
     if (result.affectedRows === 0) {

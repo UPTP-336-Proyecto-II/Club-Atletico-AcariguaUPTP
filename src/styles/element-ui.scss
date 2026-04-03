@@ -371,3 +371,202 @@
     height: 100px;
   }
 }
+
+// ============================================
+// MODERN DARK MODE COMPONENT OVERRIDES
+// ============================================
+
+[data-theme='dark'] {
+  // Global Force-Theme for Form Elements in Dark Mode
+  .el-input__inner,
+  .el-textarea__inner,
+  .el-select .el-input__inner,
+  .el-date-editor.el-input,
+  .el-date-editor.el-input__inner {
+    background-color: var(--color-bg-input) !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-text-main) !important;
+    
+    &:hover {
+      border-color: var(--color-text-light) !important;
+    }
+    
+    &:focus {
+      border-color: var(--color-primary) !important;
+      box-shadow: 0 0 0 2px rgba(255, 59, 48, 0.2) !important;
+    }
+
+    &::placeholder {
+      color: var(--color-text-placeholder) !important;
+      opacity: 0.9 !important;
+      font-weight: 500 !important;
+    }
+  }
+
+  // Dialog Form Elements - Transparent Background
+  .el-dialog {
+    .el-input__inner,
+    .el-textarea__inner,
+    .el-select .el-input__inner,
+    .el-date-editor.el-input,
+    .el-date-editor.el-input__inner {
+      background-color: transparent !important;
+    }
+  }
+
+  .el-form-item__label {
+    color: var(--color-text-muted) !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    margin-bottom: 4px !important;
+  }
+
+  // Selects
+  .el-select {
+    .el-input.is-focus .el-input__inner {
+      border-color: var(--color-primary) !important;
+    }
+  }
+
+  .el-select-dropdown {
+    background-color: var(--color-bg-card) !important;
+    border-color: var(--color-border) !important;
+    
+    .el-select-dropdown__item {
+      color: var(--color-text-main) !important;
+      
+      &.hover, &:hover {
+        background-color: var(--color-bg-hover) !important;
+      }
+      
+      &.selected {
+        color: var(--color-primary) !important;
+        font-weight: 700;
+        background-color: var(--color-bg-hover) !important;
+      }
+    }
+  }
+
+  // Radio Buttons (Modern Tab-like style)
+  .el-radio-button__inner {
+    background-color: var(--color-bg-input) !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-text-muted) !important;
+    
+    &:hover {
+      color: var(--color-primary) !important;
+    }
+  }
+
+  .el-radio-button__orig-radio:checked + .el-radio-button__inner {
+    background-color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    color: #ffffff !important;
+    box-shadow: -1px 0 0 0 var(--color-primary) !important;
+  }
+
+  // Date Picker
+  .el-date-table th {
+    border-bottom: 1px solid var(--color-border) !important;
+    color: var(--color-text-muted) !important;
+  }
+
+  .el-picker-panel {
+    background-color: var(--color-bg-card) !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-text-main) !important;
+  }
+
+  .el-date-picker__header--bordered {
+    border-bottom: 1px solid var(--color-border) !important;
+  }
+
+  // Cards
+  .el-card {
+    background-color: var(--color-bg-card) !important;
+    border: 1px solid var(--color-border) !important;
+    
+    .el-card__header {
+      border-bottom: 1px solid var(--color-border) !important;
+    }
+  }
+
+  // Tables
+  .el-table {
+    background-color: transparent !important;
+    
+    th.el-table__cell {
+      background-color: var(--color-bg-body) !important;
+      color: var(--color-text-muted) !important;
+      border-bottom: 1px solid var(--color-border) !important;
+    }
+    
+    td.el-table__cell {
+      border-bottom: 1px solid var(--color-border) !important;
+    }
+
+    .el-table__row:hover > td.el-table__cell {
+      background-color: var(--color-bg-hover) !important;
+    }
+    
+    &::before, &::after {
+      background-color: var(--color-border) !important;
+    }
+  }
+
+  // Dialogs
+  .el-dialog {
+    background-color: var(--color-bg-card) !important;
+    border: 1px solid var(--color-border) !important;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4) !important;
+    
+    .el-dialog__title {
+      color: var(--color-text-main) !important;
+    }
+    
+    .el-dialog__headerbtn .el-dialog__close {
+      color: var(--color-text-muted) !important;
+      
+      &:hover {
+        color: var(--color-primary) !important;
+      }
+    }
+  }
+
+  // Message Box
+  .el-message-box {
+    background-color: var(--color-bg-card) !important;
+    border: 1px solid var(--color-border) !important;
+    
+    .el-message-box__title,
+    .el-message-box__content {
+      color: var(--color-text-main) !important;
+    }
+  }
+
+  // Pagination
+  .el-pagination.is-background .btn-next,
+  .el-pagination.is-background .btn-prev,
+  .el-pagination.is-background .el-pager li {
+    background-color: var(--color-bg-input) !important;
+    color: var(--color-text-muted) !important;
+    border: 1px solid var(--color-border) !important;
+    
+    &:hover {
+      color: var(--color-primary) !important;
+    }
+    
+    &.active {
+      background-color: var(--color-primary) !important;
+      color: #ffffff !important;
+      border-color: var(--color-primary) !important;
+    }
+  }
+
+  // Tags
+  .el-tag--plain {
+    background-color: transparent !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-text-muted) !important;
+  }
+}

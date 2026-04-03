@@ -64,38 +64,45 @@ export default {
   display: inline-block;
   font-size: 14px;
   line-height: 60px;
-  margin-left: 8px;
+  margin-left: 12px;
+  font-family: 'Figtree', sans-serif;
 
   :deep(.el-breadcrumb__item) {
     .el-breadcrumb__inner {
-      color: rgba(255, 255, 255, 0.7);
-      font-weight: 400;
-      transition: color 0.3s ease;
+      color: rgba(255, 255, 255, 0.7) !important;
+      font-weight: 500;
+      transition: all 0.25s ease;
 
       a {
-        color: rgba(255, 255, 255, 0.9);
+        color: rgba(255, 255, 255, 0.9) !important;
         text-decoration: none;
+        padding: 4px 8px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
 
         &:hover {
-          color: #ffffff;
-          text-decoration: underline;
+          color: #ffffff !important;
+          background: rgba(255, 255, 255, 0.1);
         }
       }
 
       &.no-redirect {
-        color: rgba(255, 255, 255, 0.5);
+        color: rgba(255, 255, 255, 0.5) !important;
         font-weight: 500;
         cursor: default;
       }
     }
 
     &:last-child .el-breadcrumb__inner {
-      color: #ffffff;
-      font-weight: 600;
+      color: #ffffff !important;
+      font-weight: 700;
+      letter-spacing: -0.01em;
     }
 
     .el-breadcrumb__separator {
-      color: rgba(255, 255, 255, 0.5);
+      color: rgba(255, 255, 255, 0.4);
+      font-weight: 400;
+      margin: 0 4px;
     }
   }
 }

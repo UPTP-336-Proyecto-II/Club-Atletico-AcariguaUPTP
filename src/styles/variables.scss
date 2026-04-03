@@ -1,39 +1,52 @@
 :root {
-  /* Paleta Elegante (Pizarra/Navy) - Más agradable a la vista */
-  --color-primary: #1e293b;       // Slate 800
-  --color-primary-hover: #334155; // Slate 700
-  --color-accent: #3b82f6;        // Blue 500
+  /* Paleta Premium - Slate & Fire Red */
+  --color-primary: #ff3b30;       // Fire Red
+  --color-primary-hover: #d92b21; // Fire Red Dark
+  --color-accent: #ef4444;        // Red 500 (Club Color)
+  --color-accent-dark: #b91c1c;   // Red 700
 
   /* Colores de Fondo y Texto (Light Mode) */
+  --color-background: #ffffff;
   --color-bg-body: #f1f5f9;       // Slate 100
   --color-bg-card: #ffffff;
+  --color-bg-hover: #f8fafc;      // Slate 50
+  --color-bg-input: #ffffff;
+  
   --color-text-main: #0f172a;     // Slate 900
+  --color-text-dark: #0f172a;     // Slate 900
   --color-text-muted: #64748b;    // Slate 500
-  --color-text-placeholder: #94a3b8; // Slate 400
-  --color-bg-hover: #f8fafc;        // Slate 50
+  --color-text-light: #94a3b8;    // Slate 400
+  --color-text-placeholder: #94a3b8;
+  
   --color-border: #e2e8f0;        // Slate 200
   --color-white: #ffffff;
+  --color-shadow: rgba(0, 0, 0, 0.05);
+  --color-bg-sidebar: #1e293b;    // Modern Dark Sidebar
 }
 
-/* Dark Mode Overrides */
+/* Dark Mode Overrides - Modern Midnight Slate */
 [data-theme='dark'] {
-  --color-bg-body: #010409;       // Darker background
-  --color-bg-card: #0d1117;       // Card background
-  --color-text-main: #f0f6fc;     // Light text
-  --color-text-muted: #8b949e;    // Muted text
-  --color-text-placeholder: #4b5563; // Brighter grey for placeholders
-  --color-bg-hover: #1e293b;        // Dark hover
-  --color-border: #30363d;        // Border
+  --color-background: #0f172a;    // Slate 900
+  --color-bg-body: #020617;       // Slate 950
+  --color-bg-card: #0f172a;       // Slate 900
+  --color-bg-hover: #1e293b;      // Slate 800
+  --color-bg-input: #1e293b;      // Slate 800
   
-  /* Primary color adjustment for dark mode if needed */
-  --color-primary: #1e293b; 
-  --color-primary-hover: #334155;
-  --color-white: #0d1117;         // In dark mode, 'white' containers should be dark
+  --color-text-main: #f8fafc;     // Slate 50
+  --color-text-dark: #f8fafc;     // Slate 50
+  --color-text-muted: #94a3b8;    // Slate 400
+  --color-text-light: #475569;    // Slate 600
+  --color-text-placeholder: var(--color-text-muted); // Slate 400 - More visible but clearly a placeholder
+
+  --color-border: #1e293b;        // Slate 800
+  --color-white: #0f172a;
+  --color-shadow: rgba(0, 0, 0, 0.3);
+  --color-bg-sidebar: #020617;    // Ultra Dark Sidebar
 }
 
 // SCSS variables for legacy support
-$blue: #3b82f6;
-$light-blue: #60a5fa;
+$blue: #ff3b30;
+$light-blue: #ff5a4f;
 $red: #ef4444; 
 $pink: #f472b6;
 $green: #10b981;

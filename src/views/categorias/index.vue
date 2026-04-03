@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <!-- Header -->
-    <div class="page-header">
+    <div class="premium-header">
       <div class="header-content">
         <div>
           <h1><i class="el-icon-trophy" /> Gestión de Categorías</h1>
@@ -11,16 +11,17 @@
     </div>
 
     <!-- Controls & Filters -->
-    <el-card shadow="hover" class="control-card">
+    <el-card shadow="hover" class="premium-control-card">
       <div class="control-row">
         <div class="control-item search-box">
-          <label>Buscar</label>
+          <label class="premium-search-label">Buscar Categoría</label>
           <el-select
             v-model="filtroCategoria"
             placeholder="Seleccionar categoría..."
             clearable
             :filterable="false"
             style="width: 100%"
+            class="modern-search-input"
           >
             <el-option
               v-for="cat in categorias"
@@ -32,8 +33,8 @@
         </div>
 
         <div class="control-item filter-box">
-          <label>Filtrar por Entrenador</label>
-          <el-select v-model="filtroEntrenador" placeholder="Todos los entrenadores" clearable filterable>
+          <label class="premium-search-label">Entrenador</label>
+          <el-select v-model="filtroEntrenador" placeholder="Todos" clearable filterable style="width: 100%" class="modern-search-input">
             <el-option
               v-for="ent in entrenadores"
               :key="ent.plantel_id"
@@ -44,8 +45,8 @@
         </div>
 
         <div class="control-item filter-box">
-          <label>Filtrar por Estado</label>
-          <el-select v-model="filtroEstatus" placeholder="Todos los estados" clearable>
+          <label class="premium-search-label">Estatus</label>
+          <el-select v-model="filtroEstatus" placeholder="Todos" clearable style="width: 100%" class="modern-search-input">
             <el-option label="Activas" value="Activa" />
             <el-option label="Inactivas" value="Inactiva" />
           </el-select>
@@ -173,6 +174,7 @@ import { ref, computed, onMounted } from 'vue'
 import request from '@/utils/request'
 import { canEdit } from '@/utils/permission'
 import { ElMessage } from 'element-plus'
+import { useServerDataRefresh } from '@/composables/useServerDataRefresh'
 
 const loading = ref(false)
 const guardando = ref(false)
@@ -283,6 +285,10 @@ const guardarCategoria = async () => {
   }
 }
 
+useServerDataRefresh(cargarDatos, {
+  isBusy: () => loading.value || guardando.value || mostrarModal.value
+})
+
 onMounted(() => {
   cargarDatos()
 })
@@ -291,46 +297,10 @@ onMounted(() => {
 <style scoped>
 .app-container {
   padding: 20px;
-  background-color: #f0f2f5;
   min-height: calc(100vh - 84px);
 }
 
-/* Header Red Style */
-.page-header {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  color: white;
-  padding: 24px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-content h1 {
-  font-size: 1.5rem;
-  margin: 0 0 5px 0;
-  font-weight: 600;
-}
-
-.subtitle {
-  font-size: 0.9rem;
-  margin: 0;
-  opacity: 0.9;
-}
-
-/* Controls */
-.control-card {
-  margin-bottom: 25px;
-  border: none;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
+/* Local Styles */
 .control-row {
   display: flex;
   gap: 24px;
@@ -342,46 +312,6 @@ onMounted(() => {
   min-width: 200px;
 }
 
-.control-item label {
-  display: block;
-  font-size: 0.85rem;
-  color: var(--color-text-main);
-  font-weight: 700;
-  margin-bottom: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* Modern Input & Select Styles for Controls */
-.control-item :deep(.el-input__inner),
-.control-item :deep(.el-select .el-input__inner) {
-  background: var(--color-bg-card) !important;
-  border: 2px solid #64748b !important;
-  border-radius: 12px;
-  padding: 14px 16px;
-  height: 48px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--color-text-main);
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-}
-
-.control-item :deep(.el-input__inner:hover),
-.control-item :deep(.el-select .el-input__inner:hover) {
-  border-color: var(--color-primary) !important;
-}
-
-.control-item :deep(.el-input__inner:focus),
-.control-item :deep(.el-select .el-input.is-focus .el-input__inner) {
-  border-color: var(--color-primary) !important;
-  box-shadow: 0 0 0 4px rgba(30, 41, 59, 0.12);
-}
-
-.control-item :deep(.el-input__inner::placeholder) {
-  color: var(--color-text-placeholder) !important;
-  font-weight: 500;
-}
 
 /* Grid */
 .categories-grid {
@@ -500,8 +430,17 @@ onMounted(() => {
 
 .progress-label {
   font-size: 0.8rem;
-  color: var(--color-border);
+  color: var(--color-text-muted);
+  font-weight: 600;
   margin-bottom: 8px;
+}
+
+.progress-section :deep(.el-progress-bar__outer) {
+  background-color: var(--color-bg-hover);
+}
+
+.progress-section :deep(.el-progress-bar__inner) {
+  background-color: var(--color-primary);
 }
 
 /* Modal Styles */

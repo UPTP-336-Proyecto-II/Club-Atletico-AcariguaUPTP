@@ -427,10 +427,12 @@ const goToLogin = () => {
 }
 
 .recovery-card {
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--color-bg-card);
+  backdrop-filter: blur(20px);
   border-radius: 20px;
   padding: 2rem;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  box-shadow: 0 20px 60px var(--color-shadow);
+  border: 1px solid var(--color-border);
 }
 
 .recovery-header {
@@ -469,13 +471,13 @@ const goToLogin = () => {
 
 .logo-text p {
   font-size: 0.9rem;
-  color: #333;
+  color: var(--color-text-main);
   margin: 0;
 }
 
 .welcome-section h2 {
   font-size: 1.5rem;
-  color: #2c3e50;
+  color: var(--color-text-main);
   margin: 0 0 5px 0;
 }
 
@@ -544,7 +546,7 @@ const goToLogin = () => {
 .question-block label {
   display: block;
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--color-text-main);
   margin-bottom: 8px;
   font-size: 0.9rem;
 }
@@ -594,7 +596,7 @@ const goToLogin = () => {
 .checklist-title {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--color-text-muted);
   margin-bottom: 8px;
 }
 

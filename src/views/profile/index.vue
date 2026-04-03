@@ -1,7 +1,7 @@
 <template>
   <div class="user-profile-container">
     <!-- Header simIlar a Atletas -->
-    <div class="page-header">
+    <div class="premium-header">
       <div class="header-content">
         <div>
           <h1><i class="el-icon-user-solid" /> Mi Perfil</h1>
@@ -255,38 +255,11 @@ onMounted(() => {
 <style lang="scss" scoped>
 .user-profile-container {
   padding: 20px;
-  background-color: #f0f2f5;
-  min-height: calc(100vh - 84px);
 }
 
-.page-header {
-  background: var(--color-bg-card);
-  padding: 20px;
-  margin: -20px -20px 20px -20px;
-  box-shadow: 0 1px 4px rgba(0,21,41,.08);
-
-  .header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    h1 {
-      margin: 0;
-      font-size: 20px;
-      color: #303133;
-
-      i {
-        margin-right: 10px;
-        color: var(--color-primary);
-      }
-    }
-
-    .subtitle {
-      margin: 5px 0 0 0;
-      color: #909399;
-      font-size: 14px;
-    }
-  }
+/* Local UI Adjustments */
+.header-content h1 {
+  margin: 0;
 }
 
 .profile-card {
@@ -299,7 +272,7 @@ onMounted(() => {
 }
 
 .text-muted {
-  color: #777;
+  color: var(--color-text-muted);
 }
 
 .user-profile {
@@ -311,7 +284,8 @@ onMounted(() => {
 
   .user-role {
     font-size: 14px;
-    background: #f4f4f5;
+    background: var(--color-bg-body);
+    color: var(--color-text-muted);
     padding: 2px 10px;
     border-radius: 12px;
     display: inline-block;
@@ -380,10 +354,10 @@ onMounted(() => {
 .section-title {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #303133;
+  color: var(--color-text-main);
   margin-bottom: 15px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #EBEEF5;
+  border-bottom: 1px solid var(--color-border);
 }
 
 /* Form Grid Styling similar a Atletas */

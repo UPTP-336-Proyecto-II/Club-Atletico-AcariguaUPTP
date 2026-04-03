@@ -1,28 +1,39 @@
 <template>
   <div class="roles-container">
     <!-- Header -->
-    <div class="page-header">
+    <div class="premium-header">
       <div class="header-content">
         <div>
-          <h1><i class="el-icon-lock" /> Gestión de Roles</h1>
-          <p class="subtitle">Club Atlético Deportivo Acarigua</p>
+          <h1><i class="el-icon-lock" /> Gestion de Roles</h1>
+          <p class="subtitle">Club Atletico Deportivo Acarigua</p>
         </div>
-        <el-button type="primary" icon="el-icon-plus" @click="openRolModal(false)">
-          Agregar Rol
-        </el-button>
+        <div class="header-actions">
+          <el-button type="primary" class="add-role-btn" @click="openRolModal(false)">
+            <el-icon class="btn-emoji"><Plus /></el-icon>
+            <span>Agregar Rol</span>
+          </el-button>
+        </div>
       </div>
     </div>
 
     <!-- Content -->
     <el-card shadow="hover" class="roles-card">
-      <!-- TABLA DESKTOP (oculta en móvil) -->
+      <!-- TABLA DESKTOP (oculta en movil) -->
       <el-table
         v-loading="loading"
         :data="roles"
         style="width: 100%"
-        class="desktop-table"
+        class="desktop-table custom-table"
         stripe
         border
+        :header-cell-style="{
+          background: 'linear-gradient(135deg, var(--color-bg-card), var(--color-bg-body))',
+          color: 'var(--color-text-main)',
+          fontWeight: '700',
+          borderBottom: '3px solid var(--color-primary)',
+          textTransform: 'uppercase',
+          padding: '16px 12px'
+        }"
       >
         <el-table-column prop="rol_id" label="ID" width="80" align="center" />
         <el-table-column prop="nombre_rol" label="Nombre del Rol" min-width="150">
@@ -33,9 +44,9 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="descripcion" label="Descripción" min-width="300" show-overflow-tooltip>
+        <el-table-column prop="descripcion" label="Descripcion" min-width="300" show-overflow-tooltip>
           <template #default="{ row }">
-            <span>{{ row.descripcion || 'Sin descripción' }}</span>
+            <span>{{ row.descripcion || 'Sin descripcion' }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="usuarios_count" label="Usuarios" width="180" align="center">
@@ -51,33 +62,39 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="fecha_creacion" label="Fecha Creación" width="180" align="center">
+        <el-table-column prop="fecha_creacion" label="Fecha Creacion" width="180" align="center">
           <template #default="{ row }">
             {{ formatDate(row.fecha_creacion) }}
           </template>
         </el-table-column>
         <el-table-column label="Acciones" width="160" align="center">
           <template #default="{ row }">
-            <el-button
+                        <el-button
               type="primary"
               size="mini"
-              icon="el-icon-edit"
+              class="action-circle action-edit"
               circle
+              title="Editar rol"
               @click="handleEdit(row)"
-            />
-            <el-button
+            >
+              <el-icon class="action-emoji"><Edit /></el-icon>
+            </el-button>
+                        <el-button
               type="danger"
               size="mini"
-              icon="el-icon-delete"
+              class="action-circle action-delete"
               circle
+              title="Eliminar rol"
               :disabled="row.usuarios_count > 0"
               @click="handleDelete(row)"
-            />
+            >
+              <el-icon class="action-emoji"><Delete /></el-icon>
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
 
-      <!-- VISTA TARJETAS MÓVIL (oculta en desktop) -->
+      <!-- VISTA TARJETAS MOVIL (oculta en desktop) -->
       <div v-loading="loading" class="mobile-cards-view">
         <div
           v-for="rol in roles"
@@ -95,10 +112,10 @@
             </div>
           </div>
 
-          <!-- Descripción -->
+          <!-- Descripcion -->
           <div class="card-description">
-            <span class="desc-label">Descripción:</span>
-            <p class="desc-text">{{ rol.descripcion || 'Sin descripción' }}</p>
+            <span class="desc-label">Descripcion:</span>
+            <p class="desc-text">{{ rol.descripcion || 'Sin descripcion' }}</p>
           </div>
 
           <!-- Info del rol -->
@@ -115,7 +132,7 @@
                 </div>
               </div>
               <div class="info-item">
-                <span class="info-label">Fecha Creación</span>
+                <span class="info-label">Fecha Creacion</span>
                 <span class="info-value">{{ formatDate(rol.fecha_creacion) }}</span>
               </div>
             </div>
@@ -123,16 +140,17 @@
 
           <!-- Acciones -->
           <div class="card-actions-section">
-            <el-button size="small" type="primary" icon="el-icon-edit" @click="handleEdit(rol)">
+            <el-button size="small" type="primary" @click="handleEdit(rol)">
+              <el-icon class="btn-emoji"><Edit /></el-icon>
               Editar
             </el-button>
             <el-button
               size="small"
               type="danger"
-              icon="el-icon-delete"
               :disabled="rol.usuarios_count > 0"
               @click="handleDelete(rol)"
             >
+              <el-icon class="btn-emoji"><Delete /></el-icon>
               Eliminar
             </el-button>
           </div>
@@ -142,7 +160,8 @@
       <!-- Info Card -->
       <div class="info-section">
         <el-alert
-          title="Información sobre Roles"
+          title="Informacion sobre Roles"
+          class="roles-info-alert"
           type="info"
           :closable="false"
           show-icon
@@ -165,7 +184,7 @@
         <el-form-item label="Nombre del Rol" prop="nombre_rol">
           <el-input v-model="rolForm.nombre_rol" placeholder="Ej: administrador, entrenador" />
         </el-form-item>
-        <el-form-item label="Descripción" prop="descripcion">
+        <el-form-item label="Descripcion" prop="descripcion">
           <el-input
             v-model="rolForm.descripcion"
             type="textarea"
@@ -190,6 +209,8 @@
 import { ref, onMounted } from 'vue'
 import { getRoles, createRol, updateRol, deleteRol } from '@/api/roles'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { useServerDataRefresh } from '@/composables/useServerDataRefresh'
 
 const rolFormRef = ref(null)
 
@@ -211,8 +232,8 @@ const rolRules = {
     { min: 3, message: 'El nombre debe tener al menos 3 caracteres', trigger: 'blur' }
   ],
   descripcion: [
-    { required: true, message: 'La descripción del rol es requerida', trigger: 'blur' },
-    { min: 10, message: 'La descripción debe tener al menos 10 caracteres', trigger: 'blur' }
+    { required: true, message: 'La descripciÃ³n del rol es requerida', trigger: 'blur' },
+    { min: 10, message: 'La descripciÃ³n debe tener al menos 10 caracteres', trigger: 'blur' }
   ]
 }
 
@@ -265,10 +286,10 @@ const handleDelete = async (row) => {
 
   try {
     await ElMessageBox.confirm(
-      `¿Está seguro de eliminar el rol "${row.nombre_rol}"?`,
-      'Confirmar Eliminación',
+      `Â¿EstÃ¡ seguro de eliminar el rol "${row.nombre_rol}"?`,
+      'Confirmar EliminaciÃ³n',
       {
-        confirmButtonText: 'Sí, eliminar',
+        confirmButtonText: 'SÃ­, eliminar',
         cancelButtonText: 'Cancelar',
         type: 'warning'
       }
@@ -314,6 +335,10 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString('es-ES')
 }
 
+useServerDataRefresh(loadRoles, {
+  isBusy: () => loading.value || saving.value || showRolModal.value
+})
+
 onMounted(() => {
   loadRoles()
 })
@@ -322,24 +347,20 @@ onMounted(() => {
 <style scoped>
 .roles-container {
   padding: 20px;
-  min-height: 100vh;
-  background-color: #f0f2f5;
 }
 
-/* Page Header - Red Gradient */
-.page-header {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-  color: white;
-  padding: 25px 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 10px rgba(30, 41, 59, 0.2);
+/* Local UI Adjustments */
+.header-content h1 {
+  margin: 0;
 }
+
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
+  gap: 18px;
 }
 
 .header-content h1 {
@@ -357,8 +378,17 @@ onMounted(() => {
   font-size: 0.95rem;
 }
 
+
+
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  justify-content: flex-end;
+}
+
+
 /* Header Button */
-.header-content :deep(> .el-button--primary) {
+.header-content :deep(> .header-actions .el-button--primary) {
   background: rgba(255, 255, 255, 0.15) !important;
   border: 2px solid rgba(255, 255, 255, 0.3) !important;
   color: #fff !important;
@@ -371,12 +401,26 @@ onMounted(() => {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-.header-content :deep(> .el-button--primary:hover) {
+.header-content :deep(> .header-actions .el-button--primary:hover) {
   background: rgba(255, 255, 255, 0.25) !important;
   border-color: rgba(255, 255, 255, 0.5) !important;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   transform: translateY(-2px);
 }
+
+
+
+.add-role-btn {
+  min-width: 172px;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-emoji {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
 
 /* Roles Card Container */
 .roles-card {
@@ -468,8 +512,8 @@ onMounted(() => {
 
 /* Action Buttons (Blue/Red Circles) */
 :deep(.el-table .el-button--primary.is-circle) {
-  background-color: #409EFF;
-  border-color: #409EFF;
+  background-color: #ff3b30;
+  border-color: #ff3b30;
   box-shadow: 0 2px 6px rgba(64, 158, 255, 0.3);
 }
 
@@ -491,10 +535,42 @@ onMounted(() => {
   transform: translateY(-2px);
 }
 
+
+
+.action-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-emoji {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+
 /* Info Section */
+
 .info-section {
   margin-top: 20px;
 }
+
+:deep(.roles-info-alert.el-alert) {
+  border-radius: 10px !important;
+  background-color: var(--color-bg-hover) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+:deep(.roles-info-alert .el-alert__title),
+:deep(.roles-info-alert .el-alert__description),
+:deep(.roles-info-alert .el-alert__content) {
+  color: var(--color-text-main) !important;
+}
+
+:deep(.roles-info-alert .el-alert__icon) {
+  color: var(--color-primary) !important;
+}
+
 
 .usuarios-stats {
   display: flex;
@@ -658,7 +734,7 @@ onMounted(() => {
    ============================================ */
 
 @media (max-width: 768px) {
-  /* SWITCH: Mostrar tarjetas, ocultar tabla en móvil */
+  /* SWITCH: Mostrar tarjetas, ocultar tabla en mÃ³vil */
   .desktop-table {
     display: none !important;
   }
@@ -693,8 +769,14 @@ onMounted(() => {
     text-align: center;
   }
 
-  .header-content :deep(> .el-button--primary) {
+  .header-actions {
     width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+
+  .header-content :deep(> .header-actions .el-button--primary) {
+    min-width: 160px;
   }
 
   .roles-card {

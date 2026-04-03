@@ -1,14 +1,14 @@
 <template>
-  <div class="report-container">
+  <div class="report-container asistencia-report">
     <!-- Header -->
-    <div class="page-header">
+    <div class="premium-header">
       <div class="header-content">
         <div>
           <h1><i class="el-icon-date" /> Reporte de Asistencia</h1>
           <p class="subtitle">Análisis detallado por atleta y categoría</p>
         </div>
         <div class="no-print">
-          <el-button icon="el-icon-printer" plain class="header-action-btn" @click="handlePrint">
+          <el-button plain class="header-action-btn" :icon="Printer" @click="handlePrint">
             Imprimir Reporte
           </el-button>
         </div>
@@ -16,19 +16,21 @@
     </div>
 
     <!-- Filters / Control Panel -->
-    <el-card shadow="hover" class="control-panel no-print">
+    <el-card shadow="hover" class="premium-control-card no-print">
       <div class="control-content">
         <div class="filter-section">
 
           <div class="filter-item">
-            <span class="filter-label">Categoría</span>
+            <span class="premium-search-label">Categoría</span>
             <el-select
               v-model="filters.categoria_id"
-              placeholder="Seleccionar Categoría"
+              placeholder="Seleccionar..."
               clearable
               filterable
-              class="filter-input-select"
+              class="modern-search-input modern-filter-control"
+              popper-class="report-filter-popper"
               @change="handleFilterChange"
+              style="width: 100%"
             >
               <el-option
                 v-for="cat in categorias"
@@ -40,7 +42,7 @@
           </div>
 
           <div class="filter-item date-range-item">
-            <span class="filter-label">Rango de Fechas</span>
+            <span class="premium-search-label">Rango de Fechas</span>
             <el-date-picker
               v-model="filters.dateRange"
               type="daterange"
@@ -48,19 +50,19 @@
               start-placeholder="Inicio"
               end-placeholder="Fin"
               value-format="yyyy-MM-dd"
-              class="filter-date-picker"
+              class="filter-date-picker modern-filter-control"
+              popper-class="report-filter-popper"
               @change="handleFilterChange"
             />
           </div>
 
           <div class="filter-item search-item">
-            <span class="filter-label">Buscar Atleta</span>
+            <span class="premium-search-label">Buscar Atleta</span>
             <el-input
               v-model="filters.search"
               placeholder="Nombre o apellido..."
-              prefix-icon="el-icon-search"
               clearable
-              class="filter-input-search"
+              class="modern-search-input modern-filter-control"
             />
           </div>
 
@@ -148,22 +150,30 @@
 
           <el-table-column label="Acciones" width="140" align="center" class-name="no-print">
             <template #default="scope">
-              <el-button
-                size="small"
-                type="primary"
-                circle
-                icon="el-icon-view"
-                title="Ver Detalle"
-                @click="viewDetail(scope.row)"
-              />
-              <el-button
-                size="small"
-                type="danger"
-                circle
-                icon="el-icon-printer"
-                title="Imprimir Individual"
-                @click="printIndividual(scope.row)"
-              />
+              <el-tooltip content="Ver detalle" placement="top">
+                <el-button
+                  size="small"
+                  type="primary"
+                  circle
+                  title="Ver detalle"
+                  aria-label="Ver detalle"
+                  @click="viewDetail(scope.row)"
+                >
+                  <el-icon><View /></el-icon>
+                </el-button>
+              </el-tooltip>
+              <el-tooltip content="Imprimir individual" placement="top">
+                <el-button
+                  size="small"
+                  type="danger"
+                  circle
+                  title="Imprimir individual"
+                  aria-label="Imprimir individual"
+                  @click="printIndividual(scope.row)"
+                >
+                  <el-icon><Printer /></el-icon>
+                </el-button>
+              </el-tooltip>
             </template>
           </el-table-column>
         </el-table>
@@ -224,10 +234,10 @@
 
             <!-- Acciones -->
             <div class="card-actions-section no-print">
-              <el-button size="small" type="primary" icon="el-icon-view" @click="viewDetail(atleta)">
+              <el-button size="small" type="primary" :icon="View" @click="viewDetail(atleta)">
                 Ver Detalle
               </el-button>
-              <el-button size="small" type="danger" icon="el-icon-printer" @click="printIndividual(atleta)">
+              <el-button size="small" type="danger" :icon="Printer" @click="printIndividual(atleta)">
                 Imprimir
               </el-button>
             </div>
@@ -306,7 +316,7 @@
 
       <template #footer><div class="dialog-footer no-print">
         <el-button @click="showDetailModal = false">Cerrar</el-button>
-        <el-button type="primary" icon="el-icon-printer" @click="printModal">Imprimir</el-button>
+        <el-button type="primary" :icon="Printer" @click="printModal">Imprimir</el-button>
       </div></template>
     </el-dialog>
   </div>
@@ -318,6 +328,8 @@ import { getCategorias } from '@/api/categorias'
 import { getAtletas } from '@/api/atletas'
 import { getAsistencias } from '@/api/asistencias'
 import { ElMessage } from 'element-plus'
+import { View, Printer } from '@element-plus/icons-vue'
+import { useServerDataRefresh } from '@/composables/useServerDataRefresh'
 
 const loading = ref(false)
 const categorias = ref([])
@@ -523,6 +535,10 @@ const handleImgError = (e) => {
   if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex'
 }
 
+useServerDataRefresh(initialLoad, {
+  isBusy: () => loading.value || showDetailModal.value
+})
+
 onMounted(() => {
   initialLoad()
 })
@@ -531,39 +547,33 @@ onMounted(() => {
 <style scoped>
 .report-container {
   padding: 20px;
-  background-color: #f0f2f5;
-  min-height: 100vh;
+  --filter-shell-bg: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  --filter-shell-border: rgba(148, 163, 184, 0.34);
+  --filter-shell-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+  --filter-control-bg: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  --filter-control-border: rgba(148, 163, 184, 0.42);
+  --filter-control-border-hover: rgba(255, 59, 48, 0.45);
+  --filter-control-focus: rgba(255, 59, 48, 0.28);
+  --filter-control-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  --filter-placeholder: #94a3b8;
 }
 
-/* Page Header - Red Gradient */
-.page-header {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-  color: white;
-  padding: 25px 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 10px rgba(30, 41, 59, 0.2);
-}
-
+/* Local UI Adjustments */
 .header-content {
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
 }
 
 .header-content h1 {
   margin: 0;
-  font-size: 1.8rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
-.subtitle {
-  margin: 5px 0 0 32px;
-  opacity: 0.9;
-  font-size: 0.95rem;
+.header-content .no-print {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 /* Action Button in Header */
@@ -576,20 +586,29 @@ onMounted(() => {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(10px);
   padding: 10px 20px;
+  min-height: 42px;
+  line-height: 1;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  white-space: nowrap;
 }
+
+.header-action-btn :deep(span),
+.header-action-btn :deep(i),
+.header-action-btn :deep([class*='el-icon']) {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
 .header-action-btn:hover {
   background: rgba(255, 255, 255, 0.25) !important;
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   border-color: rgba(255, 255, 255, 0.5) !important;
-}
-
-/* Control Panel */
-.control-panel {
-  margin-bottom: 20px;
-  border-left: 5px solid var(--color-primary);
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .control-content {
@@ -598,89 +617,112 @@ onMounted(() => {
 }
 
 .filter-section {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(340px, 1.35fr) minmax(240px, 1fr);
+  gap: 16px;
   align-items: flex-end;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid var(--filter-shell-border);
+  background: var(--filter-shell-bg);
+  box-shadow: var(--filter-shell-shadow);
+  backdrop-filter: blur(8px);
 }
 
 .filter-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-width: 200px;
+  gap: 9px;
+  min-width: 0;
 }
 
-.filter-label {
-  font-weight: 700;
-  color: var(--color-text-main);
-  font-size: 0.85rem;
+.filter-item .premium-search-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  font-weight: 700;
+  color: var(--color-text-muted);
 }
 
-/* Inputs styling */
-.filter-input-select,
-.filter-date-picker,
-.filter-input-search {
+.filter-date-picker {
   width: 100%;
 }
 
-:deep(.el-input__inner),
-:deep(.el-range-input),
-:deep(.el-input__wrapper) {
-  background: var(--color-bg-body) !important;
-  border: none !important;
-  border-radius: 12px;
-  height: 44px;
-  font-size: 0.9rem;
+.filter-item :deep(.el-input__wrapper),
+.filter-item :deep(.el-range-editor.el-input__wrapper) {
+  min-height: 44px;
+  border-radius: 14px;
+  background: var(--filter-control-bg) !important;
+  box-shadow: 0 0 0 1px var(--filter-control-border), var(--filter-control-shadow) !important;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.filter-item :deep(.el-input__wrapper:hover),
+.filter-item :deep(.el-range-editor.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px var(--filter-control-border-hover), 0 10px 22px rgba(15, 23, 42, 0.14) !important;
+}
+
+.filter-item :deep(.el-input.is-focus .el-input__wrapper),
+.filter-item :deep(.el-range-editor.is-active) {
+  box-shadow: 0 0 0 2px var(--filter-control-focus), 0 12px 24px rgba(15, 23, 42, 0.16) !important;
+  transform: translateY(-1px);
+}
+
+.filter-item :deep(.el-input__inner),
+.filter-item :deep(.el-range-input),
+.filter-item :deep(.el-range-separator),
+.filter-item :deep(.el-input__icon),
+.filter-item :deep(.el-date-editor .el-range__icon) {
+  color: var(--color-text-main);
   font-weight: 500;
-  color: var(--color-text-muted);
-  transition: all 0.2s ease;
+}
+
+.filter-item :deep(.el-input__inner),
+.filter-item :deep(.el-range-input) {
+  background: transparent !important;
+  border: none !important;
   box-shadow: none !important;
 }
 
-:deep(.el-input__inner:hover),
-:deep(.el-range-editor:hover),
-:deep(.el-input__wrapper:hover) {
-  background: var(--color-border) !important;
+.filter-item :deep(.el-input__inner::placeholder),
+.filter-item :deep(.el-range-input::placeholder) {
+  color: var(--filter-placeholder);
 }
 
-:deep(.el-input__inner:focus),
-:deep(.el-input.is-focus .el-input__inner),
-:deep(.el-input__wrapper.is-focus),
-:deep(.el-range-editor.is-active) {
+:deep(.report-filter-popper) {
   background: var(--color-bg-card) !important;
-  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1) !important;
-  outline: none !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.2) !important;
+  overflow: hidden;
 }
 
-:deep(.el-input__inner::placeholder),
-:deep(.el-range-input::placeholder) {
-  color: var(--color-text-placeholder) !important;
-  font-weight: 500;
-  opacity: 1;
-}
-
-/* Specific Search Input Modernization - Truly Borderless */
-.filter-input-search :deep(.el-input__inner),
-.filter-input-search :deep(.el-input__wrapper) {
-  border: none !important;
-  background: var(--color-bg-body) !important;
-  box-shadow: none !important;
-  padding-left: 36px;
-}
-
-.filter-input-search :deep(.el-input__inner:focus),
-.filter-input-search :deep(.el-input__wrapper.is-focus) {
+:deep(.report-filter-popper .el-picker-panel),
+:deep(.report-filter-popper .el-date-range-picker),
+:deep(.report-filter-popper .el-select-dropdown__wrap) {
   background: var(--color-bg-card) !important;
-  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1) !important;
+  color: var(--color-text-main) !important;
 }
 
-:deep(.el-range-separator) {
-  line-height: 36px;
-  color: var(--color-text-muted);
-  font-weight: 600;
+:deep(.report-filter-popper .el-select-dropdown__item) {
+  min-height: 38px;
+  line-height: 38px;
+  border-radius: 8px;
+  margin: 2px 6px;
+}
+
+:deep(.report-filter-popper .el-select-dropdown__item.selected) {
+  background: rgba(255, 59, 48, 0.14);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+:deep(.report-filter-popper .el-date-table td.today .el-date-table-cell__text) {
+  color: var(--color-primary);
+}
+
+:deep(.report-filter-popper .el-date-table td.in-range .el-date-table-cell) {
+  background: rgba(255, 59, 48, 0.12);
 }
 
 /* Main Table Container */
@@ -805,11 +847,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 10px;
 }
 .modal-title { font-size: 1.2rem; font-weight: bold; color: var(--color-primary); }
-.modal-subtitle { color: #666; font-size: 1.1rem; }
+.modal-subtitle { color: var(--color-text-muted); font-size: 1.1rem; }
 
 .modal-summary {
   display: grid;
@@ -819,23 +861,28 @@ onMounted(() => {
 }
 
 .summary-item {
-  background: var(--color-bg-card);
+  background: var(--color-bg-hover);
+  border: 1px solid var(--color-border);
   padding: 15px;
   border-radius: 8px;
   text-align: center;
   display: flex;
   flex-direction: column;
 }
-.summary-item.success { background: #f0f9eb; }
-.summary-item.danger { background: #fef0f0; }
+.summary-item.success { background: rgba(34, 197, 94, 0.15); }
+.summary-item.danger { background: rgba(239, 68, 68, 0.14); }
 
-.summary-item .label { font-size: 0.8rem; color: #606266; margin-bottom: 5px; }
-.summary-item .value { font-size: 1.5rem; font-weight: bold; color: #303133; }
+.summary-item .label { font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 5px; }
+.summary-item .value { font-size: 1.5rem; font-weight: bold; color: var(--color-text-main); }
 
 .loading-state, .empty-state {
   text-align: center;
   padding: 40px;
-  color: #909399;
+  color: var(--color-text-muted);
+}
+
+.detail-table :deep(.el-table__empty-text) {
+  color: var(--color-text-muted) !important;
 }
 
 /* ============================================
@@ -978,11 +1025,12 @@ onMounted(() => {
 /* Tablets y laptops pequeños */
 @media (max-width: 1200px) {
   .filter-section {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
     gap: 15px;
   }
 
-  .filter-item {
-    min-width: 180px;
+  .search-item {
+    grid-column: 1 / -1;
   }
 
   /* Reducir anchuras de columnas */
@@ -1018,8 +1066,9 @@ onMounted(() => {
   }
 
   .filter-section {
-    flex-direction: column;
+    grid-template-columns: 1fr;
     align-items: stretch;
+    padding: 10px;
   }
 
   .filter-item {
@@ -1256,6 +1305,18 @@ onMounted(() => {
     padding: 10px;
   }
 
+  .filter-section {
+    padding: 8px;
+    border-radius: 14px;
+    gap: 10px;
+  }
+
+  .filter-item :deep(.el-input__wrapper),
+  .filter-item :deep(.el-range-editor.el-input__wrapper) {
+    min-height: 40px;
+    border-radius: 12px;
+  }
+
   .table-container {
     padding: 8px;
   }
@@ -1359,5 +1420,77 @@ onMounted(() => {
     box-shadow: none;
     border: none;
   }
+}
+</style>
+
+<style lang="scss">
+[data-theme='dark'] .asistencia-report,
+html.dark .asistencia-report {
+  --filter-shell-bg: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(2, 6, 23, 0.94));
+  --filter-shell-border: rgba(71, 85, 105, 0.78);
+  --filter-shell-shadow: 0 16px 34px rgba(2, 6, 23, 0.62);
+  --filter-control-bg: linear-gradient(180deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+  --filter-control-border: rgba(100, 116, 139, 0.84);
+  --filter-control-border-hover: rgba(96, 165, 250, 0.72);
+  --filter-control-focus: rgba(96, 165, 250, 0.34);
+  --filter-control-shadow: 0 10px 24px rgba(2, 6, 23, 0.64);
+  --filter-placeholder: #94a3b8;
+}
+
+[data-theme='dark'] .asistencia-report .premium-control-card,
+[data-theme='dark'] .asistencia-report .premium-control-card .el-card__body,
+html.dark .asistencia-report .premium-control-card,
+html.dark .asistencia-report .premium-control-card .el-card__body {
+  background: #0b1220 !important;
+  border-color: rgba(51, 65, 85, 0.85) !important;
+}
+
+[data-theme='dark'] .asistencia-report .filter-section,
+html.dark .asistencia-report .filter-section {
+  background: var(--filter-shell-bg) !important;
+  border-color: var(--filter-shell-border) !important;
+  box-shadow: var(--filter-shell-shadow) !important;
+}
+
+[data-theme='dark'] .asistencia-report .filter-item .premium-search-label,
+html.dark .asistencia-report .filter-item .premium-search-label {
+  color: #a8b7cc !important;
+}
+
+[data-theme='dark'] .asistencia-report .filter-item .el-input__wrapper,
+[data-theme='dark'] .asistencia-report .filter-item .el-range-editor.el-input__wrapper,
+html.dark .asistencia-report .filter-item .el-input__wrapper,
+html.dark .asistencia-report .filter-item .el-range-editor.el-input__wrapper {
+  background: var(--filter-control-bg) !important;
+  box-shadow: 0 0 0 1px var(--filter-control-border), var(--filter-control-shadow) !important;
+}
+
+[data-theme='dark'] .asistencia-report .filter-item .el-input.is-focus .el-input__wrapper,
+[data-theme='dark'] .asistencia-report .filter-item .el-range-editor.is-active,
+html.dark .asistencia-report .filter-item .el-input.is-focus .el-input__wrapper,
+html.dark .asistencia-report .filter-item .el-range-editor.is-active {
+  box-shadow: 0 0 0 2px var(--filter-control-focus), 0 12px 24px rgba(2, 6, 23, 0.68) !important;
+}
+
+[data-theme='dark'] .asistencia-report .filter-item .el-input__inner,
+[data-theme='dark'] .asistencia-report .filter-item .el-range-input,
+[data-theme='dark'] .asistencia-report .filter-item .el-range-separator,
+[data-theme='dark'] .asistencia-report .filter-item .el-input__icon,
+[data-theme='dark'] .asistencia-report .filter-item .el-date-editor .el-range__icon,
+html.dark .asistencia-report .filter-item .el-input__inner,
+html.dark .asistencia-report .filter-item .el-range-input,
+html.dark .asistencia-report .filter-item .el-range-separator,
+html.dark .asistencia-report .filter-item .el-input__icon,
+html.dark .asistencia-report .filter-item .el-date-editor .el-range__icon {
+  color: #e2e8f0 !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+}
+
+[data-theme='dark'] .asistencia-report .filter-item .el-input__inner::placeholder,
+[data-theme='dark'] .asistencia-report .filter-item .el-range-input::placeholder,
+html.dark .asistencia-report .filter-item .el-input__inner::placeholder,
+html.dark .asistencia-report .filter-item .el-range-input::placeholder {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
 }
 </style>

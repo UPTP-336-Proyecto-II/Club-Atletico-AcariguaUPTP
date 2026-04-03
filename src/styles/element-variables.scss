@@ -5,11 +5,74 @@
 
 /* Override Element Plus CSS variables */
 :root {
-  --el-color-primary: #3b82f6;
+  --el-color-primary: #ff3b30;
   --el-color-success: #10b981;
   --el-color-warning: #f59e0b;
   --el-color-danger: #ef4444;
+
   --el-button-font-weight: 500;
+
+  --el-bg-color: var(--color-bg-card);
+  --el-bg-color-page: var(--color-bg-body);
+  --el-bg-color-overlay: var(--color-bg-card);
+
+  --el-text-color-primary: var(--color-text-main);
+  --el-text-color-regular: var(--color-text-muted);
+  --el-text-color-secondary: var(--color-text-muted);
+  --el-text-color-placeholder: var(--color-text-placeholder);
+  --el-text-color-disabled: var(--color-text-light);
+
+  --el-border-color: var(--color-border);
   --el-border-color-light: var(--color-border);
-  --el-border-color-lighter: var(--color-bg-body);
+  --el-border-color-lighter: var(--color-border);
+  --el-border-color-extra-light: var(--color-border);
+
+  --el-fill-color: var(--color-bg-hover);
+  --el-fill-color-light: var(--color-bg-hover);
+  --el-fill-color-lighter: var(--color-bg-card);
+  --el-fill-color-extra-light: var(--color-bg-card);
+  --el-fill-color-blank: var(--color-bg-input);
+
+  --el-disabled-bg-color: var(--color-bg-hover);
+  --el-disabled-border-color: var(--color-border);
+
+  --el-mask-color: rgba(15, 23, 42, 0.55);
+  --el-overlay-color: rgba(15, 23, 42, 0.55);
+  --el-overlay-color-light: rgba(15, 23, 42, 0.45);
+}
+
+/* Dark Mode Logic for Element Plus */
+[data-theme='dark'],
+html.dark {
+  color-scheme: dark;
+
+  --el-color-primary: #ff3b30;
+
+  --el-bg-color: #0f172a;
+  --el-bg-color-page: #020617;
+  --el-bg-color-overlay: #0f172a;
+
+  --el-text-color-primary: #f8fafc;
+  --el-text-color-regular: #cbd5e1;
+  --el-text-color-secondary: #94a3b8;
+  --el-text-color-placeholder: #64748b;
+  --el-text-color-disabled: #475569;
+
+  --el-border-color: #334155;
+  --el-border-color-light: #334155;
+  --el-border-color-lighter: #1e293b;
+  --el-border-color-extra-light: #1e293b;
+
+  --el-fill-color: #1e293b;
+  --el-fill-color-light: #1e293b;
+  --el-fill-color-lighter: #0f172a;
+  --el-fill-color-extra-light: #0f172a;
+  --el-fill-color-blank: #1e293b;
+
+  --el-disabled-bg-color: #1e293b;
+  --el-disabled-border-color: #334155;
+
+  --el-mask-color: rgba(2, 6, 23, 0.72);
+  --el-overlay-color: rgba(2, 6, 23, 0.72);
+  --el-overlay-color-light: rgba(2, 6, 23, 0.6);
 }
